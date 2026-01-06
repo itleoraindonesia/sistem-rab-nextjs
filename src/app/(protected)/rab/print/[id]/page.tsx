@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import Button from "../../../../../components/ui/Button";
 import Card, { CardHeader, CardTitle, CardContent } from "../../../../../components/ui/Card";
+import { supabase } from "../../../../../lib/supabaseClient";
 
 interface PageProps {
   params: {
@@ -9,29 +10,26 @@ interface PageProps {
   };
 }
 
-export default function PrintRAB({ params }: PageProps) {
+export default async function PrintRAB({ params }: PageProps) {
   const { id } = params;
 
-  // Mock data - in real app this would come from database
-  const mockRAB = {
-    id: parseInt(id),
-    no_ref: `RAB-${id.padStart(3, '0')}`,
-    project_name: `Proyek Demo ${id}`,
-    location: "Jakarta",
-    status: "approved",
-    created_at: "2024-01-15",
-    description: "Dokumen RAB siap untuk dicetak",
-    total_cost: 150000000,
-    panels: [
-      { name: "Panel Dinding Standard", quantity: 50, area: 100, cost: 75000000 },
-      { name: "Panel Lantai Premium", quantity: 30, area: 75, cost: 56250000 },
-      { name: "Biaya Tambahan", quantity: 1, area: 0, cost: 18750000 },
-    ]
-  };
-
-  if (!mockRAB) {
+  // Fetch real data from database
+  if (!supabase) {
     notFound();
   }
+
+  const { data: rab, error } = await supabase
+    .from('rab_documents')
+    .select('*')
+    .eq('id', id)
+    .single();
+
+  if (error || !rab) {
+    notFound();
+  }
+
+  // Type assertion after null check
+  const data = rab as any;
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('id-ID', {
@@ -54,7 +52,7 @@ export default function PrintRAB({ params }: PageProps) {
           <h1 className="text-2xl font-bold text-brand-primary mb-2">
             SISTEM RAB LEORA
           </h1>
-          <p className="text-sm text-gray-600">Dokumen RAB - {mockRAB.no_ref}</p>
+          <p className="text-sm text-gray-600">Dokumen RAB - {data.no_ref}</p>
           <p className="text-xs text-gray-500 mt-1">
             Dicetak pada: {new Date().toLocaleDateString('id-ID')}
           </p>
@@ -93,11 +91,11 @@ export default function PrintRAB({ params }: PageProps) {
               <div>
                 <h4 className="font-semibold text-gray-900 mb-2">Informasi Proyek</h4>
                 <div className="space-y-1 text-sm">
-                  <p><span className="font-medium">No. Referensi:</span> {mockRAB.no_ref}</p>
-                  <p><span className="font-medium">Nama Proyek:</span> {mockRAB.project_name}</p>
-                  <p><span className="font-medium">Lokasi:</span> {mockRAB.location}</p>
-                  <p><span className="font-medium">Status:</span> {mockRAB.status}</p>
-                  <p><span className="font-medium">Tanggal:</span> {mockRAB.created_at}</p>
+                  <p><span className="font-medium">No. Referensi:</span> {data.no_ref}</p>
+                  <p><span className="font-medium">Nama Proyek:</span> {data.project_name}</p>
+                  <p><span className="font-medium">Lokasi:</span> {data.location}</p>
+                  <p><span className="font-medium">Status:</span> {data.status}</p>
+                  <p><span className="font-medium">Tanggal:</span> {new Date(data.created_at).toLocaleDateString('id-ID')}</p>
                 </div>
               </div>
               <div>
@@ -105,15 +103,15 @@ export default function PrintRAB({ params }: PageProps) {
                 <div className="space-y-1 text-sm">
                   <p><span className="font-medium">Total RAB:</span></p>
                   <p className="text-xl font-bold text-brand-primary">
-                    {formatCurrency(mockRAB.total_cost)}
+                    {formatCurrency(data.total_cost)}
                   </p>
                 </div>
               </div>
             </div>
-            {mockRAB.description && (
+            {data.description && (
               <div className="mt-4">
                 <h4 className="font-semibold text-gray-900 mb-2">Deskripsi</h4>
-                <p className="text-sm text-gray-700">{mockRAB.description}</p>
+                <p className="text-sm text-gray-700">{data.description}</p>
               </div>
             )}
           </CardContent>
@@ -136,20 +134,20 @@ export default function PrintRAB({ params }: PageProps) {
                   </tr>
                 </thead>
                 <tbody>
-                  {mockRAB.panels.map((panel, index) => (
+                  {(data.calculation_results?.items || []).map((item: any, index: number) => (
                     <tr key={index} className="border-b border-gray-200">
-                      <td className="py-2">{panel.name}</td>
-                      <td className="text-center py-2">{panel.quantity}</td>
-                      <td className="text-center py-2">{panel.area}</td>
+                      <td className="py-2">{item.desc}</td>
+                      <td className="text-center py-2">{item.qty}</td>
+                      <td className="text-center py-2">{item.unit}</td>
                       <td className="text-right py-2 font-medium">
-                        {formatCurrency(panel.cost)}
+                        {formatCurrency(item.amount)}
                       </td>
                     </tr>
                   ))}
                   <tr className="border-t-2 border-gray-300 font-semibold">
                     <td colSpan={3} className="py-3 text-right">TOTAL:</td>
                     <td className="text-right py-3 text-brand-primary">
-                      {formatCurrency(mockRAB.total_cost)}
+                      {formatCurrency(data.total_cost)}
                     </td>
                   </tr>
                 </tbody>

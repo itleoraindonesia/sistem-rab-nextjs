@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import { AuthProvider } from "../context/AuthContext";
-import { MasterDataProvider } from "../context/MasterDataContext";
+import { Providers } from "../components/Providers";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -21,13 +20,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="id">
+    <html lang="id" suppressHydrationWarning={true}>
       <body className={`${inter.variable} font-sans antialiased`}>
-        <AuthProvider>
-          <MasterDataProvider>
-            {children}
-          </MasterDataProvider>
-        </AuthProvider>
+        <Providers>
+          {children}
+        </Providers>
       </body>
     </html>
   );

@@ -1,59 +1,11 @@
-import { useCallback, useState } from "react";
-import { RABFormData } from "../schemas/rabSchema";
+import { useState, useCallback } from "react";
 
-interface Panel {
-  id: number;
-  name: string;
-  harga: number;
-  luas_per_lembar: number;
-  type: string;
-}
-
-interface Ongkir {
-  provinsi: string;
-  biaya: number;
-}
-
-interface Parameters {
-  wasteFactor: number;
-  jointFactorDinding: number;
-  jointFactorLantai: number;
-  upahPasang: number;
-  hargaJoint: number;
-}
-
-interface CalculationResult {
-  luasDinding: number;
-  luasLantai: number;
-  lembarDinding?: number;
-  lembarLantai?: number;
-  titikJointDinding?: number;
-  titikJointLantai?: number;
-  subtotalDinding: number;
-  subtotalLantai: number;
-  biayaOngkir: number;
-  grandTotal: number;
-  items: any[];
-}
-
-export function useRABCalculation(
-  panels: Panel[] = [],
-  ongkir: Ongkir[] = [],
-  parameters: Parameters = {
-    wasteFactor: 1.05,
-    jointFactorDinding: 2.5,
-    jointFactorLantai: 1.8,
-    upahPasang: 50000,
-    hargaJoint: 2500,
-  },
-  masterLoading: boolean = false
-) {
-  // Local state for calculation result
-  const [hasil, setHasil] = useState<CalculationResult | null>(null);
+export function useRABCalculation(panels, ongkir, parameters, masterLoading) {
+  const [hasil, setHasil] = useState(null);
 
   const calculateRAB = useCallback(
-    (values: Partial<RABFormData>) => {
-      if (masterLoading || !panels.length) return null;
+    (values) => {
+      if (masterLoading || !panels.length) return;
 
       const {
         bidang,
@@ -67,20 +19,15 @@ export function useRABCalculation(
       } = values;
 
       // Hitung luas
-      const luasLantai =
-        bidang?.reduce(
-          (sum: number, b: any) => sum + (b.panjang || 0) * (b.lebar || 0),
-          0
-        ) || 0;
-      const luasDinding = (perimeter || 0) * (tinggi_lantai || 0);
+      const luasLantai = bidang.reduce(
+        (sum, b) => sum + b.panjang * b.lebar,
+        0
+      );
+      const luasDinding = perimeter * tinggi_lantai;
 
       // Ambil data panel
-      const panelDinding = panels.find(
-        (p) => p.id.toString() === panel_dinding_id
-      );
-      const panelLantai = panels.find(
-        (p) => p.id.toString() === panel_lantai_id
-      );
+      const panelDinding = panels.find((p) => p.id === panel_dinding_id);
+      const panelLantai = panels.find((p) => p.id === panel_lantai_id);
       const ongkirData = ongkir.find((o) => o.provinsi === location);
 
       // Hitung biaya dinding
@@ -89,7 +36,7 @@ export function useRABCalculation(
       let titikJointDinding = 0;
       if (hitung_dinding && panelDinding) {
         lembarDinding = Math.ceil(
-          (luasDinding / (panelDinding.luas_per_lembar || 1.8)) *
+          (luasDinding / (panelDinding.luasPerLembar || 1.8)) *
             parameters.wasteFactor
         );
         titikJointDinding = Math.round(
@@ -108,7 +55,7 @@ export function useRABCalculation(
       let titikJointLantai = 0;
       if (hitung_lantai && panelLantai) {
         lembarLantai = Math.ceil(
-          (luasLantai / (panelLantai.luas_per_lembar || 1.8)) *
+          (luasLantai / (panelLantai.luasPerLembar || 1.8)) *
             parameters.wasteFactor
         );
         titikJointLantai = Math.ceil(luasLantai * parameters.jointFactorLantai);
@@ -124,7 +71,7 @@ export function useRABCalculation(
 
       const grandTotal = subtotalDinding + subtotalLantai + biayaOngkir;
 
-      return {
+      setHasil({
         luasLantai,
         luasDinding,
         lembarDinding,
@@ -191,10 +138,10 @@ export function useRABCalculation(
             amount: biayaOngkir,
           },
         ].filter((item) => item.amount > 0),
-      };
+      });
     },
     [panels, ongkir, parameters, masterLoading]
   );
 
-  return { hasil, calculateRAB, setHasil };
+  return { hasil, calculateRAB };
 }

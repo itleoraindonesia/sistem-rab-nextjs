@@ -137,12 +137,12 @@ export default function MasterData() {
 
       let result;
       if (editingPanel) {
-        result = await supabase
+        result = await (supabase as any)
           .from("master_panel")
-          .update(data as any)
+          .update(data)
           .eq("id", editingPanel.id);
       } else {
-        result = await supabase.from("master_panel").insert(data as any);
+        result = await (supabase as any).from("master_panel").insert(data);
       }
 
       if (result.error) throw result.error;
@@ -164,6 +164,11 @@ export default function MasterData() {
       )
     )
       return;
+
+    if (!supabase) {
+      alert("Database tidak tersedia");
+      return;
+    }
 
     try {
       const { error } = await supabase
