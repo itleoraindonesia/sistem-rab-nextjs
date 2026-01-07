@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import { useState, useCallback, useMemo, useEffect } from "react";
 import Link from "next/link";
@@ -18,49 +18,57 @@ export default function ListRAB() {
     setLoading(true);
     try {
       if (supabase) {
-        // Load documents directly from Supabase
+        // Load documents directly from Supabase (exclude soft deleted)
         const { data: documentsData, error: documentsError } = await supabase
-          .from('rab_documents')
-          .select('*')
-          .order('created_at', { ascending: false });
+          .from("rab_documents")
+          .select("*")
+          .is("deleted_at", null)
+          .order("created_at", { ascending: false });
 
         if (documentsError) {
-          console.error('Error fetching documents from Supabase:', documentsError);
+          console.error(
+            "Error fetching documents from Supabase:",
+            documentsError
+          );
         } else {
           // Use database data if available, otherwise fallback to mock data
-          setDokumen(documentsData && documentsData.length > 0 ? documentsData : [
-            {
-              id: 1,
-              no_ref: "RAB-001",
-              project_name: "Proyek Gedung A",
-              location: "Jakarta",
-              status: "draft",
-              total: 150000000,
-              created_at: "2024-01-15T10:00:00Z"
-            },
-            {
-              id: 2,
-              no_ref: "RAB-002",
-              project_name: "Renovasi Kantor B",
-              location: "Bandung",
-              status: "sent",
-              total: 75000000,
-              created_at: "2024-01-10T10:00:00Z"
-            },
-            {
-              id: 3,
-              no_ref: "RAB-003",
-              project_name: "Pembangunan Warehouse",
-              location: "Surabaya",
-              status: "approved",
-              total: 200000000,
-              created_at: "2024-01-05T10:00:00Z"
-            }
-          ]);
+          setDokumen(
+            documentsData && documentsData.length > 0
+              ? documentsData
+              : [
+                  {
+                    id: 1,
+                    no_ref: "RAB-001",
+                    project_name: "Proyek Gedung A",
+                    location: "Jakarta",
+                    status: "draft",
+                    total: 150000000,
+                    created_at: "2024-01-15T10:00:00Z",
+                  },
+                  {
+                    id: 2,
+                    no_ref: "RAB-002",
+                    project_name: "Renovasi Kantor B",
+                    location: "Bandung",
+                    status: "sent",
+                    total: 75000000,
+                    created_at: "2024-01-10T10:00:00Z",
+                  },
+                  {
+                    id: 3,
+                    no_ref: "RAB-003",
+                    project_name: "Pembangunan Warehouse",
+                    location: "Surabaya",
+                    status: "approved",
+                    total: 200000000,
+                    created_at: "2024-01-05T10:00:00Z",
+                  },
+                ]
+          );
         }
       } else {
         // Supabase not configured, use fallback data
-        console.log('Supabase not configured, using fallback data');
+        console.log("Supabase not configured, using fallback data");
         setDokumen([
           {
             id: 1,
@@ -69,7 +77,7 @@ export default function ListRAB() {
             location: "Jakarta",
             status: "draft",
             total: 150000000,
-            created_at: "2024-01-15T10:00:00Z"
+            created_at: "2024-01-15T10:00:00Z",
           },
           {
             id: 2,
@@ -78,7 +86,7 @@ export default function ListRAB() {
             location: "Bandung",
             status: "sent",
             total: 75000000,
-            created_at: "2024-01-10T10:00:00Z"
+            created_at: "2024-01-10T10:00:00Z",
           },
           {
             id: 3,
@@ -87,8 +95,8 @@ export default function ListRAB() {
             location: "Surabaya",
             status: "approved",
             total: 200000000,
-            created_at: "2024-01-05T10:00:00Z"
-          }
+            created_at: "2024-01-05T10:00:00Z",
+          },
         ]);
       }
     } catch (err) {
@@ -102,7 +110,7 @@ export default function ListRAB() {
           location: "Jakarta",
           status: "draft",
           total: 150000000,
-          created_at: "2024-01-15T10:00:00Z"
+          created_at: "2024-01-15T10:00:00Z",
         },
         {
           id: 2,
@@ -111,7 +119,7 @@ export default function ListRAB() {
           location: "Bandung",
           status: "sent",
           total: 75000000,
-          created_at: "2024-01-10T10:00:00Z"
+          created_at: "2024-01-10T10:00:00Z",
         },
         {
           id: 3,
@@ -120,8 +128,8 @@ export default function ListRAB() {
           location: "Surabaya",
           status: "approved",
           total: 200000000,
-          created_at: "2024-01-05T10:00:00Z"
-        }
+          created_at: "2024-01-05T10:00:00Z",
+        },
       ]);
     } finally {
       setLoading(false);
@@ -172,26 +180,33 @@ export default function ListRAB() {
     );
   };
 
-  const hapusDokumen = async (id: string, namaProyek: string) => {
-    if (
-      !confirm(`Hapus dokumen "${namaProyek}"? Tindakan tidak bisa dibatalkan.`)
-    )
+  const hapusDokumen = async (
+    id: string,
+    namaProyek: string,
+    status?: string
+  ) => {
+    // Check if document can be deleted
+    if (status === "approved") {
+      alert("Dokumen yang sudah disetujui tidak dapat dihapus.");
       return;
+    }
+
+    if (!confirm(`Hapus dokumen "${namaProyek}"? `)) return;
 
     try {
       setLoading(true);
 
       if (supabase) {
-        // Delete document directly from Supabase
-        const { error } = await supabase
-          .from('rab_documents')
-          .delete()
-          .eq('id', id);
+        // Soft delete: set deleted_at instead of hard delete
+        const { error } = await (supabase as any)
+          .from("rab_documents")
+          .update({ deleted_at: new Date().toISOString() })
+          .eq("id", id);
 
         if (error) throw error;
       }
 
-      alert("Berhasil dihapus");
+      alert("Dokumen berhasil dihapus");
       loadDokumen(); // refresh list
     } catch (err) {
       console.error("Gagal hapus:", err);
@@ -237,7 +252,7 @@ export default function ListRAB() {
       </div>
 
       {/* Search Bar */}
-      <div className='mb-3 md:mb-6 w-full'>
+      <div className='mb-3 md:mb-6 w-full bg-white'>
         <div className='relative'>
           <Search
             className='absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400'
@@ -351,7 +366,9 @@ export default function ListRAB() {
                           Edit
                         </button>
                         <button
-                          onClick={() => hapusDokumen(doc.id, doc.project_name)}
+                          onClick={() =>
+                            hapusDokumen(doc.id, doc.project_name, doc.status)
+                          }
                           className='text-red-600 hover:text-red-900'
                         >
                           Hapus

@@ -249,7 +249,7 @@ const RABDocument: React.FC<RABDocumentProps> = ({ dokumen }) => {
     },
     {
       key: "other",
-      label: "LAINNYA",
+      label: "BIAYA KIRIM",
       hasItems: groupedItems.other?.length > 0,
     },
   ].filter((cat) => cat.hasItems);

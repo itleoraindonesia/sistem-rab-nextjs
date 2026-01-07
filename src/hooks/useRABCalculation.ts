@@ -6,12 +6,14 @@ interface Panel {
   name: string;
   harga: number;
   luas_per_lembar: number;
+  jumlah_per_truck: number;
   type: string;
 }
 
 interface Ongkir {
   provinsi: string;
   biaya: number;
+  kabupaten?: string;
 }
 
 interface Parameters {
@@ -61,7 +63,8 @@ export function useRABCalculation(
         tinggi_lantai,
         hitung_dinding,
         hitung_lantai,
-        location,
+        location_provinsi,
+        location_kabupaten,
         panel_dinding_id,
         panel_lantai_id,
       } = values;
@@ -81,7 +84,7 @@ export function useRABCalculation(
       const panelLantai = panels.find(
         (p) => p.id.toString() === panel_lantai_id
       );
-      const ongkirData = ongkir.find((o) => o.provinsi === location);
+      const ongkirData = ongkir.find((o) => o.kabupaten === location_kabupaten);
 
       // Hitung biaya dinding
       let subtotalDinding = 0;
@@ -119,10 +122,28 @@ export function useRABCalculation(
         subtotalLantai = biayaPanel + biayaUpah + biayaJoint;
       }
 
-      // Hitung ongkir
-      const biayaOngkir = ongkirData?.biaya || 0;
+      // Hitung kebutuhan truk dan biaya angkutan
+      let jumlahTrukDinding = 0;
+      let jumlahTrukLantai = 0;
+      let biayaAngkutan = 0;
 
-      const grandTotal = subtotalDinding + subtotalLantai + biayaOngkir;
+      if (ongkirData) {
+        // Hitung truk untuk dinding
+        if (hitung_dinding && panelDinding && lembarDinding > 0) {
+          jumlahTrukDinding = Math.ceil(lembarDinding / panelDinding.jumlah_per_truck);
+        }
+
+        // Hitung truk untuk lantai
+        if (hitung_lantai && panelLantai && lembarLantai > 0) {
+          jumlahTrukLantai = Math.ceil(lembarLantai / panelLantai.jumlah_per_truck);
+        }
+
+        // Total truk dan biaya angkutan
+        const totalTruk = jumlahTrukDinding + jumlahTrukLantai;
+        biayaAngkutan = totalTruk * ongkirData.biaya;
+      }
+
+      const grandTotal = subtotalDinding + subtotalLantai + biayaAngkutan;
 
       return {
         luasLantai,
@@ -133,7 +154,7 @@ export function useRABCalculation(
         titikJointLantai,
         subtotalDinding,
         subtotalLantai,
-        biayaOngkir,
+        biayaOngkir: biayaAngkutan,
         grandTotal,
         items: [
           ...(hitung_dinding && panelDinding
@@ -184,12 +205,13 @@ export function useRABCalculation(
                 },
               ]
             : []),
-          {
-            desc: `Ongkos Kirim ke ${location}`,
-            qty: 1,
-            unit_price: biayaOngkir,
-            amount: biayaOngkir,
-          },
+          ...(ongkirData && (jumlahTrukDinding > 0 || jumlahTrukLantai > 0) ? [{
+            desc: `Angkutan Truk ke ${location_provinsi || 'Unknown'} - ${location_kabupaten || 'Unknown'}`,
+            qty: jumlahTrukDinding + jumlahTrukLantai,
+            unit: "Unit",
+            unit_price: ongkirData.biaya,
+            amount: biayaAngkutan,
+          }] : []),
         ].filter((item) => item.amount > 0),
       };
     },

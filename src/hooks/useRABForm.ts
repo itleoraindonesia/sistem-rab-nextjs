@@ -1,9 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import {
-  useForm,
-  useFieldArray,
-  FieldArrayWithId,
-} from "react-hook-form";
+import { useForm, useFieldArray, FieldArrayWithId } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { RABFormData, rabSchema } from "../schemas/rabSchema";
 import { useRouter } from "next/navigation";
@@ -43,19 +39,32 @@ export function useRABForm(): UseRABFormResult {
   } = useMasterData();
 
   const { register, control, handleSubmit, watch, setValue, reset, formState } =
-    useForm<RABFormData>({
+    useForm({
+      resolver: zodResolver(rabSchema),
       defaultValues: {
         no_ref: "",
         project_name: "",
-        location: "",
+        location_provinsi: "",
+        location_kabupaten: "",
+        location_address: "",
+        client_profile: {
+          nama: "",
+          no_hp: "",
+          email: "",
+        },
+        project_profile: {
+          kategori: "",
+          deskripsi: "",
+        },
+        estimasi_pengiriman: "",
         bidang: [],
-        perimeter: 0,
-        tinggi_lantai: 0,
+        perimeter: undefined,
+        tinggi_lantai: undefined,
         panel_dinding_id: "",
         panel_lantai_id: "",
         hitung_dinding: false,
         hitung_lantai: false,
-        status: "draft",
+        status: "draft" as const,
       },
       mode: "onChange",
     });
@@ -72,16 +81,19 @@ export function useRABForm(): UseRABFormResult {
   // Stabilize panels and ongkir to prevent unnecessary re-renders
   const stablePanels = useMemo(() => panels, [JSON.stringify(panels)]);
   const stableOngkir = useMemo(() => ongkir, [JSON.stringify(ongkir)]);
-  
+
   // Stabilize calculation parameters
-  const calculationParameters = useMemo(() => ({
-    wasteFactor: 1.05,
-    jointFactorDinding: 2.5,
-    jointFactorLantai: 1.8,
-    upahPasang: 50000,
-    hargaJoint: 2500,
-  }), []);
-  
+  const calculationParameters = useMemo(
+    () => ({
+      wasteFactor: 1.05,
+      jointFactorDinding: 2.5,
+      jointFactorLantai: 1.8,
+      upahPasang: 50000,
+      hargaJoint: 2500,
+    }),
+    []
+  );
+
   // Import calculation hook with stable dependencies
   const { hasil, calculateRAB, setHasil } = useRABCalculation(
     stablePanels,
@@ -97,7 +109,7 @@ export function useRABForm(): UseRABFormResult {
     bidang: watchedValues.bidang,
     hitung_dinding: watchedValues.hitung_dinding,
     hitung_lantai: watchedValues.hitung_lantai,
-    location: watchedValues.location,
+    location_kabupaten: watchedValues.location_kabupaten,
     panel_dinding_id: watchedValues.panel_dinding_id,
     panel_lantai_id: watchedValues.panel_lantai_id,
   });
@@ -107,7 +119,7 @@ export function useRABForm(): UseRABFormResult {
     if (!stablePanels.length || !watchedValues) return null;
 
     // Always calculate, but result might be empty
-    return calculateRAB(watchedValues);
+    return calculateRAB(watchedValues as Partial<RABFormData>);
   }, [calculationDeps, stablePanels, calculateRAB]);
 
   // Direct effect to update hasil (real-time) - only if calculationResult changed
@@ -196,18 +208,17 @@ export function useRABForm(): UseRABFormResult {
       try {
         setLoading(true);
 
-      const saveData = {
-        no_ref: formData.no_ref,
-        project_name: formData.project_name,
-        location: formData.location,
-        status: "draft" as const,
-        snapshot: {
-          ...formData,
-          items: hasil?.items || [], // Include items in snapshot
-          total: hasil?.grandTotal || 0,
-        },
-        total: hasil?.grandTotal || 0, // Use total instead of total_cost
-      };
+        const saveData = {
+          no_ref: formData.no_ref,
+          project_name: formData.project_name,
+          status: "draft" as const,
+          snapshot: {
+            ...formData,
+            items: hasil?.items || [], // Include items in snapshot
+            total: hasil?.grandTotal || 0,
+          },
+          total: hasil?.grandTotal || 0, // Use total instead of total_cost
+        };
 
         // Create new RAB draft
         const { data, error } = await (supabase as any)
@@ -245,7 +256,6 @@ export function useRABForm(): UseRABFormResult {
         const submitData = {
           no_ref: data.no_ref,
           project_name: data.project_name,
-          location: data.location,
           status: "draft" as "draft" | "sent" | "approved",
           snapshot: {
             ...data,

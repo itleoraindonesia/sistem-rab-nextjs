@@ -40,19 +40,32 @@ export function useRABEdit(id: string): UseRABEditResult {
   } = useMasterData();
 
   const { register, control, handleSubmit, watch, setValue, reset, formState } =
-    useForm<RABFormData>({
+    useForm({
+      resolver: zodResolver(rabSchema),
       defaultValues: {
         no_ref: "",
         project_name: "",
-        location: "",
+        location_provinsi: "",
+        location_kabupaten: "",
+        location_address: "",
+        client_profile: {
+          nama: "",
+          no_hp: "",
+          email: "",
+        },
+        project_profile: {
+          kategori: "",
+          deskripsi: "",
+        },
+        estimasi_pengiriman: "",
         bidang: [],
-        perimeter: 0,
-        tinggi_lantai: 0,
+        perimeter: undefined,
+        tinggi_lantai: undefined,
         panel_dinding_id: "",
         panel_lantai_id: "",
         hitung_dinding: false,
         hitung_lantai: false,
-        status: "draft",
+        status: "draft" as const,
       },
       mode: "onChange",
     });
@@ -69,16 +82,19 @@ export function useRABEdit(id: string): UseRABEditResult {
   // Stabilize panels and ongkir to prevent unnecessary re-renders
   const stablePanels = useMemo(() => panels, [JSON.stringify(panels)]);
   const stableOngkir = useMemo(() => ongkir, [JSON.stringify(ongkir)]);
-  
+
   // Stabilize calculation parameters
-  const calculationParameters = useMemo(() => ({
-    wasteFactor: 1.05,
-    jointFactorDinding: 2.5,
-    jointFactorLantai: 1.8,
-    upahPasang: 50000,
-    hargaJoint: 2500,
-  }), []);
-  
+  const calculationParameters = useMemo(
+    () => ({
+      wasteFactor: 1.05,
+      jointFactorDinding: 2.5,
+      jointFactorLantai: 1.8,
+      upahPasang: 50000,
+      hargaJoint: 2500,
+    }),
+    []
+  );
+
   // Import calculation hook with stable dependencies
   const { hasil, calculateRAB, setHasil } = useRABCalculation(
     stablePanels,
@@ -94,7 +110,7 @@ export function useRABEdit(id: string): UseRABEditResult {
     bidang: watchedValues.bidang,
     hitung_dinding: watchedValues.hitung_dinding,
     hitung_lantai: watchedValues.hitung_lantai,
-    location: watchedValues.location,
+    location_kabupaten: watchedValues.location_kabupaten,
     panel_dinding_id: watchedValues.panel_dinding_id,
     panel_lantai_id: watchedValues.panel_lantai_id,
   });
@@ -104,7 +120,7 @@ export function useRABEdit(id: string): UseRABEditResult {
     if (!stablePanels.length || !watchedValues) return null;
 
     // Always calculate, but result might be empty
-    return calculateRAB(watchedValues);
+    return calculateRAB(watchedValues as Partial<RABFormData>);
   }, [calculationDeps, stablePanels, calculateRAB]);
 
   // Direct effect to update hasil (real-time) - only if calculationResult changed
@@ -137,20 +153,42 @@ export function useRABEdit(id: string): UseRABEditResult {
 
         // Type assertion for Supabase response
         const doc = data as any;
-        
+
         // Extract form data from snapshot or legacy fields
         const snapshot = doc.snapshot || {};
-        const formData: RABFormData = {
+        const formData = {
           no_ref: doc.no_ref || "",
           project_name: doc.project_name || "",
-          location: doc.location || "",
+          location_provinsi:
+            snapshot.location_provinsi || doc.location_provinsi || "",
+          location_kabupaten:
+            snapshot.location_kabupaten || doc.location_kabupaten || "",
+          location_address:
+            snapshot.location_address || doc.location_address || "",
+          client_profile: {
+            nama: (snapshot.client_profile || doc.client_profile || {}).nama || "",
+            no_hp: (snapshot.client_profile || doc.client_profile || {}).no_hp || "",
+            email: (snapshot.client_profile || doc.client_profile || {}).email || "",
+          },
+          project_profile: {
+            kategori: (snapshot.project_profile || doc.project_profile || {}).kategori || "",
+            deskripsi: (snapshot.project_profile || doc.project_profile || {}).deskripsi || "",
+          },
+          estimasi_pengiriman:
+            snapshot.estimasi_pengiriman || doc.estimasi_pengiriman || "",
           bidang: snapshot.bidang || doc.bidang || [],
-          perimeter: snapshot.perimeter || doc.perimeter || 0,
-          tinggi_lantai: snapshot.tinggi_lantai || doc.tinggi_lantai || 0,
-          panel_dinding_id: snapshot.panel_dinding_id || doc.panel_dinding_id || "",
-          panel_lantai_id: snapshot.panel_lantai_id || doc.panel_lantai_id || "",
-          hitung_dinding: Boolean(snapshot.panel_dinding_id || doc.panel_dinding_id),
-          hitung_lantai: Boolean(snapshot.panel_lantai_id || doc.panel_lantai_id),
+          perimeter: snapshot.perimeter || doc.perimeter || undefined,
+          tinggi_lantai: snapshot.tinggi_lantai || doc.tinggi_lantai || undefined,
+          panel_dinding_id:
+            snapshot.panel_dinding_id || doc.panel_dinding_id || "",
+          panel_lantai_id:
+            snapshot.panel_lantai_id || doc.panel_lantai_id || "",
+          hitung_dinding: Boolean(
+            snapshot.panel_dinding_id || doc.panel_dinding_id
+          ),
+          hitung_lantai: Boolean(
+            snapshot.panel_lantai_id || doc.panel_lantai_id
+          ),
           status: doc.status || "draft",
         };
 
@@ -159,7 +197,10 @@ export function useRABEdit(id: string): UseRABEditResult {
         setDocumentId(doc.id);
       } catch (err) {
         console.error("Error loading document:", err);
-        setError("Gagal memuat dokumen: " + (err instanceof Error ? err.message : String(err)));
+        setError(
+          "Gagal memuat dokumen: " +
+            (err instanceof Error ? err.message : String(err))
+        );
       } finally {
         setLoading(false);
       }
@@ -184,7 +225,6 @@ export function useRABEdit(id: string): UseRABEditResult {
         const updateData = {
           no_ref: formData.no_ref,
           project_name: formData.project_name,
-          location: formData.location,
           status: "draft" as const,
           snapshot: {
             ...formData,
@@ -227,7 +267,6 @@ export function useRABEdit(id: string): UseRABEditResult {
         const updateData = {
           no_ref: data.no_ref,
           project_name: data.project_name,
-          location: data.location,
           status: data.status as "draft" | "sent" | "approved",
           snapshot: {
             ...data,
@@ -257,24 +296,39 @@ export function useRABEdit(id: string): UseRABEditResult {
     [router, documentId]
   );
 
-  // Delete handler
+  // Delete handler (soft delete)
   const deleteHandler = useCallback(async () => {
     if (!supabase || !documentId) {
       alert("Database not configured or document ID missing");
       return;
     }
 
-    if (!confirm("Hapus dokumen ini? Tindakan tidak bisa dibatalkan.")) return;
-
+    // Check document status first
     try {
-      const { error } = await supabase
+      const { data: doc, error: fetchError } = await (supabase as any)
         .from("rab_documents")
-        .delete()
+        .select("status")
+        .eq("id", documentId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      if ((doc as any).status === "approved") {
+        alert("Dokumen yang sudah disetujui tidak dapat dihapus.");
+        return;
+      }
+
+      if (!confirm("Hapus dokumen ini? Dokumen akan disembunyikan dan dapat dikembalikan.")) return;
+
+      // Soft delete: set deleted_at instead of hard delete
+      const { error } = await (supabase as any)
+        .from("rab_documents")
+        .update({ deleted_at: new Date().toISOString() })
         .eq("id", documentId);
 
       if (error) throw error;
 
-      alert("Dokumen berhasil dihapus");
+      alert("Dokumen berhasil dihapus (disembunyikan)");
       router.push("/rab");
     } catch (err) {
       console.error("Error deleting document:", err);

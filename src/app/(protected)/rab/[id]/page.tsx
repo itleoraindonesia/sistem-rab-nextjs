@@ -87,7 +87,10 @@ export default function DetailRAB({ params }: PageProps) {
         setDokumen(data);
       } catch (err) {
         console.error("Error fetching document:", err);
-        setError("Gagal memuat dokumen: " + (err instanceof Error ? err.message : String(err)));
+        setError(
+          "Gagal memuat dokumen: " +
+            (err instanceof Error ? err.message : String(err))
+        );
       } finally {
         setLoading(false);
       }
@@ -325,21 +328,33 @@ export default function DetailRAB({ params }: PageProps) {
   };
 
   const handleDelete = async () => {
-    if (!confirm("Hapus dokumen ini? Tindakan tidak bisa dibatalkan.")) return;
+    // Check if document can be deleted
+    if (dokumen?.status === "approved") {
+      alert("Dokumen yang sudah disetujui tidak dapat dihapus.");
+      return;
+    }
+
+    if (
+      !confirm(
+        "Hapus dokumen ini? Dokumen akan disembunyikan dan dapat dikembalikan."
+      )
+    )
+      return;
 
     try {
       if (!supabase) {
         throw new Error("Database not configured");
       }
 
-      const { error } = await supabase
+      // Soft delete: set deleted_at instead of hard delete
+      const { error } = await (supabase as any)
         .from("rab_documents")
-        .delete()
+        .update({ deleted_at: new Date().toISOString() })
         .eq("id", id);
 
       if (error) throw error;
 
-      alert("Dokumen berhasil dihapus");
+      alert("Dokumen berhasil dihapus (disembunyikan)");
       router.push("/rab");
     } catch (err) {
       console.error("Error deleting document:", err);
@@ -374,20 +389,21 @@ export default function DetailRAB({ params }: PageProps) {
     return <div className='p-10 text-center'>Memuat...</div>;
   }
 
-
-
   // Calculate total: snapshot total, or sum of items, or stored total_cost
-  const total = (dokumen as any)?.snapshot?.total !== undefined
-    ? (dokumen as any).snapshot.total
-    : items && items.length > 0
-    ? items.reduce((sum: number, item: any) => sum + (item.amount || 0), 0)
-    : dokumen?.total_cost || 0;
+  const total =
+    (dokumen as any)?.snapshot?.total !== undefined
+      ? (dokumen as any).snapshot.total
+      : items && items.length > 0
+      ? items.reduce((sum: number, item: any) => sum + (item.amount || 0), 0)
+      : dokumen?.total_cost || 0;
 
   console.log("💰 Total calculation:", {
     hasSnapshot: !!(dokumen as any)?.snapshot,
     snapshotTotal: (dokumen as any)?.snapshot?.total,
     itemsLength: items?.length || 0,
-    itemsSum: items?.reduce((sum: number, item: any) => sum + (item.amount || 0), 0) || 0,
+    itemsSum:
+      items?.reduce((sum: number, item: any) => sum + (item.amount || 0), 0) ||
+      0,
     storedTotal: dokumen?.total_cost,
     finalTotal: total,
   });

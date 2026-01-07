@@ -9,7 +9,38 @@ export const rabSchema = z
       .min(1, "Nama proyek wajib diisi")
       .max(100, "Nama proyek maksimal 100 karakter"),
 
-    location: z.string().min(1, "Lokasi wajib dipilih"),
+    location_provinsi: z.string().min(1, "Provinsi wajib dipilih"),
+
+    location_kabupaten: z.string().min(1, "Kabupaten wajib dipilih"),
+
+    location_address: z.string().optional(),
+
+    client_profile: z
+      .object({
+        nama: z.string().min(1, "Nama client wajib diisi").default(""),
+        no_hp: z.string().optional().default(""),
+        email: z.union([z.string().email(), z.literal("")]).optional(),
+      })
+      .default({
+        nama: "",
+        no_hp: "",
+        email: "",
+      }),
+
+    project_profile: z
+      .object({
+        kategori: z
+          .string()
+          .min(1, "Kategori proyek wajib dipilih")
+          .default(""),
+        deskripsi: z.string().optional().default(""),
+      })
+      .default({
+        kategori: "",
+        deskripsi: "",
+      }),
+
+    estimasi_pengiriman: z.string().optional(),
 
     bidang: z
       .array(
@@ -55,6 +86,28 @@ export const rabSchema = z
   .refine((data) => data.hitung_dinding || data.hitung_lantai, {
     message: "Pilih minimal satu jenis perhitungan (dinding atau lantai)",
     path: ["hitung_dinding"],
+  })
+  // Validasi: jika hitung_dinding dicentang, field-field terkait harus diisi
+  .refine((data) => {
+    if (data.hitung_dinding) {
+      return data.perimeter && data.tinggi_lantai && data.panel_dinding_id;
+    }
+    return true;
+  }, {
+    message: "Perimeter, tinggi lantai, dan panel dinding harus diisi jika hitung dinding dipilih",
+    path: ["perimeter"],
+  })
+  // Validasi: jika hitung_lantai dicentang, field-field terkait harus diisi
+  .refine((data) => {
+    if (data.hitung_lantai) {
+      return data.bidang && data.bidang.length > 0 &&
+             data.bidang.some(b => b.panjang && b.lebar) &&
+             data.panel_lantai_id;
+    }
+    return true;
+  }, {
+    message: "Bidang (panjang dan lebar) serta panel lantai harus diisi jika hitung lantai dipilih",
+    path: ["bidang"],
   });
 
 export const bidangSchema = z.object({
@@ -74,12 +127,12 @@ export type BidangData = z.infer<typeof bidangSchema>;
 
 // Status enum
 export const RABStatus = {
-  DRAFT: 'draft',
-  SENT: 'sent',
-  APPROVED: 'approved',
+  DRAFT: "draft",
+  SENT: "sent",
+  APPROVED: "approved",
 } as const;
 
-export type RABStatusType = typeof RABStatus[keyof typeof RABStatus];
+export type RABStatusType = (typeof RABStatus)[keyof typeof RABStatus];
 
 // RAB Document type
 export interface RABDocument {

@@ -22,13 +22,13 @@ export default function Dashboard() {
       setLoading(true);
 
       if (supabase) {
-        // Get statistics from Supabase
+        // Get statistics from Supabase (exclude soft deleted)
         const [totalResult, draftResult, sentResult, approvedResult, recentResult] = await Promise.all([
-          supabase.from('rab_documents').select('*', { count: 'exact', head: true }),
-          supabase.from('rab_documents').select('*', { count: 'exact', head: true }).eq('status', 'draft'),
-          supabase.from('rab_documents').select('*', { count: 'exact', head: true }).eq('status', 'sent'),
-          supabase.from('rab_documents').select('*', { count: 'exact', head: true }).eq('status', 'approved'),
-          supabase.from('rab_documents').select('*').order('created_at', { ascending: false }).limit(3)
+          supabase.from('rab_documents').select('*', { count: 'exact', head: true }).is("deleted_at", null),
+          supabase.from('rab_documents').select('*', { count: 'exact', head: true }).eq('status', 'draft').is("deleted_at", null),
+          supabase.from('rab_documents').select('*', { count: 'exact', head: true }).eq('status', 'sent').is("deleted_at", null),
+          supabase.from('rab_documents').select('*', { count: 'exact', head: true }).eq('status', 'approved').is("deleted_at", null),
+          supabase.from('rab_documents').select('*').is("deleted_at", null).order('created_at', { ascending: false }).limit(3)
         ]);
 
         setStats({

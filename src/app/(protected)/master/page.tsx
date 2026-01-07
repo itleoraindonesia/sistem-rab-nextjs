@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback, useTransition } from "react";
 import { Plus, Edit3, Trash2, Save, X } from "lucide-react";
 import { supabase } from "../../../lib/supabaseClient";
 
@@ -16,8 +16,10 @@ interface Panel {
 }
 
 interface Ongkir {
+  id?: string;
   provinsi: string;
   biaya: number;
+  kabupaten?: string;
 }
 
 export default function MasterData() {
@@ -28,11 +30,40 @@ export default function MasterData() {
   const [newPanel, setNewPanel] = useState<Panel | null>(null);
   const [newOngkir, setNewOngkir] = useState<Ongkir | null>(null);
   const [loading, setLoading] = useState(true);
+  const [selectedMasterData, setSelectedMasterData] = useState<'panel' | 'ongkir' | null>(null);
+
+  // Modal states
+  const [showModalPanel, setShowModalPanel] = useState(false);
+  const [showModalOngkir, setShowModalOngkir] = useState(false);
+
+  // Search states
+  const [searchPanel, setSearchPanel] = useState('');
+  const [searchOngkir, setSearchOngkir] = useState('');
+  const [debouncedSearchPanel, setDebouncedSearchPanel] = useState('');
+  const [debouncedSearchOngkir, setDebouncedSearchOngkir] = useState('');
+
+  // useTransition for non-blocking search
+  const [isPending, startTransition] = useTransition();
 
   // Load master data on mount
   useEffect(() => {
     loadMasterData();
   }, []);
+
+  // Debouncing search inputs
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchPanel(searchPanel);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchPanel]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchOngkir(searchOngkir);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchOngkir]);
 
   const loadMasterData = async () => {
     try {
@@ -150,6 +181,7 @@ export default function MasterData() {
       alert(`${editingPanel ? "Edit" : "Tambah"} panel berhasil`);
       setEditingPanel(null);
       setNewPanel(null);
+      setShowModalPanel(false);
       loadMasterData();
     } catch (err) {
       console.error("Gagal simpan panel:", err);
@@ -186,6 +218,22 @@ export default function MasterData() {
     }
   };
 
+  // ========== SEARCH AND FILTER FUNCTIONS ==========
+  const filteredPanels = useMemo(() => {
+    return panels.filter(panel =>
+      panel.id.toLowerCase().includes(debouncedSearchPanel.toLowerCase()) ||
+      panel.name.toLowerCase().includes(debouncedSearchPanel.toLowerCase()) ||
+      panel.type.toLowerCase().includes(debouncedSearchPanel.toLowerCase())
+    );
+  }, [panels, debouncedSearchPanel]);
+
+  const filteredOngkir = useMemo(() => {
+    return ongkir.filter(item =>
+      item.provinsi.toLowerCase().includes(debouncedSearchOngkir.toLowerCase()) ||
+      (item.kabupaten && item.kabupaten.toLowerCase().includes(debouncedSearchOngkir.toLowerCase()))
+    );
+  }, [ongkir, debouncedSearchOngkir]);
+
   // ========== ONGKIR FUNCTIONS ==========
   const handleSaveOngkir = async () => {
     if (!newOngkir && !editingOngkir) return;
@@ -198,14 +246,15 @@ export default function MasterData() {
       const data = {
         provinsi: editingOngkir ? editingOngkir.provinsi : newOngkir!.provinsi,
         biaya: editingOngkir ? editingOngkir.biaya : newOngkir!.biaya,
+        kabupaten: editingOngkir ? editingOngkir.kabupaten || "UNKNOWN" : newOngkir!.kabupaten || "UNKNOWN",
       };
 
       let result;
-      if (editingOngkir) {
+      if (editingOngkir && editingOngkir.id) {
         result = await (supabase as any)
           .from("master_ongkir")
           .update(data)
-          .eq("provinsi", editingOngkir.provinsi);
+          .eq("id", editingOngkir.id);
       } else {
         result = await (supabase as any).from("master_ongkir").insert(data);
       }
@@ -215,6 +264,7 @@ export default function MasterData() {
       alert(`${editingOngkir ? "Edit" : "Tambah"} ongkir berhasil`);
       setEditingOngkir(null);
       setNewOngkir(null);
+      setShowModalOngkir(false);
       loadMasterData();
     } catch (err) {
       console.error("Gagal simpan ongkir:", err);
@@ -261,203 +311,86 @@ export default function MasterData() {
         <p className='text-gray-600'>Kelola data panel dan ongkos kirim</p>
       </div>
 
-      <div className='grid grid-cols-1 lg:grid-cols-2 gap-6'>
-        {/* Panel Section */}
-        <div className='bg-white rounded-lg shadow'>
-          <div className='p-4 border-b flex justify-between items-center'>
-            <h2 className='font-semibold'>Daftar Panel</h2>
-            <button
-              onClick={() =>
-                setNewPanel({
-                  id: "",
-                  name: "",
-                  type: "dinding",
-                  harga: 0,
-                  berat: 0,
-                  volume: 0,
-                  jumlah_per_truck: 0,
-                  keterangan: "",
-                })
-              }
-              className='bg-brand-primary hover:bg-brand-dark text-white p-2 rounded-lg'
-            >
-              <Plus size={18} />
-            </button>
+      {/* Master Data Cards */}
+      {!selectedMasterData && (
+        <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8'>
+          {/* Panel Card */}
+          <div
+            onClick={() => setSelectedMasterData('panel')}
+            className='bg-white rounded-lg shadow hover:shadow-lg transition-shadow cursor-pointer border-2 border-transparent hover:border-brand-primary'
+          >
+            <div className='p-6'>
+              <h3 className='text-lg font-semibold text-gray-900 mb-2'>Data Panel</h3>
+              <p className='text-gray-600 text-sm'>Kelola data panel dinding dan lantai untuk proyek konstruksi</p>
+            </div>
           </div>
 
-          {/* Form Tambah Panel */}
-          {newPanel && (
-            <div className='p-4 border-b bg-blue-50'>
-              <h3 className='font-medium mb-3'>Tambah Panel Baru</h3>
-              <div className='space-y-3'>
-                <div>
-                  <label className='block text-sm text-gray-700 mb-1'>ID</label>
-                  <input
-                    value={newPanel.id}
-                    onChange={(e) =>
-                      setNewPanel({ ...newPanel, id: e.target.value })
-                    }
-                    className='w-full p-2 border rounded'
-                    placeholder='d-75-60-300'
-                    required
-                  />
-                </div>
-                <div>
-                  <label className='block text-sm text-gray-700 mb-1'>
-                    Nama Panel
-                  </label>
-                  <input
-                    value={newPanel.name}
-                    onChange={(e) =>
-                      setNewPanel({ ...newPanel, name: e.target.value })
-                    }
-                    className='w-full p-2 border rounded'
-                    required
-                  />
-                </div>
-                <div className='grid grid-cols-1 sm:grid-cols-2 gap-3'>
-                  <div>
-                    <label className='block text-sm text-gray-700 mb-1'>
-                      Tipe
-                    </label>
-                    <select
-                      value={newPanel.type}
-                      onChange={(e) =>
-                        setNewPanel({ ...newPanel, type: e.target.value })
-                      }
-                      className='w-full p-2 border rounded'
-                      required
-                    >
-                      <option value='dinding'>Dinding</option>
-                      <option value='lantai'>Lantai</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className='block text-sm text-gray-700 mb-1'>
-                      Harga (Rp)
-                    </label>
-                    <input
-                      type='number'
-                      value={newPanel.harga}
-                      onChange={(e) =>
-                        setNewPanel({
-                          ...newPanel,
-                          harga: parseInt(e.target.value) || 0,
-                        })
-                      }
-                      className='w-full p-2 border rounded'
-                      required
-                    />
-                  </div>
-                </div>
-                <div className='flex gap-2'>
-                  <button
-                    onClick={handleSavePanel}
-                    className='bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded flex items-center gap-2'
-                  >
-                    <Save size={16} /> Simpan
-                  </button>
-                  <button
-                    onClick={() => setNewPanel(null)}
-                    className='bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded flex items-center gap-2'
-                  >
-                    <X size={16} /> Batal
-                  </button>
-                </div>
-              </div>
+          {/* Ongkir Card */}
+          <div
+            onClick={() => setSelectedMasterData('ongkir')}
+            className='bg-white rounded-lg shadow hover:shadow-lg transition-shadow cursor-pointer border-2 border-transparent hover:border-brand-primary'
+          >
+            <div className='p-6'>
+              <h3 className='text-lg font-semibold text-gray-900 mb-2'>Data Ongkos Kirim</h3>
+              <p className='text-gray-600 text-sm'>Kelola biaya pengiriman berdasarkan provinsi tujuan</p>
             </div>
-          )}
+          </div>
+        </div>
+      )}
 
-          {/* Form Edit Panel */}
-          {editingPanel && (
-            <div className='p-4 border-b bg-yellow-50'>
-              <h3 className='font-medium mb-3'>
-                Edit Panel: {editingPanel.name}
-              </h3>
-              <div className='space-y-3'>
-                <div>
-                  <label className='block text-sm text-gray-700 mb-1'>ID</label>
-                  <input
-                    value={editingPanel.id}
-                    onChange={(e) =>
-                      setEditingPanel({ ...editingPanel, id: e.target.value })
-                    }
-                    className='w-full p-2 border rounded bg-gray-100'
-                    disabled
-                  />
-                </div>
-                <div>
-                  <label className='block text-sm text-gray-700 mb-1'>
-                    Nama Panel
-                  </label>
-                  <input
-                    value={editingPanel.name}
-                    onChange={(e) =>
-                      setEditingPanel({ ...editingPanel, name: e.target.value })
-                    }
-                    className='w-full p-2 border rounded'
-                    required
-                  />
-                </div>
-                <div className='grid grid-cols-1 sm:grid-cols-2 gap-3'>
-                  <div>
-                    <label className='block text-sm text-gray-700 mb-1'>
-                      Tipe
-                    </label>
-                    <select
-                      value={editingPanel.type}
-                      onChange={(e) =>
-                        setEditingPanel({
-                          ...editingPanel,
-                          type: e.target.value,
-                        })
-                      }
-                      className='w-full p-2 border rounded'
-                      required
-                    >
-                      <option value='dinding'>Dinding</option>
-                      <option value='lantai'>Lantai</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className='block text-sm text-gray-700 mb-1'>
-                      Harga (Rp)
-                    </label>
-                    <input
-                      type='number'
-                      value={editingPanel.harga}
-                      onChange={(e) =>
-                        setEditingPanel({
-                          ...editingPanel,
-                          harga: parseInt(e.target.value) || 0,
-                        })
-                      }
-                      className='w-full p-2 border rounded'
-                      required
-                    />
-                  </div>
-                </div>
+      {/* Panel Table */}
+      {selectedMasterData === 'panel' && (
+        <div className='bg-white rounded-lg shadow'>
+          <div className='p-4 border-b'>
+            <div className='flex justify-between items-center'>
+              <h2 className='font-semibold'>Daftar Panel</h2>
+              <div className='flex items-center gap-4'>
+                <input
+                  type='text'
+                  placeholder='Cari panel (ID, nama, tipe)...'
+                  value={searchPanel}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setSearchPanel(value);
+                    startTransition(() => {
+                      setDebouncedSearchPanel(value);
+                    });
+                  }}
+                  className='w-64 p-2 border rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent'
+                />
                 <div className='flex gap-2'>
                   <button
-                    onClick={handleSavePanel}
-                    className='bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded flex items-center gap-2'
+                    onClick={() => {
+                      setNewPanel({
+                        id: "",
+                        name: "",
+                        type: "dinding",
+                        harga: 0,
+                        berat: 0,
+                        volume: 0,
+                        jumlah_per_truck: 0,
+                        keterangan: "",
+                      });
+                      setShowModalPanel(true);
+                    }}
+                    className='bg-brand-primary hover:bg-brand-dark text-white p-2 rounded-lg'
                   >
-                    <Save size={16} /> Simpan Perubahan
+                    <Plus size={18} />
                   </button>
                   <button
-                    onClick={() => setEditingPanel(null)}
-                    className='bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded flex items-center gap-2'
+                    onClick={() => setSelectedMasterData(null)}
+                    className='bg-gray-200 hover:bg-gray-300 text-gray-800 px-3 py-2 rounded-lg text-sm'
                   >
-                    <X size={16} /> Batal
+                    Tutup
                   </button>
                 </div>
               </div>
             </div>
-          )}
+          </div>
 
           {/* Tabel Panel */}
           <div className='overflow-x-auto'>
-            <table className='min-w-full divide-y divide-gray-200'>
+            <table className='min-w-full divide-y divide-gray-200 table-auto'>
               <thead className='bg-gray-50'>
                 <tr>
                   <th className='px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase'>
@@ -470,7 +403,19 @@ export default function MasterData() {
                     Tipe
                   </th>
                   <th className='px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase'>
+                    Berat (kg)
+                  </th>
+                  <th className='px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase'>
+                    Volume (m³)
+                  </th>
+                  <th className='px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase'>
+                    Jumlah/Truck
+                  </th>
+                  <th className='px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase'>
                     Harga
+                  </th>
+                  <th className='px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase'>
+                    Keterangan
                   </th>
                   <th className='px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase'>
                     Aksi
@@ -478,7 +423,7 @@ export default function MasterData() {
                 </tr>
               </thead>
               <tbody className='divide-y divide-gray-200'>
-                {panels.map((panel) => (
+                {filteredPanels.map((panel) => (
                   <tr key={panel.id} className='hover:bg-gray-50'>
                     <td className='px-4 py-2 text-sm font-mono text-gray-700'>
                       {panel.id}
@@ -497,12 +442,27 @@ export default function MasterData() {
                         {panel.type}
                       </span>
                     </td>
+                    <td className='px-4 py-2 text-right text-sm text-gray-700'>
+                      {panel.berat || 0}
+                    </td>
+                    <td className='px-4 py-2 text-right text-sm text-gray-700'>
+                      {panel.volume || 0}
+                    </td>
+                    <td className='px-4 py-2 text-right text-sm text-gray-700'>
+                      {panel.jumlah_per_truck || 0}
+                    </td>
                     <td className='px-4 py-2 text-right text-sm font-medium text-gray-900'>
                       {formatRupiah(panel.harga)}
                     </td>
+                    <td className='px-4 py-2 text-sm text-gray-700'>
+                      {panel.keterangan || '-'}
+                    </td>
                     <td className='px-4 py-2 text-right flex gap-2'>
                       <button
-                        onClick={() => setEditingPanel({ ...panel })}
+                        onClick={() => {
+                          setEditingPanel({ ...panel });
+                          setShowModalPanel(true);
+                        }}
                         className='text-brand-primary hover:text-brand-dark'
                         title='Edit'
                       >
@@ -522,143 +482,63 @@ export default function MasterData() {
             </table>
           </div>
         </div>
+      )}
 
-        {/* Ongkir Section */}
+      {/* Ongkir Table */}
+      {selectedMasterData === 'ongkir' && (
         <div className='bg-white rounded-lg shadow'>
-          <div className='p-4 border-b flex justify-between items-center'>
-            <h2 className='font-semibold'>Ongkos Kirim</h2>
-            <button
-              onClick={() =>
-                setNewOngkir({
-                  provinsi: "",
-                  biaya: 0,
-                })
-              }
-              className='bg-brand-primary hover:bg-brand-dark text-white p-2 rounded-lg'
-            >
-              <Plus size={18} />
-            </button>
-          </div>
-
-          {/* Form Tambah Ongkir */}
-          {newOngkir && (
-            <div className='p-4 border-b bg-green-50'>
-              <h3 className='font-medium mb-3'>Tambah Ongkos Kirim</h3>
-              <div className='space-y-3'>
-                <div>
-                  <label className='block text-sm text-gray-700 mb-1'>
-                    Provinsi
-                  </label>
-                  <input
-                    value={newOngkir.provinsi}
-                    onChange={(e) =>
-                      setNewOngkir({ ...newOngkir, provinsi: e.target.value })
-                    }
-                    className='w-full p-2 border rounded'
-                    placeholder='Daerah Istimewa Yogyakarta'
-                    required
-                  />
-                </div>
-                <div>
-                  <label className='block text-sm text-gray-700 mb-1'>
-                    Biaya (Rp)
-                  </label>
-                  <input
-                    type='number'
-                    value={newOngkir.biaya}
-                    onChange={(e) =>
+          <div className='p-4 border-b'>
+            <div className='flex justify-between items-center'>
+              <h2 className='font-semibold'>Ongkos Kirim</h2>
+              <div className='flex items-center gap-4'>
+                <input
+                  type='text'
+                  placeholder='Cari ongkir (provinsi, kabupaten)...'
+                  value={searchOngkir}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setSearchOngkir(value);
+                    startTransition(() => {
+                      setDebouncedSearchOngkir(value);
+                    });
+                  }}
+                  className='w-64 p-2 border rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent'
+                />
+                <div className='flex gap-2'>
+                  <button
+                    onClick={() => {
                       setNewOngkir({
-                        ...newOngkir,
-                        biaya: parseInt(e.target.value) || 0,
-                      })
-                    }
-                    className='w-full p-2 border rounded'
-                    required
-                  />
-                </div>
-                <div className='flex gap-2'>
-                  <button
-                    onClick={handleSaveOngkir}
-                    className='bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded flex items-center gap-2'
+                        provinsi: "",
+                        biaya: 0,
+                        kabupaten: "UNKNOWN",
+                      });
+                      setShowModalOngkir(true);
+                    }}
+                    className='bg-brand-primary hover:bg-brand-dark text-white p-2 rounded-lg'
                   >
-                    <Save size={16} /> Simpan
+                    <Plus size={18} />
                   </button>
                   <button
-                    onClick={() => setNewOngkir(null)}
-                    className='bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded flex items-center gap-2'
+                    onClick={() => setSelectedMasterData(null)}
+                    className='bg-gray-200 hover:bg-gray-300 text-gray-800 px-3 py-2 rounded-lg text-sm'
                   >
-                    <X size={16} /> Batal
+                    Tutup
                   </button>
                 </div>
               </div>
             </div>
-          )}
-
-          {/* Form Edit Ongkir */}
-          {editingOngkir && (
-            <div className='p-4 border-b bg-yellow-50'>
-              <h3 className='font-medium mb-3'>
-                Edit Ongkir: {editingOngkir.provinsi}
-              </h3>
-              <div className='space-y-3'>
-                <div>
-                  <label className='block text-sm text-gray-700 mb-1'>
-                    Provinsi
-                  </label>
-                  <input
-                    value={editingOngkir.provinsi}
-                    onChange={(e) =>
-                      setEditingOngkir({
-                        ...editingOngkir,
-                        provinsi: e.target.value,
-                      })
-                    }
-                    className='w-full p-2 border rounded bg-gray-100'
-                    disabled
-                  />
-                </div>
-                <div>
-                  <label className='block text-sm text-gray-700 mb-1'>
-                    Biaya (Rp)
-                  </label>
-                  <input
-                    type='number'
-                    value={editingOngkir.biaya}
-                    onChange={(e) =>
-                      setEditingOngkir({
-                        ...editingOngkir,
-                        biaya: parseInt(e.target.value) || 0,
-                      })
-                    }
-                    className='w-full p-2 border rounded'
-                    required
-                  />
-                </div>
-                <div className='flex gap-2'>
-                  <button
-                    onClick={handleSaveOngkir}
-                    className='bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded flex items-center gap-2'
-                  >
-                    <Save size={16} /> Simpan Perubahan
-                  </button>
-                  <button
-                    onClick={() => setEditingOngkir(null)}
-                    className='bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded flex items-center gap-2'
-                  >
-                    <X size={16} /> Batal
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
+          </div>
 
           {/* Tabel Ongkir */}
           <div className='overflow-x-auto'>
-            <table className='min-w-full divide-y divide-gray-200'>
+            <table className='min-w-full divide-y divide-gray-200 table-auto'>
               <thead className='bg-gray-50'>
                 <tr>
                   <th className='px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase'>
                     Provinsi
+                  </th>
+                  <th className='px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase'>
+                    Kabupaten
                   </th>
                   <th className='px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase'>
                     Biaya
@@ -669,17 +549,23 @@ export default function MasterData() {
                 </tr>
               </thead>
               <tbody className='divide-y divide-gray-200'>
-                {ongkir.map((item) => (
-                  <tr key={item.provinsi} className='hover:bg-gray-50'>
+                {filteredOngkir.map((item, index) => (
+                  <tr key={`${item.provinsi}-${item.kabupaten || 'UNKNOWN'}-${index}`} className='hover:bg-gray-50'>
                     <td className='px-4 py-2 text-sm font-medium text-gray-900'>
                       {item.provinsi}
+                    </td>
+                    <td className='px-4 py-2 text-sm text-gray-700'>
+                      {item.kabupaten || 'UNKNOWN'}
                     </td>
                     <td className='px-4 py-2 text-right text-sm font-semibold text-gray-900'>
                       {formatRupiah(item.biaya)}
                     </td>
                     <td className='px-4 py-2 text-right flex gap-2'>
                       <button
-                        onClick={() => setEditingOngkir({ ...item })}
+                        onClick={() => {
+                          setEditingOngkir({ ...item });
+                          setShowModalOngkir(true);
+                        }}
                         className='text-brand-primary hover:text-brand-dark'
                         title='Edit'
                       >
@@ -699,7 +585,286 @@ export default function MasterData() {
             </table>
           </div>
         </div>
-      </div>
+      )}
+
+      {/* Modal Panel */}
+      {showModalPanel && (
+        <div className='fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50'>
+          <div className='bg-white rounded-lg p-6 w-full max-w-md mx-4'>
+            <div className='flex justify-between items-center mb-4'>
+              <h3 className='text-lg font-semibold'>
+                {editingPanel ? 'Edit Panel' : 'Tambah Panel Baru'}
+              </h3>
+              <button
+                onClick={() => {
+                  setShowModalPanel(false);
+                  setEditingPanel(null);
+                  setNewPanel(null);
+                }}
+                className='text-gray-400 hover:text-gray-600'
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            <div className='space-y-4'>
+              <div>
+                <label className='block text-sm text-gray-700 mb-1'>ID</label>
+                <input
+                  value={editingPanel ? editingPanel.id : (newPanel?.id || '')}
+                  onChange={(e) => {
+                    if (editingPanel) {
+                      setEditingPanel({ ...editingPanel, id: e.target.value });
+                    } else if (newPanel) {
+                      setNewPanel({ ...newPanel, id: e.target.value });
+                    }
+                  }}
+                  className='w-full p-2 border rounded focus:ring-2 focus:ring-brand-primary focus:border-transparent'
+                  placeholder='d-75-60-300'
+                  disabled={!!editingPanel}
+                />
+              </div>
+
+              <div>
+                <label className='block text-sm text-gray-700 mb-1'>Nama Panel</label>
+                <input
+                  value={editingPanel ? editingPanel.name : (newPanel?.name || '')}
+                  onChange={(e) => {
+                    if (editingPanel) {
+                      setEditingPanel({ ...editingPanel, name: e.target.value });
+                    } else if (newPanel) {
+                      setNewPanel({ ...newPanel, name: e.target.value });
+                    }
+                  }}
+                  className='w-full p-2 border rounded focus:ring-2 focus:ring-brand-primary focus:border-transparent'
+                />
+              </div>
+
+              <div>
+                <label className='block text-sm text-gray-700 mb-1'>Tipe</label>
+                <select
+                  value={editingPanel ? editingPanel.type : (newPanel?.type || 'dinding')}
+                  onChange={(e) => {
+                    if (editingPanel) {
+                      setEditingPanel({ ...editingPanel, type: e.target.value });
+                    } else if (newPanel) {
+                      setNewPanel({ ...newPanel, type: e.target.value });
+                    }
+                  }}
+                  className='w-full p-2 border rounded focus:ring-2 focus:ring-brand-primary focus:border-transparent'
+                >
+                  <option value='dinding'>Dinding</option>
+                  <option value='lantai'>Lantai</option>
+                </select>
+              </div>
+
+              <div className='grid grid-cols-2 gap-3'>
+                <div>
+                  <label className='block text-sm text-gray-700 mb-1'>Berat (kg)</label>
+                  <input
+                    type='number'
+                    value={editingPanel?.berat ?? newPanel?.berat ?? 0}
+                    onChange={(e) => {
+                      const value = parseFloat(e.target.value) || 0;
+                      if (editingPanel) {
+                        setEditingPanel({ ...editingPanel, berat: value });
+                      } else if (newPanel) {
+                        setNewPanel({ ...newPanel, berat: value });
+                      }
+                    }}
+                    className='w-full p-2 border rounded focus:ring-2 focus:ring-brand-primary focus:border-transparent'
+                  />
+                </div>
+
+                <div>
+                  <label className='block text-sm text-gray-700 mb-1'>Volume (m³)</label>
+                  <input
+                    type='number'
+                    step='0.01'
+                    value={editingPanel?.volume ?? newPanel?.volume ?? 0}
+                    onChange={(e) => {
+                      const value = parseFloat(e.target.value) || 0;
+                      if (editingPanel) {
+                        setEditingPanel({ ...editingPanel, volume: value });
+                      } else if (newPanel) {
+                        setNewPanel({ ...newPanel, volume: value });
+                      }
+                    }}
+                    className='w-full p-2 border rounded focus:ring-2 focus:ring-brand-primary focus:border-transparent'
+                  />
+                </div>
+              </div>
+
+              <div className='grid grid-cols-2 gap-3'>
+                <div>
+                  <label className='block text-sm text-gray-700 mb-1'>Jumlah per Truck</label>
+                  <input
+                    type='number'
+                    value={editingPanel?.jumlah_per_truck ?? newPanel?.jumlah_per_truck ?? 0}
+                    onChange={(e) => {
+                      const value = parseInt(e.target.value) || 0;
+                      if (editingPanel) {
+                        setEditingPanel({ ...editingPanel, jumlah_per_truck: value });
+                      } else if (newPanel) {
+                        setNewPanel({ ...newPanel, jumlah_per_truck: value });
+                      }
+                    }}
+                    className='w-full p-2 border rounded focus:ring-2 focus:ring-brand-primary focus:border-transparent'
+                  />
+                </div>
+
+                <div>
+                  <label className='block text-sm text-gray-700 mb-1'>Harga (Rp)</label>
+                  <input
+                    type='number'
+                    value={editingPanel?.harga ?? newPanel?.harga ?? 0}
+                    onChange={(e) => {
+                      const value = parseInt(e.target.value) || 0;
+                      if (editingPanel) {
+                        setEditingPanel({ ...editingPanel, harga: value });
+                      } else if (newPanel) {
+                        setNewPanel({ ...newPanel, harga: value });
+                      }
+                    }}
+                    className='w-full p-2 border rounded focus:ring-2 focus:ring-brand-primary focus:border-transparent'
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className='block text-sm text-gray-700 mb-1'>Keterangan</label>
+                <textarea
+                  value={editingPanel ? (editingPanel.keterangan || '') : (newPanel?.keterangan || '')}
+                  onChange={(e) => {
+                    if (editingPanel) {
+                      setEditingPanel({ ...editingPanel, keterangan: e.target.value });
+                    } else if (newPanel) {
+                      setNewPanel({ ...newPanel, keterangan: e.target.value });
+                    }
+                  }}
+                  className='w-full p-2 border rounded focus:ring-2 focus:ring-brand-primary focus:border-transparent'
+                  rows={3}
+                />
+              </div>
+            </div>
+
+            <div className='flex gap-2 mt-6'>
+              <button
+                onClick={handleSavePanel}
+                className='flex-1 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded flex items-center justify-center gap-2'
+              >
+                <Save size={16} />
+                {editingPanel ? 'Simpan Perubahan' : 'Simpan'}
+              </button>
+              <button
+                onClick={() => {
+                  setShowModalPanel(false);
+                  setEditingPanel(null);
+                  setNewPanel(null);
+                }}
+                className='px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-50'
+              >
+                Batal
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Ongkir */}
+      {showModalOngkir && (
+        <div className='fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50'>
+          <div className='bg-white rounded-lg p-6 w-full max-w-md mx-4'>
+            <div className='flex justify-between items-center mb-4'>
+              <h3 className='text-lg font-semibold'>
+                {editingOngkir ? 'Edit Ongkos Kirim' : 'Tambah Ongkos Kirim'}
+              </h3>
+              <button
+                onClick={() => {
+                  setShowModalOngkir(false);
+                  setEditingOngkir(null);
+                  setNewOngkir(null);
+                }}
+                className='text-gray-400 hover:text-gray-600'
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            <div className='space-y-4'>
+              <div>
+                <label className='block text-sm text-gray-700 mb-1'>Provinsi</label>
+                <input
+                  value={editingOngkir ? editingOngkir.provinsi : (newOngkir?.provinsi || '')}
+                  onChange={(e) => {
+                    if (editingOngkir) {
+                      setEditingOngkir({ ...editingOngkir, provinsi: e.target.value });
+                    } else if (newOngkir) {
+                      setNewOngkir({ ...newOngkir, provinsi: e.target.value });
+                    }
+                  }}
+                  className='w-full p-2 border rounded focus:ring-2 focus:ring-brand-primary focus:border-transparent'
+                  placeholder='Daerah Istimewa Yogyakarta'
+                  disabled={!!editingOngkir}
+                />
+              </div>
+
+              <div>
+                <label className='block text-sm text-gray-700 mb-1'>Kabupaten</label>
+                <input
+                  value={editingOngkir ? (editingOngkir.kabupaten || '') : (newOngkir?.kabupaten || '')}
+                  onChange={(e) => {
+                    if (editingOngkir) {
+                      setEditingOngkir({ ...editingOngkir, kabupaten: e.target.value });
+                    } else if (newOngkir) {
+                      setNewOngkir({ ...newOngkir, kabupaten: e.target.value });
+                    }
+                  }}
+                  className='w-full p-2 border rounded focus:ring-2 focus:ring-brand-primary focus:border-transparent'
+                  placeholder='Sleman'
+                />
+              </div>
+
+              <div>
+                <label className='block text-sm text-gray-700 mb-1'>Biaya (Rp)</label>
+                <input
+                  type='number'
+                  value={editingOngkir?.biaya ?? newOngkir?.biaya ?? 0}
+                  onChange={(e) => {
+                    const value = parseInt(e.target.value) || 0;
+                    if (editingOngkir) {
+                      setEditingOngkir({ ...editingOngkir, biaya: value });
+                    } else if (newOngkir) {
+                      setNewOngkir({ ...newOngkir, biaya: value });
+                    }
+                  }}
+                  className='w-full p-2 border rounded focus:ring-2 focus:ring-brand-primary focus:border-transparent'
+                />
+              </div>
+            </div>
+
+            <div className='flex gap-2 mt-6'>
+              <button
+                onClick={handleSaveOngkir}
+                className='flex-1 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded flex items-center justify-center gap-2'
+              >
+                <Save size={16} />
+                {editingOngkir ? 'Simpan Perubahan' : 'Simpan'}
+              </button>
+              <button
+                onClick={() => {
+                  setShowModalOngkir(false);
+                  setEditingOngkir(null);
+                  setNewOngkir(null);
+                }}
+                className='px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-50'
+              >
+                Batal
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

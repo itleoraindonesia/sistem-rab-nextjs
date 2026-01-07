@@ -82,7 +82,14 @@ export default function CalculationResults({
             </div>
             <div>
               <span className="text-sm text-gray-600">Lokasi:</span>
-              <p className="font-medium">{watchedValues.location || '-'}</p>
+              <p className="font-medium">
+                {[watchedValues.location_provinsi, watchedValues.location_kabupaten]
+                  .filter(Boolean)
+                  .join(', ') || '-'}
+              </p>
+              {watchedValues.location_address && (
+                <p className="text-sm text-gray-500 mt-1">{watchedValues.location_address}</p>
+              )}
             </div>
             <div>
               <span className="text-sm text-gray-600">Jumlah Bidang:</span>
