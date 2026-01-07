@@ -17,7 +17,7 @@ function LoginForm() {
   const { login, isLoading, isAuthenticated } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirect = searchParams.get('redirect') || '/';
+  const redirect = searchParams.get("redirect") || "/";
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -98,7 +98,7 @@ function LoginForm() {
 
               <Button
                 type='submit'
-                className='w-full bg-brand-primary hover:bg-brand-dark'
+                className='w-full bg-green-800 text-white hover:bg-green-700 '
                 disabled={isLoading}
               >
                 {isLoading ? "Sedang Masuk..." : "Masuk"}
@@ -125,14 +125,16 @@ function LoginForm() {
 
 export default function Login() {
   return (
-    <Suspense fallback={
-      <div className='min-h-screen flex items-center justify-center bg-gray-50'>
-        <div className='text-center'>
-          <div className='animate-spin rounded-full h-12 w-12 border-b-2 border-brand-primary mx-auto'></div>
-          <p className='mt-4 text-gray-600'>Memuat...</p>
+    <Suspense
+      fallback={
+        <div className='min-h-screen flex items-center justify-center bg-gray-50'>
+          <div className='text-center'>
+            <div className='animate-spin rounded-full h-12 w-12 border-b-2 border-brand-primary mx-auto'></div>
+            <p className='mt-4 text-gray-600'>Memuat...</p>
+          </div>
         </div>
-      </div>
-    }>
+      }
+    >
       <LoginForm />
     </Suspense>
   );
