@@ -1,10 +1,9 @@
-'use client';
+"use client";
 
 import { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Header from "../../components/layout/Header";
 import Navbar from "../../components/layout/Navbar";
-import PWAInstallBanner from "../../components/ui/PWAInstallBanner";
 import { useAuth } from "../../context/AuthContext";
 
 export default function ProtectedLayout({
@@ -38,8 +37,7 @@ export default function ProtectedLayout({
 
   // Check if current route is form route
   const isFormRoute =
-    pathname === "/rab/baru" ||
-    pathname.startsWith("/rab/edit/");
+    pathname === "/rab/baru" || pathname.startsWith("/rab/edit/");
 
   // Redirect if not authenticated - move to useEffect to avoid setState during render
   useEffect(() => {
@@ -51,10 +49,10 @@ export default function ProtectedLayout({
   // Loading state
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-primary mx-auto"></div>
-          <p className="mt-4 text-gray-600">Memuat...</p>
+      <div className='min-h-screen flex items-center justify-center'>
+        <div className='text-center'>
+          <div className='animate-spin rounded-full h-12 w-12 border-b-2 border-brand-primary mx-auto'></div>
+          <p className='mt-4 text-gray-600'>Memuat...</p>
         </div>
       </div>
     );
@@ -81,9 +79,6 @@ export default function ProtectedLayout({
 
   return (
     <div className='flex flex-col min-h-screen bg-gray-50 z-50'>
-      {/* PWA Install Banner - Mobile Only */}
-      <PWAInstallBanner />
-
       {/* Header Tetap di Atas */}
       <Header />
 
@@ -114,9 +109,7 @@ export default function ProtectedLayout({
         `}
         >
           {/* Responsive Container untuk Konten */}
-          <div className='w-full'>
-            {children}
-          </div>
+          <div className='w-full'>{children}</div>
         </main>
       </div>
 
