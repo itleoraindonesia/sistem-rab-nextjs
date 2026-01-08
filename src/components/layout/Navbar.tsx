@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
@@ -43,7 +43,7 @@ export default function Navbar({
   }, []);
 
   // Helper function to check if current path is child of parent
-  const isChildRoute = (item: typeof navItems[0]) => {
+  const isChildRoute = (item: (typeof navItems)[0]) => {
     if (!item.children || item.children.length === 0) return false;
 
     // Special handling for RAB routes - simplified logic
@@ -61,7 +61,7 @@ export default function Navbar({
   };
 
   // Get active state and color for nav item
-  const getNavItemState = (item: typeof navItems[0]) => {
+  const getNavItemState = (item: (typeof navItems)[0]) => {
     const isExactActive = pathname === item.path;
     const isChildActive = isChildRoute(item);
 
@@ -102,11 +102,12 @@ export default function Navbar({
 
     // Normal mobile navbar
     return (
-      <nav className='fixed bottom-0 left-0 right-0 bg-surface border-t border-default md:hidden z-50 shadow-lg'>
+      <nav className='fixed bottom-0 left-0 right-0 bg-surface border-t border-default md:hidden z-50 shadow-lg bg-white'>
         <div className='grid grid-cols-3'>
           {navItems.map((item) => {
             const Icon = item.icon;
-            const { isActive, isChildActive, activeColor } = getNavItemState(item);
+            const { isActive, isChildActive, activeColor } =
+              getNavItemState(item);
 
             return (
               <Link
@@ -153,7 +154,8 @@ export default function Navbar({
         <nav className='space-y-1'>
           {navItems.map((item) => {
             const Icon = item.icon;
-            const { isActive, isChildActive, activeColor } = getNavItemState(item);
+            const { isActive, isChildActive, activeColor } =
+              getNavItemState(item);
 
             return (
               <Link

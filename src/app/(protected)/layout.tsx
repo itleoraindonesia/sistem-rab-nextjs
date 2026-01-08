@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Header from "../../components/layout/Header";
 import Navbar from "../../components/layout/Navbar";
+import PWAInstallBanner from "../../components/ui/PWAInstallBanner";
 import { useAuth } from "../../context/AuthContext";
 
 export default function ProtectedLayout({
@@ -80,6 +81,9 @@ export default function ProtectedLayout({
 
   return (
     <div className='flex flex-col min-h-screen bg-gray-50 z-50'>
+      {/* PWA Install Banner - Mobile Only */}
+      <PWAInstallBanner />
+
       {/* Header Tetap di Atas */}
       <Header />
 
