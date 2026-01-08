@@ -1,10 +1,89 @@
 @import "tailwindcss";
-
+@plugin "daisyui" {
+  themes: light --nextprobably;
+}
 @theme {
-  /* Use --color-* naming convention to add new colors */
+  /* ===========================================
+     BRAND COLORS
+     =========================================== */
   --color-brand-primary: #095540;
   --color-brand-accent: #cdde00;
   --color-brand-dark: #053a2c;
+
+  /* ===========================================
+     SURFACE COLORS
+     =========================================== */
+  --color-bg-surface: #ffffff;
+  --color-bg-surface-secondary: #f9fafb;
+  --color-bg-surface-muted: #f3f4f6;
+  --color-bg-surface-hover: #f9fafb;
+
+  /* ===========================================
+     TEXT COLORS
+     =========================================== */
+  --color-text-primary: #111827;
+  --color-text-secondary: #374151;
+  --color-text-muted: #6b7280;
+  --color-text-subtle: #9ca3af;
+  --color-text-inverse: #ffffff;
+
+  /* ===========================================
+     BORDER COLORS
+     =========================================== */
+  --color-border-default: #e5e7eb;
+  --color-border-secondary: #d1d5db;
+  --color-border-focus: #3b82f6;
+
+  /* ===========================================
+     STATUS COLORS - ERROR
+     =========================================== */
+  --color-bg-error-surface: #fef2f2;
+  --color-border-error: #fca5a5;
+  --color-text-error: #ef4444;
+  --color-text-error-dark: #dc2626;
+  --color-text-error-darker: #b91c1c;
+
+  /* ===========================================
+     STATUS COLORS - SUCCESS
+     =========================================== */
+  --color-bg-success-surface: #f0fdf4;
+  --color-border-success: #bbf7d0;
+  --color-bg-success: #16a34a;
+  --color-bg-success-hover: #15803d;
+  --color-text-success: #16a34a;
+  --color-text-success-dark: #15803d;
+  --color-text-success-darker: #166534;
+  --color-text-success-darkest: #14532d;
+
+  /* ===========================================
+     STATUS COLORS - WARNING
+     =========================================== */
+  --color-bg-warning-surface: #fffbeb;
+  --color-border-warning: #fde68a;
+  --color-text-warning: #d97706;
+  --color-text-warning-dark: #b45309;
+  --color-text-warning-darker: #92400e;
+
+  /* ===========================================
+     STATUS COLORS - INFO
+     =========================================== */
+  --color-bg-info-surface: #eff6ff;
+  --color-border-info: #bfdbfe;
+  --color-text-info: #2563eb;
+  --color-text-info-dark: #1d4ed8;
+  --color-text-info-darker: #1e40af;
+
+  /* ===========================================
+     GRAY SCALE COLORS
+     =========================================== */
+  --color-bg-gray-200: #e5e7eb;
+  --color-bg-gray-300: #d1d5db;
+  --color-bg-gray-hover: #d1d5db;
+  --color-text-gray-500: #6b7280;
+  --color-text-gray-600: #4b5563;
+  --color-text-gray-800: #1f2937;
+  --color-border-gray-200: #e5e7eb;
+  --color-border-gray-300: #d1d5db;
 }
 
 /* Responsive images */

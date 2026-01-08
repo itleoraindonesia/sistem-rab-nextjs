@@ -76,7 +76,7 @@ export default function Navbar({
     // Special navbar for form routes
     if (isFormRoute) {
       return (
-        <nav className='fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 md:hidden z-50'>
+        <nav className='fixed bottom-0 left-0 right-0 bg-surface border-t border-default md:hidden z-50'>
           <div className='flex gap-3 p-4'>
             <button
               onClick={onCancel}
@@ -89,7 +89,7 @@ export default function Navbar({
               disabled={!isFormValid}
               className={`flex-1 py-3 px-4 rounded-lg font-bold text-sm transition-colors ${
                 isFormValid
-                  ? "bg-green-600 hover:bg-green-700 text-white"
+                  ? "bg-success hover:bg-success-hover text-inverse"
                   : "bg-gray-300 text-gray-500 cursor-not-allowed"
               }`}
             >
@@ -102,7 +102,7 @@ export default function Navbar({
 
     // Normal mobile navbar
     return (
-      <nav className='fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 md:hidden z-50 shadow-lg'>
+      <nav className='fixed bottom-0 left-0 right-0 bg-surface border-t border-default md:hidden z-50 shadow-lg'>
         <div className='grid grid-cols-3'>
           {navItems.map((item) => {
             const Icon = item.icon;
@@ -115,7 +115,7 @@ export default function Navbar({
                 className={`flex flex-col items-center justify-center py-3 px-2 text-xs ${
                   isActive
                     ? "text-brand-primary font-medium"
-                    : "text-gray-600 hover:text-gray-900"
+                    : "text-muted hover:text-secondary"
                 }`}
               >
                 <Icon
@@ -133,7 +133,7 @@ export default function Navbar({
 
   // Desktop: sidebar kiri - Logo lebih kecil dan layout lebih rapi
   return (
-    <aside className='hidden md:flex md:flex-col w-64 lg:w-72 xl:w-80 bg-white border-r border-gray-200 min-h-screen sticky overflow-hidden'>
+    <aside className='hidden md:flex md:flex-col w-64 lg:w-72 xl:w-80 bg-surface border-r border-default min-h-screen sticky overflow-hidden'>
       <div className='p-4 pt-6'>
         {/* Logo yang lebih kecil */}
         <Link
@@ -161,13 +161,13 @@ export default function Navbar({
                 href={item.path}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition ${
                   isActive
-                    ? "bg-brand-primary text-white"
-                    : "text-gray-700 hover:bg-gray-100"
+                    ? "bg-brand-primary text-inverse"
+                    : "text-secondary hover:bg-surface-hover"
                 }`}
               >
                 <Icon
                   size={18}
-                  className={isActive ? "text-white" : "text-gray-500"}
+                  className={isActive ? "text-inverse" : "text-muted"}
                 />
                 <span className='text-sm'>{item.name}</span>
               </Link>
@@ -177,10 +177,10 @@ export default function Navbar({
       </div>
 
       {/* Footer Sidebar */}
-      <div className='mt-auto p-4 border-t border-gray-100'>
+      <div className='mt-auto p-4 border-t border-default'>
         {/* User Info */}
         {user && (
-          <div className='text-xs text-gray-600 mb-3'>
+          <div className='text-xs text-muted mb-3'>
             <div className='font-medium'>Halo, {user.username}</div>
           </div>
         )}
@@ -188,14 +188,14 @@ export default function Navbar({
         {/* Logout Button */}
         <button
           onClick={logout}
-          className='flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-600 hover:bg-gray-50 rounded-lg transition-colors mb-3'
+          className='flex items-center gap-2 w-full px-3 py-2 text-xs text-muted hover:bg-surface-hover rounded-lg transition-colors mb-3'
         >
           <LogOut size={14} />
           <span>Keluar</span>
         </button>
 
         {/* Status & Copyright */}
-        <div className='text-xs text-gray-500'>
+        <div className='text-xs text-subtle'>
           <div className='flex items-center gap-2 mb-2'>
             <div className='w-2 h-2 bg-brand-accent rounded-full'></div>
             <span>Online</span>

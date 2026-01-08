@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
@@ -23,12 +23,38 @@ export default function Dashboard() {
 
       if (supabase) {
         // Get statistics from Supabase (exclude soft deleted)
-        const [totalResult, draftResult, sentResult, approvedResult, recentResult] = await Promise.all([
-          supabase.from('rab_documents').select('*', { count: 'exact', head: true }).is("deleted_at", null),
-          supabase.from('rab_documents').select('*', { count: 'exact', head: true }).eq('status', 'draft').is("deleted_at", null),
-          supabase.from('rab_documents').select('*', { count: 'exact', head: true }).eq('status', 'sent').is("deleted_at", null),
-          supabase.from('rab_documents').select('*', { count: 'exact', head: true }).eq('status', 'approved').is("deleted_at", null),
-          supabase.from('rab_documents').select('*').is("deleted_at", null).order('created_at', { ascending: false }).limit(3)
+        const [
+          totalResult,
+          draftResult,
+          sentResult,
+          approvedResult,
+          recentResult,
+        ] = await Promise.all([
+          supabase
+            .from("rab_documents")
+            .select("*", { count: "exact", head: true })
+            .is("deleted_at", null),
+          supabase
+            .from("rab_documents")
+            .select("*", { count: "exact", head: true })
+            .eq("status", "draft")
+            .is("deleted_at", null),
+          supabase
+            .from("rab_documents")
+            .select("*", { count: "exact", head: true })
+            .eq("status", "sent")
+            .is("deleted_at", null),
+          supabase
+            .from("rab_documents")
+            .select("*", { count: "exact", head: true })
+            .eq("status", "approved")
+            .is("deleted_at", null),
+          supabase
+            .from("rab_documents")
+            .select("*")
+            .is("deleted_at", null)
+            .order("created_at", { ascending: false })
+            .limit(3),
         ]);
 
         setStats({
@@ -41,7 +67,7 @@ export default function Dashboard() {
         setRecentRAB(recentResult.data || []);
       } else {
         // Supabase not configured, use fallback data
-        console.log('Supabase not configured, using fallback data');
+        console.log("Supabase not configured, using fallback data");
         setStats({
           total: 3,
           draft: 1,
@@ -55,7 +81,7 @@ export default function Dashboard() {
             project_name: "Proyek Gedung A",
             location: "Jakarta",
             status: "draft",
-            created_at: "2024-01-15T10:00:00Z"
+            created_at: "2024-01-15T10:00:00Z",
           },
           {
             id: 2,
@@ -63,7 +89,7 @@ export default function Dashboard() {
             project_name: "Renovasi Kantor B",
             location: "Bandung",
             status: "sent",
-            created_at: "2024-01-10T10:00:00Z"
+            created_at: "2024-01-10T10:00:00Z",
           },
           {
             id: 3,
@@ -71,8 +97,8 @@ export default function Dashboard() {
             project_name: "Pembangunan Warehouse",
             location: "Surabaya",
             status: "approved",
-            created_at: "2024-01-05T10:00:00Z"
-          }
+            created_at: "2024-01-05T10:00:00Z",
+          },
         ]);
       }
     } catch (err) {
@@ -91,7 +117,7 @@ export default function Dashboard() {
           project_name: "Proyek Gedung A",
           location: "Jakarta",
           status: "draft",
-          created_at: "2024-01-15T10:00:00Z"
+          created_at: "2024-01-15T10:00:00Z",
         },
         {
           id: 2,
@@ -99,7 +125,7 @@ export default function Dashboard() {
           project_name: "Renovasi Kantor B",
           location: "Bandung",
           status: "sent",
-          created_at: "2024-01-10T10:00:00Z"
+          created_at: "2024-01-10T10:00:00Z",
         },
         {
           id: 3,
@@ -107,8 +133,8 @@ export default function Dashboard() {
           project_name: "Pembangunan Warehouse",
           location: "Surabaya",
           status: "approved",
-          created_at: "2024-01-05T10:00:00Z"
-        }
+          created_at: "2024-01-05T10:00:00Z",
+        },
       ]);
     } finally {
       setLoading(false);

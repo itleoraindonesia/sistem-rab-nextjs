@@ -53,8 +53,8 @@ export default function CalculationResults({
         <CardContent>
           <div className="space-y-4">
             {/* Bidang Area Cost */}
-            <div className="flex justify-between items-center py-2 border-b border-gray-200">
-              <span className="text-gray-700">Biaya Area</span>
+            <div className="flex justify-between items-center py-2 border-b border-default">
+              <span className="text-secondary">Biaya Area</span>
               <span className="font-medium">{formatCurrency(bidangTotal)}</span>
             </div>
 
@@ -77,26 +77,26 @@ export default function CalculationResults({
         <CardContent>
           <div className="space-y-3">
             <div>
-              <span className="text-sm text-gray-600">Nama Proyek:</span>
+              <span className="text-sm text-muted">Nama Proyek:</span>
               <p className="font-medium">{watchedValues.project_name || '-'}</p>
             </div>
             <div>
-              <span className="text-sm text-gray-600">Lokasi:</span>
+              <span className="text-sm text-muted">Lokasi:</span>
               <p className="font-medium">
                 {[watchedValues.location_provinsi, watchedValues.location_kabupaten]
                   .filter(Boolean)
                   .join(', ') || '-'}
               </p>
               {watchedValues.location_address && (
-                <p className="text-sm text-gray-500 mt-1">{watchedValues.location_address}</p>
+                <p className="text-sm text-subtle mt-1">{watchedValues.location_address}</p>
               )}
             </div>
             <div>
-              <span className="text-sm text-gray-600">Jumlah Bidang:</span>
+              <span className="text-sm text-muted">Jumlah Bidang:</span>
               <p className="font-medium">{watchedValues.bidang?.length || 0} area</p>
             </div>
             <div>
-              <span className="text-sm text-gray-600">Total Luas:</span>
+              <span className="text-sm text-muted">Total Luas:</span>
               <p className="font-medium">
                 {(watchedValues.bidang || []).reduce((total, bidang) => {
                   return total + ((bidang?.panjang || 0) * (bidang?.lebar || 0));
@@ -137,8 +137,8 @@ export default function CalculationResults({
 
       {/* Validation Status */}
       {!isValid && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-          <p className="text-sm text-yellow-800">
+        <div className="bg-warning-surface border border-warning rounded-lg p-3">
+          <p className="text-sm text-warning-darker">
             ⚠️ Mohon lengkapi semua field yang wajib diisi sebelum menyimpan.
           </p>
         </div>
@@ -146,8 +146,8 @@ export default function CalculationResults({
 
       {/* Success Message */}
       {isValid && (
-        <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-          <p className="text-sm text-green-800">
+        <div className="bg-success-surface border border-success rounded-lg p-3">
+          <p className="text-sm text-success-darker">
             ✅ Form siap disimpan. Total biaya: {formatCurrency(grandTotal)}
           </p>
         </div>
