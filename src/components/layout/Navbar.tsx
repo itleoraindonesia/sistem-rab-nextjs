@@ -76,7 +76,7 @@ export default function Navbar({
     // Special navbar for form routes
     if (isFormRoute) {
       return (
-        <nav className='fixed bottom-0 left-0 right-0 bg-surface border-t border-default md:hidden z-50'>
+        <nav className='fixed bottom-0 left-0 right-0 bg-surface border-t border-default md:hidden z-50 bg-white'>
           <div className='flex gap-3 p-4'>
             <button
               onClick={onCancel}
