@@ -41,9 +41,9 @@ const FormField = ({
     name={name as any}
     control={control}
     render={({ field }) => (
-      <div className="form-control w-full">
-        <label className='label'>
-          <span className='label-text font-medium'>{label}</span>
+      <div className='w-full'>
+        <label className='block text-sm font-medium text-secondary mb-2'>
+          {label}
         </label>
         <input
           {...field}
@@ -52,21 +52,23 @@ const FormField = ({
           placeholder={placeholder}
           step={step}
           value={field.value ?? ""} // Ensure controlled input always has a value
-          className={`input input-bordered w-full ${
-            (errors as any)[name] ? "input-error" : ""
+          className={`w-full px-3 py-2 border rounded-lg text-base focus:outline-none focus:ring-2 focus:border-transparent transition-colors ${
+            (errors as any)[name]
+              ? "border-error focus:ring-error/20 bg-error-surface/30"
+              : "border-gray-300 focus:ring-brand-primary/60 bg-surface hover:bg-surface-secondary"
+          } ${
+            disabled ? "bg-surface-muted cursor-not-allowed opacity-60" : ""
           }`}
           aria-describedby={(errors as any)[name] ? `${name}-error` : undefined}
         />
         {(errors as any)[name] && (
-          <label className="label">
-            <span
-              id={`${name}-error`}
-              className='label-text-alt text-error'
-              role='alert'
-            >
-              {(errors as any)[name]?.message}
-            </span>
-          </label>
+          <span
+            id={`${name}-error`}
+            className='text-error text-sm mt-1 block'
+            role='alert'
+          >
+            {(errors as any)[name]?.message}
+          </span>
         )}
       </div>
     )}
@@ -96,16 +98,20 @@ const FormSelect = ({
     name={name as any}
     control={control}
     render={({ field }) => (
-      <div className="form-control w-full">
-        <label className='label'>
-          <span className='label-text font-medium'>{label}</span>
+      <div className='w-full'>
+        <label className='block text-sm font-medium text-secondary mb-2'>
+          {label}
         </label>
         <select
           {...field}
           value={field.value ?? ""} // Ensure controlled select always has a value
           disabled={disabled}
-          className={`select select-bordered w-full ${
-            (errors as any)[name] ? "select-error" : ""
+          className={`w-full px-3 py-2 border rounded-lg text-base appearance-none focus:outline-none focus:ring-2 focus:border-transparent transition-colors ${
+            (errors as any)[name]
+              ? "border-error focus:ring-error/20 bg-error-surface/30"
+              : "border-gray-300 focus:ring-brand-primary/60 bg-surface hover:bg-surface-secondary"
+          } ${
+            disabled ? "bg-surface-muted cursor-not-allowed opacity-60" : ""
           }`}
           aria-describedby={(errors as any)[name] ? `${name}-error` : undefined}
         >
@@ -117,15 +123,13 @@ const FormSelect = ({
           ))}
         </select>
         {(errors as any)[name] && (
-          <label className="label">
-            <span
-              id={`${name}-error`}
-              className='label-text-alt text-error'
-              role='alert'
-            >
-              {(errors as any)[name]?.message}
-            </span>
-          </label>
+          <span
+            id={`${name}-error`}
+            className='text-error text-sm mt-1 block'
+            role='alert'
+          >
+            {(errors as any)[name]?.message}
+          </span>
         )}
       </div>
     )}
@@ -155,9 +159,9 @@ const FormTextarea = ({
     name={name as any}
     control={control}
     render={({ field }) => (
-      <div className="form-control w-full">
-        <label className='label'>
-          <span className='label-text font-medium'>{label}</span>
+      <div className='w-full'>
+        <label className='block text-sm font-medium text-secondary mb-2'>
+          {label}
         </label>
         <textarea
           {...field}
@@ -165,13 +169,17 @@ const FormTextarea = ({
           disabled={disabled}
           placeholder={placeholder}
           rows={rows}
-          className={`textarea textarea-bordered w-full ${
-            (errors as any)[name] ? "textarea-error" : ""
+          className={`w-full px-3 py-2 border rounded-lg text-base resize-vertical focus:outline-none focus:ring-2 focus:border-transparent transition-colors ${
+            (errors as any)[name]
+              ? "border-error focus:ring-error/20 bg-error-surface/30"
+              : "border-gray-300 focus:ring-brand-primary/60 bg-surface hover:bg-surface-secondary"
+          } ${
+            disabled ? "bg-surface-muted cursor-not-allowed opacity-60" : ""
           }`}
           aria-describedby={(errors as any)[name] ? `${name}-error` : undefined}
         />
         {(errors as any)[name] && (
-          <label className="label">
+          <label className='label'>
             <span
               id={`${name}-error`}
               className='label-text-alt text-error'
@@ -349,8 +357,8 @@ export default function FormRAB({
   }, [watchedProvinsi, watchedKabupaten, getKabupaten, setValue]);
 
   return (
-      <div className='min-h-screen bg-surface-secondary max-w-7xl mx-auto'>
-      <div className='bg-success border-b border-default shadow-sm lg:hidden'>
+    <div className='min-h-screen bg-surface-secondary max-w-7xl mx-auto'>
+      <div className='bg-success border-b border-gray-300 shadow-sm lg:hidden'>
         <div className='px-4 py-4'>
           <div className='flex items-center justify-between gap-3'>
             <button
@@ -388,7 +396,7 @@ export default function FormRAB({
             </div>
 
             <div className='bg-surface rounded-xl shadow overflow-hidden'>
-              <div className='p-4 border-b'>
+              <div className='p-4 border-b border-gray-200'>
                 <h2 className='text-lg font-semibold flex items-center gap-2'>
                   <span className='text-brand-accent'>📋</span>
                   Data Proyek
@@ -449,8 +457,10 @@ export default function FormRAB({
                       <select
                         {...field}
                         disabled={watchedStatus === "approved"}
-                        className={`w-full p-3 border rounded-lg text-base appearance-none bg-surface disabled:bg-surface-muted disabled:cursor-not-allowed ${
-                          errors.status ? "border-error" : "border-default"
+                        className={`w-full p-3 border rounded-lg text-base appearance-none focus:outline-none focus:ring-2 focus:border-transparent transition-colors bg-surface hover:bg-surface-secondary disabled:bg-surface-muted disabled:cursor-not-allowed ${
+                          errors.status
+                            ? "border-error focus:ring-error/20"
+                            : "border-gray-300 focus:ring-brand-primary/60"
                         }`}
                         aria-describedby={
                           errors.status ? "status-error" : undefined
@@ -480,13 +490,13 @@ export default function FormRAB({
                         <option value='approved'>Disetujui</option>
                       </select>
                       {errors.status && (
-                      <span
-                        id='status-error'
-                        className='text-error text-sm mt-1 block'
-                        role='alert'
-                      >
-                        {errors.status.message}
-                      </span>
+                        <span
+                          id='status-error'
+                          className='text-error text-sm mt-1 block'
+                          role='alert'
+                        >
+                          {errors.status.message}
+                        </span>
                       )}
                     </div>
                   )}
@@ -496,7 +506,7 @@ export default function FormRAB({
 
             {/* Section Ongkos Kirim */}
             <div className='bg-surface rounded-xl shadow overflow-hidden mt-4'>
-              <div className='p-4 border-b'>
+              <div className='p-4 border-b border-gray-200'>
                 <h2 className='text-lg font-semibold flex items-center gap-2'>
                   <span className='text-brand-accent'>📋</span>
                   Ongkos Kirim
@@ -506,9 +516,9 @@ export default function FormRAB({
               <div className='p-4 space-y-6'>
                 {/* Location Section */}
                 <div className='space-y-4'>
-                <h3 className='text-md font-medium text-secondary'>
-                  Lokasi Proyek
-                </h3>
+                  <h3 className='text-md font-medium text-secondary'>
+                    Lokasi Proyek
+                  </h3>
                   <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
                     <FormSelect
                       name='location_provinsi'
@@ -661,7 +671,7 @@ export default function FormRAB({
                   name='hitung_dinding'
                   control={control}
                   render={({ field }) => (
-                    <label className='flex items-center gap-3 p-3 bg-info-surface rounded-lg border border-info'>
+                    <label className='flex items-center gap-3 p-3 bg-blue-50 rounded-lg border border-blue-200'>
                       <input
                         type='checkbox'
                         checked={field.value || false}
@@ -675,7 +685,7 @@ export default function FormRAB({
                         }
                         className='h-5 w-5 rounded text-brand-primary disabled:cursor-not-allowed'
                       />
-                      <span className='font-medium text-info-darker'>
+                      <span className='font-medium text-blue-800'>
                         Hitung Dinding
                       </span>
                     </label>
@@ -701,10 +711,10 @@ export default function FormRAB({
                               }
                               disabled={watchedStatus === "approved"}
                               type='number'
-                              className={`w-full p-3 border rounded-lg text-base ${
+                              className={`w-full p-3 border rounded-lg text-base focus:outline-none focus:ring-2 focus:border-transparent transition-colors bg-surface hover:bg-surface-secondary ${
                                 errors.perimeter
-                                  ? "border-error"
-                                  : "border-default"
+                                  ? "border-error focus:ring-error/20"
+                                  : "border-gray-300 focus:ring-brand-primary/60"
                               }`}
                               step='0.01'
                             />
@@ -733,10 +743,10 @@ export default function FormRAB({
                               }
                               disabled={watchedStatus === "approved"}
                               type='number'
-                              className={`w-full p-3 border rounded-lg text-base ${
+                              className={`w-full p-3 border rounded-lg text-base focus:outline-none focus:ring-2 focus:border-transparent transition-colors bg-surface hover:bg-surface-secondary ${
                                 errors.tinggi_lantai
-                                  ? "border-error"
-                                  : "border-default"
+                                  ? "border-error focus:ring-error/20"
+                                  : "border-gray-300 focus:ring-brand-primary/60"
                               }`}
                               step='0.01'
                             />
@@ -755,18 +765,18 @@ export default function FormRAB({
                       control={control}
                       render={({ field }) => (
                         <div>
-                            <label className='block text-xs text-muted mb-1'>
-                              Panel Dinding
-                            </label>
-                            <select
-                              {...field}
-                              disabled={watchedStatus === "approved"}
-                              className={`w-full p-3 border rounded-lg text-base appearance-none bg-surface ${
-                                errors.panel_dinding_id
-                                  ? "border-error"
-                                  : "border-default"
-                              }`}
-                            >
+                          <label className='block text-xs text-muted mb-1'>
+                            Panel Dinding
+                          </label>
+                          <select
+                            {...field}
+                            disabled={watchedStatus === "approved"}
+                            className={`w-full p-3 border rounded-lg text-base appearance-none focus:outline-none focus:ring-2 focus:border-transparent transition-colors bg-surface hover:bg-surface-secondary ${
+                              errors.panel_dinding_id
+                                ? "border-error focus:ring-error/20"
+                                : "border-gray-300 focus:ring-brand-primary/60"
+                            }`}
+                          >
                             <option value=''>Pilih Panel Dinding</option>
                             {panels
                               .filter((p) => p.type === "dinding")
@@ -793,7 +803,7 @@ export default function FormRAB({
                   name='hitung_lantai'
                   control={control}
                   render={({ field }) => (
-                    <label className='flex items-center gap-3 p-3 bg-success-surface rounded-lg border border-success'>
+                    <label className='flex items-center gap-3 p-3 bg-green-50 rounded-lg border border-green-200'>
                       <input
                         type='checkbox'
                         checked={field.value || false}
@@ -804,7 +814,7 @@ export default function FormRAB({
                         disabled={watchedStatus === "approved"}
                         className='h-5 w-5 rounded text-brand-primary'
                       />
-                      <span className='font-medium text-success-darker'>
+                      <span className='font-medium text-green-800'>
                         Hitung Lantai
                       </span>
                     </label>
@@ -825,15 +835,15 @@ export default function FormRAB({
                             </span>
                             {fields.length > 1 && (
                               <div className='flex items-center gap-2'>
-                            <span className='text-xs text-subtle'>
-                              {watchedBidang?.[i]?.panjang || 0} ×{" "}
-                              {watchedBidang?.[i]?.lebar || 0} ={" "}
-                              {(
-                                (watchedBidang?.[i]?.panjang || 0) *
-                                (watchedBidang?.[i]?.lebar || 0)
-                              ).toFixed(2)}{" "}
-                              m²
-                            </span>
+                                <span className='text-xs text-subtle'>
+                                  {watchedBidang?.[i]?.panjang || 0} ×{" "}
+                                  {watchedBidang?.[i]?.lebar || 0} ={" "}
+                                  {(
+                                    (watchedBidang?.[i]?.panjang || 0) *
+                                    (watchedBidang?.[i]?.lebar || 0)
+                                  ).toFixed(2)}{" "}
+                                  m²
+                                </span>
                                 {fields.length > 1 && (
                                   <button
                                     type='button'
@@ -853,9 +863,9 @@ export default function FormRAB({
                               control={control}
                               render={({ field: fieldItem }) => (
                                 <div>
-                            <label className='block text-xs text-muted mb-1'>
-                              Panjang (m)
-                            </label>
+                                  <label className='block text-xs text-muted mb-1'>
+                                    Panjang (m)
+                                  </label>
                                   <input
                                     {...fieldItem}
                                     value={fieldItem.value || ""}
@@ -866,7 +876,7 @@ export default function FormRAB({
                                     }
                                     disabled={watchedStatus === "approved"}
                                     type='number'
-                                    className='w-full p-2 border border-default rounded-lg text-base'
+                                    className='w-full p-2 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:border-transparent transition-colors bg-surface hover:bg-surface-secondary'
                                     step='0.01'
                                   />
                                 </div>
@@ -890,7 +900,7 @@ export default function FormRAB({
                                     }
                                     disabled={watchedStatus === "approved"}
                                     type='number'
-                                    className='w-full p-2 border border-default rounded-lg text-base'
+                                    className='w-full p-2 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:border-transparent transition-colors bg-surface hover:bg-surface-secondary'
                                     step='0.01'
                                   />
                                 </div>
@@ -915,16 +925,16 @@ export default function FormRAB({
                       control={control}
                       render={({ field }) => (
                         <div>
-                            <label className='block text-xs text-muted mb-1'>
-                              Panel Lantai
-                            </label>
+                          <label className='block text-xs text-muted mb-1'>
+                            Panel Lantai
+                          </label>
                           <select
                             {...field}
                             disabled={watchedStatus === "approved"}
-                            className={`w-full p-3 border rounded-lg text-base appearance-none bg-surface ${
+                            className={`w-full p-3 border rounded-lg text-base appearance-none focus:outline-none focus:ring-2 focus:border-transparent transition-colors bg-surface hover:bg-surface-secondary ${
                               errors.panel_lantai_id
-                                ? "border-error"
-                                : "border-default"
+                                ? "border-error focus:ring-error/20"
+                                : "border-gray-300 focus:ring-brand-primary/60"
                             }`}
                           >
                             <option value=''>Pilih Panel Lantai</option>
@@ -954,7 +964,7 @@ export default function FormRAB({
           <div className='lg:col-span-2'>
             {/* Hasil Hitung */}
             <div className='bg-surface rounded-xl shadow overflow-hidden'>
-              <div className='p-4 border-b bg-surface-muted'>
+              <div className='p-4 border-b bg-gray-50'>
                 <h2 className='text-lg font-semibold flex items-center gap-2'>
                   <Calculator size={20} className='text-brand-accent' />
                   Hasil Perhitungan
@@ -964,14 +974,14 @@ export default function FormRAB({
               <div className='p-4 space-y-4'>
                 {/* Info message */}
                 {!watchedHitungDinding && !watchedHitungLantai && (
-                  <div className='bg-info-surface border border-info rounded-lg p-4 mb-4'>
+                  <div className='bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4'>
                     <div className='flex items-center gap-2'>
-                      <Calculator className='text-info' size={20} />
+                      <Calculator className='text-blue-800' size={20} />
                       <div>
-                        <h3 className='font-medium text-info-darker'>
+                        <h3 className='font-medium text-blue-800'>
                           Pilih Jenis Perhitungan
                         </h3>
-                        <p className='text-info-dark text-sm'>
+                        <p className='text-blue-800 text-sm'>
                           Centang "Hitung Dinding" atau "Hitung Lantai" untuk
                           melihat hasil perhitungan.
                         </p>
@@ -984,21 +994,21 @@ export default function FormRAB({
                 {(hasil?.grandTotal || 0) > 0 && (
                   <div className='grid grid-cols-1 sm:grid-cols-2 gap-3'>
                     {(hasil?.luasLantai || 0) > 0 && (
-                      <div className='bg-success-surface p-4 rounded-lg border border-success'>
-                        <div className='text-success-darker text-sm font-medium'>
+                      <div className='bg-green-50 p-4 rounded-lg border border-green-200'>
+                        <div className='text-green-800 text-sm font-medium'>
                           Luas Lantai
                         </div>
-                        <div className='text-2xl font-bold text-success-darkest mt-1'>
+                        <div className='text-2xl font-bold text-green-800 mt-1'>
                           {hasil?.luasLantai?.toFixed(2) || 0} m²
                         </div>
                       </div>
                     )}
                     {(hasil?.luasDinding || 0) > 0 && (
-                      <div className='bg-info-surface p-4 rounded-lg border border-info'>
-                        <div className='text-info-darker text-sm font-medium'>
+                      <div className='bg-blue-50 p-4 rounded-lg border border-blue-200'>
+                        <div className='text-blue-800 text-sm font-medium'>
                           Luas Dinding
                         </div>
-                        <div className='text-2xl font-bold text-info-darker mt-1'>
+                        <div className='text-2xl font-bold text-blue-800 mt-1'>
                           {hasil?.luasDinding?.toFixed(2) || 0} m²
                         </div>
                       </div>
@@ -1008,8 +1018,8 @@ export default function FormRAB({
 
                 {/* Detail Perhitungan */}
                 {(hasil?.grandTotal || 0) > 0 && (
-                  <div className='bg-surface-muted p-3 rounded-lg border border-default'>
-                    <h3 className='font-medium mb-2 flex items-center gap-2 text-primary'>
+                  <div className='bg-gray-50 p-3 rounded-lg border border-gray-200'>
+                    <h3 className='font-medium mb-2 flex items-center gap-2 text-gray-900'>
                       <Calculator size={16} />
                       Detail Perhitungan
                     </h3>
@@ -1018,8 +1028,8 @@ export default function FormRAB({
                       {(hasil?.items?.filter((item: any) =>
                         item.desc.includes("Dinding")
                       )?.length || 0) > 0 && (
-                        <div className='bg-info-surface p-4 rounded-lg border border-info'>
-                          <h4 className='font-medium text-info-darker mb-2'>
+                        <div className='bg-blue-50 p-4 rounded-lg border border-blue-200'>
+                          <h4 className='font-medium text-blue-800 mb-2'>
                             Dinding Panel
                           </h4>
                           <div className='space-y-2'>
@@ -1029,17 +1039,17 @@ export default function FormRAB({
                               )
                               .map((item: any, index: number) => (
                                 <div key={index} className='text-sm'>
-                                  <div className='text-info-dark'>
+                                  <div className='text-blue-700'>
                                     {item.desc}
                                   </div>
-                                  <div className='text-info-darker font-medium'>
+                                  <div className='text-blue-800 font-medium'>
                                     {item.qty} {item.unit || "lembar"} @{" "}
                                     {formatRupiah(item.unit_price)} ={" "}
                                     {formatRupiah(item.amount)}
                                   </div>
                                 </div>
                               ))}
-                            <div className='border-t pt-2 flex justify-between font-semibold text-info-darker'>
+                            <div className='border-t border-blue-300 pt-2 flex justify-between font-semibold text-blue-800'>
                               <span>Subtotal Dinding</span>
                               <span>
                                 {formatRupiah(hasil?.subtotalDinding || 0)}
@@ -1052,8 +1062,8 @@ export default function FormRAB({
                       {(hasil?.items?.filter((item: any) =>
                         item.desc.includes("Lantai")
                       )?.length || 0) > 0 && (
-                        <div className='bg-success-surface p-4 rounded-lg border border-success'>
-                          <h4 className='font-medium text-success-darker mb-2'>
+                        <div className='bg-green-50 p-4 rounded-lg border border-green-200'>
+                          <h4 className='font-medium text-green-800 mb-2'>
                             Lantai Panel
                           </h4>
                           <div className='space-y-2'>
@@ -1063,17 +1073,17 @@ export default function FormRAB({
                               )
                               .map((item: any, index: number) => (
                                 <div key={index} className='text-sm'>
-                                  <div className='text-success-dark'>
+                                  <div className='text-green-700'>
                                     {item.desc}
                                   </div>
-                                  <div className='text-success-darkest font-medium'>
+                                  <div className='text-green-800 font-medium'>
                                     {item.qty} {item.unit || "lembar"} @{" "}
                                     {formatRupiah(item.unit_price)} ={" "}
                                     {formatRupiah(item.amount)}
                                   </div>
                                 </div>
                               ))}
-                            <div className='border-t pt-2 flex justify-between font-semibold text-success-darker'>
+                            <div className='border-t border-green-300 pt-2 flex justify-between font-semibold text-green-800'>
                               <span>Subtotal Lantai</span>
                               <span>
                                 {formatRupiah(hasil?.subtotalLantai || 0)}
@@ -1086,29 +1096,33 @@ export default function FormRAB({
                   </div>
                 )}
                 {/* Kebutuhan Truk - dari hasil perhitungan */}
-                {hasil?.items?.some((item: any) => item.desc.includes("Angkutan Truk")) && (
-                  <div className='bg-warning-surface p-4 rounded-lg border border-warning'>
-                    <h3 className='font-medium text-warning-darker mb-2 flex items-center gap-2'>
+                {hasil?.items?.some((item: any) =>
+                  item.desc.includes("Angkutan Truk")
+                ) && (
+                  <div className='bg-yellow-50 p-4 rounded-lg border border-yellow-200'>
+                    <h3 className='font-medium text-yellow-800 mb-2 flex items-center gap-2'>
                       <Truck size={16} />
                       Kebutuhan Truk
                     </h3>
                     <div className='space-y-2'>
                       {hasil?.items
-                        ?.filter((item: any) => item.desc.includes("Angkutan Truk"))
+                        ?.filter((item: any) =>
+                          item.desc.includes("Angkutan Truk")
+                        )
                         .map((item: any, index: number) => (
                           <div key={index} className='text-sm'>
-                            <div className='text-warning-dark'>
-                              {item.desc}
-                            </div>
-                            <div className='text-warning-darker font-medium'>
-                              {item.qty} {item.unit} @ {formatRupiah(item.unit_price)} = {formatRupiah(item.amount)}
+                            <div className='text-yellow-700'>{item.desc}</div>
+                            <div className='text-yellow-800 font-medium'>
+                              {item.qty} {item.unit} @{" "}
+                              {formatRupiah(item.unit_price)} ={" "}
+                              {formatRupiah(item.amount)}
                             </div>
                           </div>
                         ))}
                     </div>
                   </div>
                 )}
-                
+
                 {/* Rincian Biaya */}
                 {(hasil?.grandTotal || 0) > 0 && (
                   <div className='border-t pt-4'>

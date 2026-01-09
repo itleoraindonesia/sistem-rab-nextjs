@@ -163,7 +163,7 @@ export default function Navbar({
                 href={item.path}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition ${
                   isActive
-                    ? "bg-brand-primary text-inverse"
+                    ? "bg-brand-primary text-inverse text-white"
                     : "text-secondary hover:bg-surface-hover"
                 }`}
               >

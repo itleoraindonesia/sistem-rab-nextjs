@@ -1,7 +1,4 @@
 @import "tailwindcss";
-@plugin "daisyui" {
-  themes: light --nextprobably;
-}
 @theme {
   /* ===========================================
      BRAND COLORS
@@ -30,7 +27,7 @@
   /* ===========================================
      BORDER COLORS
      =========================================== */
-  --color-border-default: #e5e7eb;
+  --color-border-default: #f9fafb;
   --color-border-secondary: #d1d5db;
   --color-border-focus: #3b82f6;
 
@@ -183,3 +180,4 @@ img {
 .animate-slide-down {
   animation: slide-down 0.3s ease-out;
 }
+/* Page breaks */

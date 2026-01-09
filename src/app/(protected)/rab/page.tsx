@@ -20,26 +20,37 @@ export default function ListRAB() {
 
     try {
       if (!supabase) {
-        throw new Error("Supabase client tidak tersedia. Periksa konfigurasi environment variables.");
+        throw new Error(
+          "Supabase client tidak tersedia. Periksa konfigurasi environment variables."
+        );
       }
 
       const { data: documentsData, error: documentsError } = await supabase
         .from("rab_documents")
-        .select("id, no_ref, project_name, location_kabupaten, client_profile, status, total, created_at")
+        .select(
+          "id, no_ref, project_name, location_kabupaten, client_profile, status, total, created_at"
+        )
         .is("deleted_at", null)
         .order("created_at", { ascending: false });
 
       if (documentsError) {
-        console.error("Error fetching documents from Supabase:", documentsError);
-        throw new Error(`Database error: ${documentsError.message || 'Unknown error'}`);
+        console.error(
+          "Error fetching documents from Supabase:",
+          documentsError
+        );
+        throw new Error(
+          `Database error: ${documentsError.message || "Unknown error"}`
+        );
       }
 
       // Set data langsung dari database (bisa kosong array)
       setDokumen(documentsData || []);
-
     } catch (err) {
       console.error("Gagal load dokumen:", err);
-      const errorMessage = err instanceof Error ? err.message : "Terjadi kesalahan yang tidak diketahui";
+      const errorMessage =
+        err instanceof Error
+          ? err.message
+          : "Terjadi kesalahan yang tidak diketahui";
       setError(errorMessage);
       setDokumen([]); // Pastikan array kosong saat error
     } finally {

@@ -75,7 +75,7 @@ export default function RABTable({
     {
       key: "no_ref",
       header: "No",
-      className: "text-center",
+      className: "text-left",
       sortable: true,
       render: (value, item) => (
         <div className='font-medium text-left'>
@@ -86,20 +86,27 @@ export default function RABTable({
     {
       key: "project_name",
       header: "Proyek",
+      className: "text-left",
       sortable: true,
-      render: (value, item) => <div className='font-medium text-left'>{value}</div>,
+      render: (value, item) => (
+        <div className='font-medium text-left'>{value}</div>
+      ),
     },
     {
       key: "location_kabupaten",
       header: "Kabupaten",
+      className: "text-left",
       sortable: true,
       render: (value, item) => <div className='text-left'>{value || "-"}</div>,
     },
     {
       key: "client_profile",
       header: "Client",
+      className: "text-left",
       sortable: true,
-      render: (value, item) => <div className='text-left'>{value?.nama || "-"}</div>,
+      render: (value, item) => (
+        <div className='text-left'>{value?.nama || "-"}</div>
+      ),
     },
     {
       key: "total",
@@ -107,7 +114,7 @@ export default function RABTable({
       className: "text-center font-semibold",
       sortable: true,
       render: (value) => (
-        <div className='text-right'>
+        <div className='text-center'>
           {value !== null && value !== undefined ? formatRupiah(value) : "-"}
         </div>
       ),
@@ -138,7 +145,7 @@ export default function RABTable({
     <Link
       key={item.id}
       href={`/rab/${item.id}`}
-      className='min-h-fit border-b border-default p-4 bg-surface hover:bg-surface-hover border block'
+      className='card bg-base-100 hover:bg-base-200 border-b border-base-300 p-4 block transition-colors'
     >
       <div className='flex h-full'>
         {/* Left Column - Main Content */}
@@ -151,25 +158,27 @@ export default function RABTable({
           </div>
 
           {/* Middle: Project Name (Prioritized) */}
-          <h3 className='font-bold text-base text-primary line-clamp-2 mb-1'>
+          <h3 className='font-bold text-base text-base-content line-clamp-2 mb-1'>
             {item.project_name}
           </h3>
 
           {/* Bottom: Kabupaten, Client & Date */}
           <div className='space-y-1'>
-            <div className='flex items-center text-xs text-muted'>
+            <div className='flex items-center text-xs text-base-content/70'>
               <span className='mr-1'>📍</span>
               <span className='truncate'>{item.location_kabupaten || "-"}</span>
             </div>
             {item.client_profile?.nama && (
-              <div className='flex items-center text-xs text-muted'>
+              <div className='flex items-center text-xs text-base-content/70'>
                 <span className='mr-1'>👤</span>
                 <span className='truncate'>{item.client_profile.nama}</span>
               </div>
             )}
-            <div className='flex items-center text-xs text-muted'>
+            <div className='flex items-center text-xs text-base-content/70'>
               <span className='mr-1'>📅</span>
-              <span>{new Date(item.created_at).toLocaleDateString("id-ID")}</span>
+              <span>
+                {new Date(item.created_at).toLocaleDateString("id-ID")}
+              </span>
             </div>
           </div>
         </div>
@@ -178,17 +187,17 @@ export default function RABTable({
         <div className='flex flex-col justify-between items-end pl-3'>
           {/* Status badge di atas */}
           <span
-            className={`px-2 py-1 text-xs font-medium rounded-full ${
+            className={`badge ${
               item.status === "draft"
-                ? "bg-warning-surface text-warning-darker"
+                ? "badge-warning"
                 : item.status === "sent"
-                ? "bg-info-surface text-info-darker"
-                : "bg-success-surface text-success-darkest"
+                ? "badge-info"
+                : "badge-success"
             }`}
           >
             {translateStatus(item.status)}
           </span>
-          <div className='text-subtle'>
+          <div className='text-base-content/70'>
             <span className='font-semibold text-primary'>
               {item.total !== null && item.total !== undefined
                 ? formatRupiah(item.total)
@@ -213,7 +222,7 @@ export default function RABTable({
 
         <button
           onClick={exportToExcel}
-          className='flex items-center gap-2 bg-surface border border-secondary text-secondary px-3 py-2 md:px-4 md:py-2 rounded-lg hover:bg-surface-hover text-sm md:text-base'
+          className='btn btn-outline btn-secondary'
         >
           <FileDown size={16} />
           <span>Export Excel</span>
