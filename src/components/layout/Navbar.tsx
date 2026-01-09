@@ -75,32 +75,13 @@ export default function Navbar({
   };
 
   if (isMobile) {
-    // Special navbar for form routes
-    if (isFormRoute) {
-      return (
-        <nav className='fixed bottom-0 left-0 right-0 bg-surface shadow-xl shadow-gray-700  md:hidden z-50 bg-white'>
-          <div className='flex gap-3 p-4'>
-            <button
-              onClick={onCancel}
-              className='flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 py-3 px-4 rounded-lg font-medium text-sm'
-            >
-              Batal
-            </button>
-            <button
-              onClick={onSave}
-              disabled={isSubmitting || !isFormValid}
-              className='flex-1 bg-brand-primary hover:bg-brand-primary/90 text-white font-semibold py-3 px-4 rounded-lg text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
-            >
-              {isSubmitting ? "Menyimpan..." : "Simpan"}
-            </button>
-          </div>
-        </nav>
-      );
-    }
-
     // Normal mobile navbar
     return (
-      <nav className='fixed bottom-0 left-0 right-0 bg-surface shadow-xl  md:hidden z-50 inset-shadow-xl border-t border-gray-200 bg-white'>
+      <nav
+        className={`fixed bottom-0 left-0 right-0 bg-surface shadow-xl  md:hidden z-50 inset-shadow-xl border-t border-gray-200 bg-white ${
+          isFormRoute ? "hidden" : ""
+        }`}
+      >
         <div className='grid grid-cols-3'>
           {navItems.map((item) => {
             const Icon = item.icon;

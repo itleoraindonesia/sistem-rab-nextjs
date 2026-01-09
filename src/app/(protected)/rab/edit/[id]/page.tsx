@@ -17,11 +17,7 @@ interface PageProps {
 export default function EditRABPage({ params }: PageProps) {
   const [id, setId] = useState<string>("");
   const router = useRouter();
-  const {
-    panels,
-    ongkir,
-    loading: masterLoading,
-  } = useMasterData();
+  const { panels, ongkir, loading: masterLoading } = useMasterData();
 
   // Load params
   useEffect(() => {

@@ -1220,7 +1220,7 @@ export default function FormRAB({
             </div>
 
             {/* Mobile Save Button */}
-            <div className='mt-4 md:hidden'>
+            <div className='mt-4 md:hidden sticky b-0 '>
               <button
                 type='button'
                 onClick={handleSubmit(handleFormSubmit)}
