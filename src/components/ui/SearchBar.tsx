@@ -45,7 +45,7 @@ export default function SearchBar({
         placeholder={placeholder}
         value={localValue}
         onChange={handleChange}
-        className='input input-bordered w-full pl-10 pr-4 py-2 focus:input-primary text-sm md:text-base'
+        className='input border rounded-md border-gray-400 w-full pl-10 pr-4 py-2 focus:input-primary text-sm md:text-base'
       />
     </div>
   );

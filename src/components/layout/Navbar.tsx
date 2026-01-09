@@ -76,7 +76,7 @@ export default function Navbar({
     // Special navbar for form routes
     if (isFormRoute) {
       return (
-        <nav className='fixed bottom-0 left-0 right-0 bg-surface border-t border-default md:hidden z-50 bg-white'>
+        <nav className='fixed bottom-0 left-0 right-0 bg-surface shadow-xl shadow-gray-700  md:hidden z-50 bg-white'>
           <div className='flex gap-3 p-4'>
             <button
               onClick={onCancel}
@@ -102,7 +102,7 @@ export default function Navbar({
 
     // Normal mobile navbar
     return (
-      <nav className='fixed bottom-0 left-0 right-0 bg-surface border-t border-default md:hidden z-50 shadow-lg bg-white'>
+      <nav className='fixed bottom-0 left-0 right-0 bg-surface shadow-xl  md:hidden z-50 inset-shadow-xl border-t border-gray-200 bg-white'>
         <div className='grid grid-cols-3'>
           {navItems.map((item) => {
             const Icon = item.icon;
@@ -190,7 +190,7 @@ export default function Navbar({
         {/* Logout Button */}
         <button
           onClick={logout}
-          className='flex items-center gap-2 w-full px-3 py-2 text-xs text-muted hover:bg-surface-hover rounded-lg transition-colors mb-3'
+          className='flex items-center gap-2 w-full px-3 py-2 text-xs bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors mb-3'
         >
           <LogOut size={14} />
           <span>Keluar</span>

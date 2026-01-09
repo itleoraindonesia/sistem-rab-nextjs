@@ -289,7 +289,7 @@ export default function Dashboard() {
                           </div>
                           <div className='flex items-center gap-1 text-xs text-gray-600'>
                             <MapPin className='w-3 h-3' />
-                            <span>{rab.location}</span>
+                            <span>{rab.location_kabupaten}</span>
                           </div>
                         </div>
                       </div>

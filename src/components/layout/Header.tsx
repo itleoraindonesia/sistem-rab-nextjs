@@ -1,6 +1,11 @@
+"use client";
+
 import Link from "next/link";
+import { useAuth } from "../../context/AuthContext";
 
 export default function Header() {
+  const { logout } = useAuth();
+
   return (
     <header className='sticky top-0 md:hidden bg-brand-primary text-white shadow-md z-50'>
       <div className='w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
@@ -14,6 +19,13 @@ export default function Header() {
               <p className='text-xs opacity-80'>Hitung Cepat & Akurat</p>
             </div>
           </Link>
+
+          <button
+            onClick={logout}
+            className='text-sm text-white/80 hover:text-white transition-colors md:hidden'
+          >
+            Keluar
+          </button>
         </div>
       </div>
     </header>

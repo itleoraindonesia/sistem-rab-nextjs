@@ -27,6 +27,7 @@ interface RABTableProps {
   search: string;
   onSearchChange: (value: string) => void;
   onDelete: (id: string, projectName: string, status?: string) => void;
+  showSearchAndExport?: boolean;
 }
 
 export default function RABTable({
@@ -145,99 +146,68 @@ export default function RABTable({
     <Link
       key={item.id}
       href={`/rab/${item.id}`}
-      className='card bg-base-100 hover:bg-base-200 border-b border-base-300 p-4 block transition-colors'
+      className='bg-white hover:bg-blue-50/50 border border-gray-200 rounded-lg p-3 mb-2 block transition-all duration-200 relative'
     >
-      <div className='flex h-full'>
-        {/* Left Column - Main Content */}
-        <div className='flex-1 flex flex-col justify-between'>
-          {/* Kode di kiri atas */}
-          <div className='mb-1'>
-            <span className='font-semibold text-sm text-primary'>
-              {item.no_ref || `#${index + 1}`}
+      {/* Status Badge - Top Right */}
+      <div className='absolute top-3 right-3'>
+        {columnRenderers.status(item.status)}
+      </div>
+
+      {/* Header Row - Code & Project Name */}
+      <div className='mb-3 pr-20'>
+        <div className='flex items-center gap-2 mb-2'>
+          <span className='bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-0.5 rounded-full'>
+            {item.no_ref || `#${index + 1}`}
+          </span>
+        </div>
+        <h3 className='font-bold text-gray-900 text-lg leading-tight line-clamp-2'>
+          {item.project_name}
+        </h3>
+      </div>
+
+      {/* Info Row - Date & Location */}
+      <div className='flex items-center justify-between text-xs text-gray-600 mb-2'>
+        <div className='flex items-center gap-3 flex-1 min-w-0'>
+          <div className='flex items-center gap-1'>
+            <span className='text-gray-400'>📅</span>
+            <span className='truncate'>
+              {new Date(item.created_at).toLocaleDateString("id-ID")}
             </span>
           </div>
-
-          {/* Middle: Project Name (Prioritized) */}
-          <h3 className='font-bold text-base text-base-content line-clamp-2 mb-1'>
-            {item.project_name}
-          </h3>
-
-          {/* Bottom: Kabupaten, Client & Date */}
-          <div className='space-y-1'>
-            <div className='flex items-center text-xs text-base-content/70'>
-              <span className='mr-1'>📍</span>
-              <span className='truncate'>{item.location_kabupaten || "-"}</span>
-            </div>
-            {item.client_profile?.nama && (
-              <div className='flex items-center text-xs text-base-content/70'>
-                <span className='mr-1'>👤</span>
-                <span className='truncate'>{item.client_profile.nama}</span>
-              </div>
-            )}
-            <div className='flex items-center text-xs text-base-content/70'>
-              <span className='mr-1'>📅</span>
-              <span>
-                {new Date(item.created_at).toLocaleDateString("id-ID")}
-              </span>
-            </div>
+          <div className='flex items-center gap-1'>
+            <span className='text-gray-400'>📍</span>
+            <span className='truncate'>{item.location_kabupaten || "-"}</span>
           </div>
         </div>
+      </div>
 
-        {/* Right Column - Status & Action Button Group */}
-        <div className='flex flex-col justify-between items-end pl-3'>
-          {/* Status badge di atas */}
-          <span
-            className={`badge ${
-              item.status === "draft"
-                ? "badge-warning"
-                : item.status === "sent"
-                ? "badge-info"
-                : "badge-success"
-            }`}
-          >
-            {translateStatus(item.status)}
-          </span>
-          <div className='text-base-content/70'>
-            <span className='font-semibold text-primary'>
-              {item.total !== null && item.total !== undefined
-                ? formatRupiah(item.total)
-                : "-"}
-            </span>
-          </div>
+      {/* Client Info - Only show if exists */}
+      {item.client_profile?.nama && (
+        <div className='flex items-center gap-1 text-xs text-gray-500 mb-2'>
+          <span className='text-gray-400'>👤</span>
+          <span className='truncate'>{item.client_profile.nama}</span>
+        </div>
+      )}
+
+      {/* Total Price - Bottom Right */}
+      <div className='absolute bottom-3 right-3'>
+        <div className='font-bold text-green-600 text-lg'>
+          {item.total !== null && item.total !== undefined
+            ? formatRupiah(item.total)
+            : "-"}
         </div>
       </div>
     </Link>
   );
 
   return (
-    <div className='space-y-4'>
-      {/* Search and Export */}
-      <div className='flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between'>
-        <SearchBar
-          placeholder='Cari proyek, lokasi, atau no ref...'
-          value={search}
-          onChange={onSearchChange}
-          className='w-full sm:w-96'
-        />
-
-        <button
-          onClick={exportToExcel}
-          className='btn btn-outline btn-secondary'
-        >
-          <FileDown size={16} />
-          <span>Export Excel</span>
-        </button>
-      </div>
-
-      {/* Table */}
-      <DataTable
-        columns={columns}
-        data={filteredData}
-        loading={loading}
-        emptyMessage='Belum ada dokumen RAB'
-        emptyIcon='📁'
-        mobileCardRender={mobileCardRender}
-      />
-    </div>
+    <DataTable
+      columns={columns}
+      data={filteredData}
+      loading={loading}
+      emptyMessage='Belum ada dokumen RAB'
+      emptyIcon='📁'
+      mobileCardRender={mobileCardRender}
+    />
   );
 }
