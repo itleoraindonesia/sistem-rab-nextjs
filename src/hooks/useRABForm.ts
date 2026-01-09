@@ -211,6 +211,9 @@ export function useRABForm(): UseRABFormResult {
         const saveData = {
           no_ref: formData.no_ref,
           project_name: formData.project_name,
+          location_provinsi: formData.location_provinsi,
+          location_kabupaten: formData.location_kabupaten,
+          location_address: formData.location_address,
           status: "draft" as const,
           snapshot: {
             ...formData,
@@ -219,6 +222,34 @@ export function useRABForm(): UseRABFormResult {
           },
           total: hasil?.grandTotal || 0, // Use total instead of total_cost
         };
+
+        // #region agent log
+        if (typeof window !== "undefined") {
+          fetch(
+            "http://127.0.0.1:7242/ingest/49f537d8-251b-4d1b-9021-92d0eb2d1e91",
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                sessionId: "debug-session",
+                runId: "kabupaten-save",
+                hypothesisId: "K1",
+                location: "useRABForm.ts:211",
+                message: "Saving new RAB draft - payload",
+                data: {
+                  no_ref: formData.no_ref,
+                  project_name: formData.project_name,
+                  location_provinsi: formData.location_provinsi,
+                  location_kabupaten: formData.location_kabupaten,
+                  location_address: formData.location_address,
+                  saveDataKeys: Object.keys(saveData),
+                },
+                timestamp: Date.now(),
+              }),
+            }
+          ).catch(() => {});
+        }
+        // #endregion
 
         // Create new RAB draft
         const { data, error } = await (supabase as any)
@@ -256,6 +287,9 @@ export function useRABForm(): UseRABFormResult {
         const submitData = {
           no_ref: data.no_ref,
           project_name: data.project_name,
+          location_provinsi: data.location_provinsi,
+          location_kabupaten: data.location_kabupaten,
+          location_address: data.location_address,
           status: "draft" as "draft" | "sent" | "approved",
           snapshot: {
             ...data,
@@ -264,6 +298,34 @@ export function useRABForm(): UseRABFormResult {
           },
           total: hasil?.grandTotal || 0, // Use total instead of total_cost
         };
+
+        // #region agent log
+        if (typeof window !== "undefined") {
+          fetch(
+            "http://127.0.0.1:7242/ingest/49f537d8-251b-4d1b-9021-92d0eb2d1e91",
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                sessionId: "debug-session",
+                runId: "kabupaten-submit",
+                hypothesisId: "K1",
+                location: "useRABForm.ts:256",
+                message: "Submitting new RAB - payload",
+                data: {
+                  no_ref: data.no_ref,
+                  project_name: data.project_name,
+                  location_provinsi: data.location_provinsi,
+                  location_kabupaten: data.location_kabupaten,
+                  location_address: data.location_address,
+                  submitDataKeys: Object.keys(submitData),
+                },
+                timestamp: Date.now(),
+              }),
+            }
+          ).catch(() => {});
+        }
+        // #endregion
 
         // Create new RAB
         const { data: result, error } = await (supabase as any)
@@ -274,8 +336,7 @@ export function useRABForm(): UseRABFormResult {
 
         if (error) throw error;
 
-        router.push(`/rab/${result.id}`);
-        alert("RAB berhasil dibuat!");
+        // Component will handle redirect logic
       } catch (err) {
         console.error("Error submitting:", err);
         alert("Gagal membuat RAB: " + (err as Error).message);

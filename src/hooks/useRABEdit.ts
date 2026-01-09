@@ -225,6 +225,9 @@ export function useRABEdit(id: string): UseRABEditResult {
         const updateData = {
           no_ref: formData.no_ref,
           project_name: formData.project_name,
+          location_provinsi: formData.location_provinsi,
+          location_kabupaten: formData.location_kabupaten,
+          location_address: formData.location_address,
           status: "draft" as const,
           snapshot: {
             ...formData,
@@ -233,6 +236,35 @@ export function useRABEdit(id: string): UseRABEditResult {
           },
           total: hasil?.grandTotal || 0,
         };
+
+        // #region agent log
+        if (typeof window !== "undefined") {
+          fetch(
+            "http://127.0.0.1:7242/ingest/49f537d8-251b-4d1b-9021-92d0eb2d1e91",
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                sessionId: "debug-session",
+                runId: "kabupaten-edit-save",
+                hypothesisId: "K2",
+                location: "useRABEdit.ts:225",
+                message: "Updating RAB draft - payload",
+                data: {
+                  id: documentId,
+                  no_ref: formData.no_ref,
+                  project_name: formData.project_name,
+                  location_provinsi: formData.location_provinsi,
+                  location_kabupaten: formData.location_kabupaten,
+                  location_address: formData.location_address,
+                  updateDataKeys: Object.keys(updateData),
+                },
+                timestamp: Date.now(),
+              }),
+            }
+          ).catch(() => {});
+        }
+        // #endregion
 
         // Update existing RAB draft
         const { error } = await (supabase as any)
@@ -267,6 +299,9 @@ export function useRABEdit(id: string): UseRABEditResult {
         const updateData = {
           no_ref: data.no_ref,
           project_name: data.project_name,
+          location_provinsi: data.location_provinsi,
+          location_kabupaten: data.location_kabupaten,
+          location_address: data.location_address,
           status: data.status as "draft" | "sent" | "approved",
           snapshot: {
             ...data,
@@ -276,6 +311,35 @@ export function useRABEdit(id: string): UseRABEditResult {
           total: hasil?.grandTotal || 0,
         };
 
+        // #region agent log
+        if (typeof window !== "undefined") {
+          fetch(
+            "http://127.0.0.1:7242/ingest/49f537d8-251b-4d1b-9021-92d0eb2d1e91",
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                sessionId: "debug-session",
+                runId: "kabupaten-edit-submit",
+                hypothesisId: "K2",
+                location: "useRABEdit.ts:267",
+                message: "Submitting RAB update - payload",
+                data: {
+                  id: documentId,
+                  no_ref: data.no_ref,
+                  project_name: data.project_name,
+                  location_provinsi: data.location_provinsi,
+                  location_kabupaten: data.location_kabupaten,
+                  location_address: data.location_address,
+                  updateDataKeys: Object.keys(updateData),
+                },
+                timestamp: Date.now(),
+              }),
+            }
+          ).catch(() => {});
+        }
+        // #endregion
+
         // Update existing RAB
         const { error } = await (supabase as any)
           .from("rab_documents")
@@ -284,8 +348,7 @@ export function useRABEdit(id: string): UseRABEditResult {
 
         if (error) throw error;
 
-        router.push(`/rab/${documentId}`);
-        alert("RAB berhasil diperbarui!");
+        // Component will handle redirect logic
       } catch (err) {
         console.error("Error updating:", err);
         alert("Gagal memperbarui RAB: " + (err as Error).message);

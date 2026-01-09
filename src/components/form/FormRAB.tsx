@@ -13,7 +13,9 @@ import { ChevronLeft, Plus, Calculator, Truck } from "lucide-react";
 import { RABFormData } from "../../schemas/rabSchema";
 import { useState, useEffect, useMemo } from "react";
 import { useMasterData } from "../../context/MasterDataContext";
+import { useFormContext } from "../../context/FormContext";
 import { useWilayahData } from "../../hooks/useWilayahData";
+import { useRouter } from "next/navigation";
 
 // Reusable Form Components
 interface FormFieldProps {
@@ -294,6 +296,10 @@ export default function FormRAB({
   onBack,
   title,
 }: FormRABProps) {
+  const router = useRouter();
+  const context = useFormContext();
+  const onSubmittingChange = context?.onSubmittingChange;
+
   // Selective useWatch for performance - only watch necessary fields
   const watchedStatus = useWatch({ control, name: "status" });
   const watchedProvinsi = useWatch({ control, name: "location_provinsi" });
@@ -355,6 +361,39 @@ export default function FormRAB({
 
     loadKabupaten();
   }, [watchedProvinsi, watchedKabupaten, getKabupaten, setValue]);
+
+  // Update layout's submitting state when form's submitting state changes
+  useEffect(() => {
+    if (onSubmittingChange) {
+      onSubmittingChange(isSubmitting);
+    }
+  }, [isSubmitting, onSubmittingChange]);
+
+  // Handle form submission with redirect logic
+  const handleFormSubmit = async (data: RABFormData) => {
+    try {
+      // Call the original onSubmit function (which handles database operations)
+      await onSubmit(data, hasil);
+
+      // Determine redirect route based on device type
+      const isMobile = window.innerWidth < 768;
+
+      if (isMobile) {
+        // Mobile: redirect to list page
+        router.push("/rab");
+      } else {
+        // Desktop: redirect to detail page (this assumes the onSubmit returns an ID)
+        // For edit forms, redirect back to the list since we don't have the ID context here
+        // The hook will handle the specific redirect logic
+        router.push("/rab");
+      }
+
+      alert("RAB berhasil disimpan!");
+    } catch (error) {
+      console.error("Error submitting form:", error);
+      alert("Gagal menyimpan RAB: " + (error as Error).message);
+    }
+  };
 
   return (
     <div className='min-h-screen bg-surface-secondary max-w-7xl mx-auto'>
@@ -1173,6 +1212,18 @@ export default function FormRAB({
             <div className='mt-4 hidden md:block'>
               <button
                 type='submit'
+                disabled={isSubmitting || !isValid}
+                className='w-full bg-brand-primary hover:bg-brand-primary/90 text-white font-semibold py-3 px-6 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
+              >
+                {isSubmitting ? "Menyimpan..." : "Simpan"}
+              </button>
+            </div>
+
+            {/* Mobile Save Button */}
+            <div className='mt-4 md:hidden'>
+              <button
+                type='button'
+                onClick={handleSubmit(handleFormSubmit)}
                 disabled={isSubmitting || !isValid}
                 className='w-full bg-brand-primary hover:bg-brand-primary/90 text-white font-semibold py-3 px-6 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
               >

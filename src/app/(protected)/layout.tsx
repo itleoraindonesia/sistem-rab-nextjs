@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import Header from "../../components/layout/Header";
 import Navbar from "../../components/layout/Navbar";
 import { useAuth } from "../../context/AuthContext";
+import { FormProvider } from "../../context/FormContext";
 
 export default function ProtectedLayout({
   children,
@@ -16,6 +17,7 @@ export default function ProtectedLayout({
   const pathname = usePathname();
   const [isMobile, setIsMobile] = useState(false);
   const [isFormValid, setIsFormValid] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Responsive screen detection
   useEffect(() => {
@@ -91,6 +93,7 @@ export default function ProtectedLayout({
             onCancel={handleCancel}
             onSave={handleSave}
             isFormValid={isFormValid}
+            isSubmitting={isSubmitting}
           />
         </aside>
 
@@ -109,7 +112,11 @@ export default function ProtectedLayout({
         `}
         >
           {/* Responsive Container untuk Konten */}
-          <div className='w-full'>{children}</div>
+          <div className='w-full'>
+            <FormProvider onSubmittingChange={setIsSubmitting}>
+              {children}
+            </FormProvider>
+          </div>
         </main>
       </div>
 
@@ -125,6 +132,7 @@ export default function ProtectedLayout({
           onCancel={handleCancel}
           onSave={handleSave}
           isFormValid={isFormValid}
+          isSubmitting={isSubmitting}
         />
       </div>
 

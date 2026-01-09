@@ -23,6 +23,7 @@ interface NavbarProps {
   onCancel?: () => void;
   onSave?: () => void;
   isFormValid?: boolean;
+  isSubmitting?: boolean;
 }
 
 export default function Navbar({
@@ -30,6 +31,7 @@ export default function Navbar({
   onCancel,
   onSave,
   isFormValid = true,
+  isSubmitting = false,
 }: NavbarProps) {
   const [isMobile, setIsMobile] = useState(false);
   const pathname = usePathname();
@@ -86,14 +88,10 @@ export default function Navbar({
             </button>
             <button
               onClick={onSave}
-              disabled={!isFormValid}
-              className={`flex-1 py-3 px-4 rounded-lg font-bold text-sm transition-colors ${
-                isFormValid
-                  ? "bg-success hover:bg-success-hover text-inverse"
-                  : "bg-gray-300 text-gray-500 cursor-not-allowed"
-              }`}
+              disabled={isSubmitting || !isFormValid}
+              className='flex-1 bg-brand-primary hover:bg-brand-primary/90 text-white font-semibold py-3 px-4 rounded-lg text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
             >
-              Simpan
+              {isSubmitting ? "Menyimpan..." : "Simpan"}
             </button>
           </div>
         </nav>
