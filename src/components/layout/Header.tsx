@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useAuth } from "../../context/AuthContext";
+import Image from "next/image";
 
 export default function Header() {
   const { logout } = useAuth();
@@ -11,8 +12,8 @@ export default function Header() {
       <div className='w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
         <div className='flex items-center justify-between h-16'>
           <Link href='/' className='flex items-center gap-3 md:hidden'>
-            <div className='bg-brand-accent w-10 h-10 rounded-lg flex items-center justify-center'>
-              <span className='font-bold text-brand-primary text-lg'>R</span>
+            <div className=' rounded-lg flex items-center justify-center'>
+              <Image src='/logo-only.png' width={48} height={48} alt='logo' />
             </div>
             <div>
               <h1 className='text-lg font-bold'>Sistem RAB</h1>
