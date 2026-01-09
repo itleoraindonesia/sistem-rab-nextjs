@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "../../../lib/supabaseClient";
 import MasterPanelTable from "../../../components/tables/MasterPanelTable";
 import MasterOngkirTable from "../../../components/tables/MasterOngkirTable";
+import { useAuth } from "../../../context/AuthContext";
 
 interface Panel {
   id: string;
@@ -24,6 +25,9 @@ interface Ongkir {
 }
 
 export default function MasterData() {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
+
   const [panels, setPanels] = useState<Panel[]>([]);
   const [ongkir, setOngkir] = useState<Ongkir[]>([]);
   const [loading, setLoading] = useState(true);
@@ -32,6 +36,23 @@ export default function MasterData() {
   // Search states
   const [searchPanel, setSearchPanel] = useState('');
   const [searchOngkir, setSearchOngkir] = useState('');
+
+  // Check if user has admin access
+  if (!isAdmin) {
+    return (
+      <div className='p-4 max-w-7xl mx-auto'>
+        <div className='text-center py-20'>
+          <div className='text-6xl mb-4'>🔒</div>
+          <h1 className='text-2xl font-bold text-gray-900 mb-2'>
+            Akses Terbatas
+          </h1>
+          <p className='text-gray-600'>
+            Anda tidak memiliki akses ke halaman Master Data
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   // Load master data on mount
   useEffect(() => {

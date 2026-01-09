@@ -7,7 +7,10 @@ const Card = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn("card bg-base-100 shadow-xl", className)}
+    className={cn(
+      "rounded-lg border border-accent-foreground/10 bg-card text-card-foreground ",
+      className
+    )}
     {...props}
   />
 ));
@@ -19,7 +22,7 @@ const CardHeader = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn("card-header p-6", className)}
+    className={cn("flex flex-col space-y-1.5 p-8", className)} // Increased padding from p-6 to p-8
     {...props}
   />
 ));
@@ -31,7 +34,10 @@ const CardTitle = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <h3
     ref={ref}
-    className={cn("card-title text-2xl font-semibold", className)}
+    className={cn(
+      "text-2xl font-semibold leading-none tracking-tight",
+      className
+    )}
     {...props}
   />
 ));
@@ -43,7 +49,7 @@ const CardDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <p
     ref={ref}
-    className={cn("text-sm text-base-content/70", className)}
+    className={cn("text-sm text-muted-foreground", className)}
     {...props}
   />
 ));
@@ -53,7 +59,7 @@ const CardContent = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
 >(({ className, ...props }, ref) => (
-  <div ref={ref} className={cn("card-body", className)} {...props} />
+  <div ref={ref} className={cn("p-8 pt-0", className)} {...props} /> // Increased padding from default to p-8
 ));
 CardContent.displayName = "CardContent";
 
@@ -63,7 +69,7 @@ const CardFooter = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn("card-footer flex items-center p-6", className)}
+    className={cn("flex items-center p-8 pt-0", className)} // Increased padding to p-8
     {...props}
   />
 ));
@@ -71,10 +77,4 @@ CardFooter.displayName = "CardFooter";
 
 export default Card;
 
-export {
-  CardHeader,
-  CardFooter,
-  CardTitle,
-  CardDescription,
-  CardContent,
-};
+export { CardHeader, CardFooter, CardTitle, CardDescription, CardContent };

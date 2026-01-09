@@ -2,12 +2,10 @@
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "../../context/AuthContext";
-import Button from "../../components/ui/Button";
-import Card, {
-  CardHeader,
-  CardTitle,
-  CardContent,
-} from "../../components/ui/Card";
+import { Button } from "../../components/ui";
+import { Card, CardHeader, CardTitle, CardContent } from "../../components/ui";
+import { Input } from "../../components/ui/input";
+import { Label } from "../../components/ui/label";
 
 function LoginForm() {
   const [username, setUsername] = useState("");
@@ -50,57 +48,45 @@ function LoginForm() {
 
         <Card>
           <CardHeader>
-            <CardTitle className='text-center'>Login</CardTitle>
+            <CardTitle className='text-center bg-gradient-to-r from-brand-primary to-brand-accent bg-clip-text text-transparent'>
+              Login
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className='space-y-6'>
-              <div>
-                <label
-                  htmlFor='username'
-                  className='block text-sm font-medium text-gray-700'
-                >
-                  Username
-                </label>
-                <input
+              <div className='space-y-2'>
+                <Label htmlFor='username'>Username</Label>
+                <Input
                   id='username'
                   name='username'
                   type='text'
                   required
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  className='mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-brand-primary focus:border-brand-primary'
                   placeholder='Masukkan username'
                 />
               </div>
 
-              <div>
-                <label
-                  htmlFor='password'
-                  className='block text-sm font-medium text-gray-700'
-                >
-                  Password
-                </label>
-                <input
+              <div className='space-y-2'>
+                <Label htmlFor='password'>Password</Label>
+                <Input
                   id='password'
                   name='password'
                   type='password'
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className='mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-brand-primary focus:border-brand-primary'
                   placeholder='Masukkan password'
                 />
               </div>
 
               {error && (
-                <div className='text-red-600 text-sm text-center'>{error}</div>
+                <div className='text-center text-sm text-destructive'>
+                  {error}
+                </div>
               )}
 
-              <Button
-                type='submit'
-                className='w-full bg-green-800 text-white hover:bg-green-700 '
-                disabled={isLoading}
-              >
+              <Button type='submit' className='w-full' disabled={isLoading}>
                 {isLoading ? "Sedang Masuk..." : "Masuk"}
               </Button>
             </form>
@@ -109,11 +95,11 @@ function LoginForm() {
               <p>Demo credentials:</p>
               <p>
                 Username:{" "}
-                <code className='bg-gray-100 px-1 rounded'>admin</code>
+                <code className='bg-gray-100 px-1 rounded'>user1</code>
               </p>
               <p>
                 Password:{" "}
-                <code className='bg-gray-100 px-1 rounded'>password</code>
+                <code className='bg-gray-100 px-1 rounded'>user123</code>
               </p>
             </div>
           </CardContent>

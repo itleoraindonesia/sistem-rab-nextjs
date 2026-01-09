@@ -44,7 +44,7 @@ const FormField = ({
     control={control}
     render={({ field }) => (
       <div className='w-full'>
-        <label className='block text-sm font-medium text-secondary mb-2'>
+        <label className='block text-sm font-medium text-primary mb-2'>
           {label}
         </label>
         <input
@@ -101,7 +101,7 @@ const FormSelect = ({
     control={control}
     render={({ field }) => (
       <div className='w-full'>
-        <label className='block text-sm font-medium text-secondary mb-2'>
+        <label className='block text-sm font-medium text-primary mb-2'>
           {label}
         </label>
         <select
@@ -162,7 +162,7 @@ const FormTextarea = ({
     control={control}
     render={({ field }) => (
       <div className='w-full'>
-        <label className='block text-sm font-medium text-secondary mb-2'>
+        <label className='block text-sm font-medium text-primary mb-2'>
           {label}
         </label>
         <textarea
@@ -490,7 +490,7 @@ export default function FormRAB({
                   control={control}
                   render={({ field }) => (
                     <div>
-                      <label className='block text-sm font-medium text-secondary mb-2'>
+                      <label className='block text-sm font-medium text-primary mb-2'>
                         Status
                       </label>
                       <select
@@ -555,7 +555,7 @@ export default function FormRAB({
               <div className='p-4 space-y-6'>
                 {/* Location Section */}
                 <div className='space-y-4'>
-                  <h3 className='text-md font-medium text-secondary'>
+                  <h3 className='text-md font-medium text-primary'>
                     Lokasi Proyek
                   </h3>
                   <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
@@ -604,7 +604,7 @@ export default function FormRAB({
 
                 {/* Client Profile Section */}
                 <div className='space-y-4'>
-                  <h3 className='text-md font-medium text-secondary'>
+                  <h3 className='text-md font-medium text-primary'>
                     Profil Client
                   </h3>
                   <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
@@ -646,7 +646,7 @@ export default function FormRAB({
 
                 {/* Project Profile Section */}
                 <div className='space-y-4'>
-                  <h3 className='text-md font-medium text-secondary'>
+                  <h3 className='text-md font-medium text-primary'>
                     Profil Proyek
                   </h3>
                   <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
@@ -869,7 +869,7 @@ export default function FormRAB({
                       {fields?.map((field, i) => (
                         <div key={field.id} className='mb-4'>
                           <div className='flex items-center justify-between mb-2'>
-                            <span className='text-sm font-medium text-secondary'>
+                            <span className='text-sm font-medium text-primary'>
                               Bidang {i + 1}
                             </span>
                             {fields.length > 1 && (
@@ -1172,7 +1172,7 @@ export default function FormRAB({
                     <div className='space-y-2 text-sm'>
                       {(hasil?.subtotalDinding || 0) > 0 && (
                         <div className='flex justify-between'>
-                          <span className='text-secondary'>Dinding</span>
+                          <span className='text-primary'>Dinding</span>
                           <span className='font-semibold text-primary'>
                             {formatRupiah(hasil?.subtotalDinding || 0)}
                           </span>
@@ -1180,7 +1180,7 @@ export default function FormRAB({
                       )}
                       {(hasil?.subtotalLantai || 0) > 0 && (
                         <div className='flex justify-between'>
-                          <span className='text-secondary'>Lantai</span>
+                          <span className='text-primary'>Lantai</span>
                           <span className='font-semibold text-primary'>
                             {formatRupiah(hasil?.subtotalLantai || 0)}
                           </span>
@@ -1188,7 +1188,7 @@ export default function FormRAB({
                       )}
                       {hasil?.biayaOngkir && hasil.biayaOngkir > 0 && (
                         <div className='flex justify-between'>
-                          <span className='text-secondary'>Angkutan Truk</span>
+                          <span className='text-primary'>Angkutan Truk</span>
                           <span className='font-semibold text-primary'>
                             {formatRupiah(hasil.biayaOngkir)}
                           </span>

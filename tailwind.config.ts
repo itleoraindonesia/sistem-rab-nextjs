@@ -16,6 +16,12 @@ const config: Config = {
           dark: "var(--color-brand-dark)",
         },
 
+        // App primary color (shadcn-style alias)
+        primary: {
+          DEFAULT: "var(--color-brand-primary)",
+          foreground: "var(--color-primary-foreground)",
+        },
+
         // Surface colors
         bg: {
           surface: "var(--color-bg-surface)",
@@ -25,6 +31,14 @@ const config: Config = {
           "gray-200": "var(--color-bg-gray-200)",
           "gray-300": "var(--color-bg-gray-300)",
           "gray-hover": "var(--color-bg-gray-hover)",
+        },
+
+        // Aliases so utilities match the classes used in components
+        surface: {
+          DEFAULT: "var(--color-bg-surface)",
+          secondary: "var(--color-bg-surface-secondary)",
+          muted: "var(--color-bg-surface-muted)",
+          hover: "var(--color-bg-surface-hover)",
         },
 
         // Text colors
@@ -39,6 +53,12 @@ const config: Config = {
           "gray-800": "var(--color-text-gray-800)",
         },
 
+        // Direct text aliases (used as utilities like `text-secondary`, `text-muted`, etc.)
+        secondary: "var(--color-text-secondary)",
+        muted: "var(--color-text-muted)",
+        inverse: "var(--color-text-inverse)",
+        "muted-foreground": "var(--color-muted-foreground)",
+
         // Border colors
         border: {
           default: "var(--color-border-default)",
@@ -47,6 +67,9 @@ const config: Config = {
           "gray-200": "var(--color-border-gray-200)",
           "gray-300": "var(--color-border-gray-300)",
         },
+
+        // Default border alias (for `border-default`)
+        default: "var(--color-border-default)",
 
         // Status colors - Error
         error: {
@@ -81,6 +104,32 @@ const config: Config = {
           DEFAULT: "var(--color-text-info)",
           dark: "var(--color-text-info-dark)",
           darker: "var(--color-text-info-darker)",
+        },
+
+        // Component colors (shadcn-style)
+        secondary: {
+          DEFAULT: "var(--color-secondary)",
+          foreground: "var(--color-secondary-foreground)",
+        },
+        accent: {
+          DEFAULT: "var(--color-accent)",
+          foreground: "var(--color-accent-foreground)",
+        },
+        destructive: {
+          DEFAULT: "var(--color-destructive)",
+          foreground: "var(--color-destructive-foreground)",
+        },
+        card: {
+          DEFAULT: "var(--color-card)",
+          foreground: "var(--color-card-foreground)",
+        },
+        input: "var(--color-input)",
+        ring: "var(--color-ring)",
+        "primary-foreground": "var(--color-primary-foreground)",
+        "secondary-foreground": "var(--color-secondary-foreground)",
+        "accent-foreground": "var(--color-accent-foreground)",
+        "destructive-foreground": "var(--color-destructive-foreground)",
+        "card-foreground": "var(--color-card-foreground)",
         },
       },
     },

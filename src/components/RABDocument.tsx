@@ -1,5 +1,12 @@
 import React from "react";
-import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
+import {
+  Document,
+  Page,
+  Text,
+  View,
+  StyleSheet,
+  Image,
+} from "@react-pdf/renderer";
 
 // Create styles
 /* eslint-disable no-undef */
@@ -21,6 +28,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     textDecoration: "underline",
     marginBottom: 15,
+    textAlign: "center",
   },
   infoTable: {
     fontSize: "12px",
@@ -51,6 +59,11 @@ const styles = StyleSheet.create({
     color: "#555",
     fontSize: "20px",
   },
+  logoImage: {
+    width: 120,
+    height: 36,
+    objectFit: "contain",
+  },
   table: {
     marginTop: 20,
     borderWidth: 1,
@@ -66,7 +79,7 @@ const styles = StyleSheet.create({
     padding: 4,
     color: "white",
     fontWeight: "bold",
-    textAlign: "center", // Center align all header text
+    textAlign: "center",
     fontSize: "10px",
     textTransform: "uppercase",
     borderRightWidth: 1,
@@ -193,6 +206,7 @@ interface RABDocumentData {
   no_ref: string;
   project_name: string;
   location: string;
+  location_kabupaten?: string;
   snapshot?: {
     items: RABItem[];
     total: number;
@@ -208,6 +222,7 @@ const RABDocument: React.FC<RABDocumentProps> = ({ dokumen }) => {
 
   const {
     project_name,
+    location_kabupaten,
     location,
     no_ref,
     snapshot: { total, items },
@@ -277,14 +292,14 @@ const RABDocument: React.FC<RABDocumentProps> = ({ dokumen }) => {
               <View style={styles.infoRow}>
                 <Text style={styles.infoLabel}>Location</Text>
                 <Text style={styles.infoSeparator}>:</Text>
-                <Text style={styles.infoValue}>{location}</Text>
+                <Text style={styles.infoValue}>
+                  {location_kabupaten || location}
+                </Text>
               </View>
             </View>
           </View>
           <View>
-            <Text style={styles.logo}>
-              LEORA <Text style={styles.logoAccent}>&#9776;</Text>
-            </Text>
+            <Image src='/Logo-Leora-PNG.png' style={styles.logoImage} />
           </View>
         </View>
 
@@ -331,7 +346,10 @@ const RABDocument: React.FC<RABDocumentProps> = ({ dokumen }) => {
                     {item.desc}
                   </Text>
                   <Text style={[styles.tableCell, styles.unitCell]}>
-                    {"Lembar"}
+                    {item.desc.toLowerCase().includes("ongkos kirim") ||
+                    item.desc.toLowerCase().includes("truk")
+                      ? "Unit"
+                      : "Lembar"}
                   </Text>
                   <Text style={[styles.tableCell, styles.qtyCell]}>
                     {item.qty.toFixed(2)}

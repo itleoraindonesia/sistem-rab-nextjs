@@ -134,7 +134,7 @@ export default function DataTable({
   };
   if (loading) {
     return (
-      <div className='card bg-base-100 shadow-lg p-10 text-center'>
+      <div className='card bg-base-100  p-10 text-center'>
         <div className='loading loading-spinner loading-lg text-primary mx-auto'></div>
         <p className='mt-4 text-base-content/70'>Memuat data...</p>
       </div>
@@ -143,7 +143,7 @@ export default function DataTable({
 
   if (data.length === 0) {
     return (
-      <div className='card bg-base-100 shadow-lg p-12 text-center'>
+      <div className='card bg-base-100 border rounded-md border-border-default p-12 text-center'>
         {emptyIcon && (
           <div className='text-base-content/50 mb-4 text-4xl'>{emptyIcon}</div>
         )}
@@ -188,7 +188,7 @@ export default function DataTable({
         })()}
         {/* #endregion */}
         <table ref={tableRef} className='w-full border-collapse'>
-          <thead ref={theadRef} className='bg-brand-accent text-gray-800'>
+          <thead ref={theadRef} className='bg-gray-200'>
             <tr>
               {columns.map((column) => {
                 // Extract alignment from column className, default to center for header

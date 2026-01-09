@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LayoutDashboard, FileText, Package, Home, LogOut } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
+import Image from "next/image";
 
 const navItems = [
   { name: "Dashboard", path: "/", icon: LayoutDashboard, children: [] },
@@ -120,8 +121,9 @@ export default function Navbar({
           href='/'
           className='flex items-center gap-3 text-brand-primary font-bold mb-8 hover:opacity-90 transition'
         >
-          <div className='bg-brand-accent w-10 h-10 rounded-lg flex items-center justify-center'>
+          <div className='w-12 h-12 rounded-lg flex items-center justify-center'>
             <Home size={20} className='text-brand-primary' />
+            <Image src='/logo-only.png' width={100} height={100} alt='logo' />
           </div>
           <div>
             <h1 className='text-lg font-bold'>Sistem RAB Leora</h1>
@@ -143,7 +145,7 @@ export default function Navbar({
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition ${
                   isActive
                     ? "bg-brand-primary text-inverse text-white"
-                    : "text-secondary hover:bg-surface-hover"
+                    : "text-brand-primary hover:bg-surface-hover"
                 }`}
               >
                 <Icon
