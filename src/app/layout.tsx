@@ -38,10 +38,15 @@ export default function RootLayout({
         <link rel='apple-touch-icon' sizes='96x96' href='/icon-96x96.png' />
         <link rel='apple-touch-icon' sizes='128x128' href='/icon-128x128.png' />
         <link rel='apple-touch-icon' sizes='144x144' href='/icon-144x144.png' />
-        <link rel='apple-touch-icon' sizes='152x152' href='/icon-144x144.png' />
-        <link rel='apple-touch-icon' sizes='180x180' href='/icon-192x192.png' />
+        <link rel='apple-touch-icon' sizes='152x152' href='/icon-152x152.png' />
+        <link rel='apple-touch-icon' sizes='180x180' href='/icon-180x180.png' />
         <link rel='apple-touch-icon' sizes='192x192' href='/icon-192x192.png' />
         <link rel='apple-touch-icon' sizes='512x512' href='/icon-512x512.png' />
+        <link rel='icon' type='image/png' sizes='16x16' href='/favicon-16x16.png' />
+        <link rel='icon' type='image/png' sizes='32x32' href='/favicon-32x32.png' />
+        <link rel='icon' type='image/png' sizes='48x48' href='/favicon-48x48.png' />
+        <link rel='icon' type='image/png' sizes='64x64' href='/favicon-64x64.png' />
+        <link rel='icon' href='/favicon.ico' />
       </head>
       <body className={`${inter.variable} font-sans antialiased`}>
         <PWALoadingScreen />
