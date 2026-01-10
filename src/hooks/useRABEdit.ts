@@ -18,6 +18,7 @@ interface UseRABEditResult {
   loading: boolean;
   error: string | null;
   documentId: string | null;
+  originalStatus: 'draft' | 'sent' | 'approved';
   hasil: any;
   onSubmit: (data: RABFormData, hasil?: any) => Promise<void>;
   saveHandler: (hasil?: any) => Promise<void>;
@@ -418,6 +419,7 @@ export function useRABEdit(id: string): UseRABEditResult {
     loading: loading || masterLoading,
     error,
     documentId,
+    originalStatus: initialData?.status || 'draft',
     hasil,
     onSubmit,
     saveHandler,

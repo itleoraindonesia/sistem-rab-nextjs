@@ -38,6 +38,7 @@ export default function EditRABPage({ params }: PageProps) {
     onSubmit,
     saveHandler,
     deleteHandler,
+    originalStatus,
   } = useRABEdit(id);
 
   if (error) {
@@ -60,6 +61,8 @@ export default function EditRABPage({ params }: PageProps) {
       hasil={hasil}
       onBack={() => router.back()}
       title='Edit RAB'
+      isEdit={true}
+      originalStatus={originalStatus}
     />
   );
 }

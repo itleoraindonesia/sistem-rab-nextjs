@@ -9,7 +9,15 @@ import {
   FieldPath,
   FieldErrors,
 } from "react-hook-form";
-import { ChevronLeft, Plus, Calculator, Truck } from "lucide-react";
+import {
+  ChevronLeft,
+  Plus,
+  Calculator,
+  Truck,
+  ClipboardList,
+  User,
+  Building,
+} from "lucide-react";
 import { RABFormData } from "../../schemas/rabSchema";
 import { useState, useEffect, useMemo } from "react";
 import { useMasterData } from "../../context/MasterDataContext";
@@ -272,7 +280,7 @@ interface FormRABProps {
   handleSubmit: UseFormReturn<RABFormData>["handleSubmit"];
   setValue: UseFormReturn<RABFormData>["setValue"];
   formState: UseFormReturn<RABFormData>["formState"];
-  onSubmit: (data: RABFormData, hasil?: any) => Promise<void>;
+  onSubmit: (data: RABFormData, hasil?: any) => Promise<{ id: string } | void>;
 
   // Data
   panels: Panel[];
@@ -282,6 +290,10 @@ interface FormRABProps {
   // Navigation
   onBack: () => void;
   title: string;
+
+  // Edit mode
+  isEdit?: boolean;
+  originalStatus?: "draft" | "sent" | "approved";
 }
 
 export default function FormRAB({
@@ -295,6 +307,8 @@ export default function FormRAB({
   hasil,
   onBack,
   title,
+  isEdit = false,
+  originalStatus,
 }: FormRABProps) {
   const router = useRouter();
   const context = useFormContext();
@@ -372,8 +386,8 @@ export default function FormRAB({
   // Handle form submission with redirect logic
   const handleFormSubmit = async (data: RABFormData) => {
     try {
-      // Call the original onSubmit function (which handles database operations)
-      await onSubmit(data, hasil);
+      // Call the original onSubmit function (which returns the created record ID)
+      const result = await onSubmit(data, hasil);
 
       // Determine redirect route based on device type
       const isMobile = window.innerWidth < 768;
@@ -382,10 +396,12 @@ export default function FormRAB({
         // Mobile: redirect to list page
         router.push("/rab");
       } else {
-        // Desktop: redirect to detail page (this assumes the onSubmit returns an ID)
-        // For edit forms, redirect back to the list since we don't have the ID context here
-        // The hook will handle the specific redirect logic
-        router.push("/rab");
+        // Desktop: redirect to detail page of the newly created RAB
+        if (result?.id) {
+          router.push(`/rab/${result.id}`);
+        } else {
+          router.push("/rab");
+        }
       }
 
       alert("RAB berhasil disimpan!");
@@ -396,7 +412,7 @@ export default function FormRAB({
   };
 
   return (
-    <div className='min-h-screen bg-surface-secondary max-w-7xl mx-auto'>
+    <div className='min-h-screen bg-surface-secondary max-w-7xl mx-auto pb-20 md:pb-4'>
       <div className='bg-success border-b border-gray-300 shadow-sm lg:hidden'>
         <div className='px-4 py-4'>
           <div className='flex items-center justify-between gap-3'>
@@ -434,24 +450,24 @@ export default function FormRAB({
               </p>
             </div>
 
-            <div className='bg-surface rounded-xl shadow overflow-hidden'>
+            <div className='bg-surface rounded-xl shadow border border-gray-200 overflow-hidden'>
               <div className='p-4 border-b border-gray-200'>
                 <h2 className='text-lg font-semibold flex items-center gap-2'>
-                  <span className='text-brand-accent'>📋</span>
+                  <ClipboardList size={20} className='text-primary' />
                   Data Proyek
                 </h2>
               </div>
 
               <div className='p-4 space-y-4'>
                 {watchedStatus === "approved" && (
-                  <div className='bg-error-surface border border-error rounded-lg p-4 mb-4'>
+                  <div className='bg-red-50 border border-red-200 rounded-lg p-4 mb-4'>
                     <div className='flex items-center gap-2'>
-                      <div className='text-error text-lg'>🔒</div>
+                      <div className='text-red-600 text-lg'>🔒</div>
                       <div>
-                        <h3 className='font-medium text-error-darker'>
+                        <h3 className='font-medium text-red-800'>
                           Dokumen Terkunci
                         </h3>
-                        <p className='text-error-dark text-sm'>
+                        <p className='text-red-700 text-sm'>
                           Dokumen yang sudah disetujui tidak dapat diedit atau
                           dihapus.
                         </p>
@@ -461,14 +477,14 @@ export default function FormRAB({
                 )}
 
                 {watchedStatus === "sent" && (
-                  <div className='bg-warning-surface border border-warning rounded-lg p-4 mb-4'>
+                  <div className='bg-red-50 border border-red-200 rounded-lg p-4 mb-4'>
                     <div className='flex items-center gap-2'>
-                      <div className='text-warning text-lg'>📨</div>
+                      <div className='text-red-600 text-lg'>📨</div>
                       <div>
-                        <h3 className='font-medium text-warning-darker'>
+                        <h3 className='font-medium text-red-800'>
                           Dokumen Terkirim
                         </h3>
-                        <p className='text-warning-dark text-sm'>
+                        <p className='text-red-700 text-sm'>
                           Dokumen sudah terkirim. Ubah status ke "Draft" untuk
                           membuat perubahan.
                         </p>
@@ -482,7 +498,10 @@ export default function FormRAB({
                   label='Nama Proyek *'
                   control={control}
                   errors={errors}
-                  disabled={watchedStatus === "approved"}
+                  disabled={
+                    isEdit &&
+                    (watchedStatus === "sent" || watchedStatus === "approved")
+                  }
                 />
 
                 <Controller
@@ -493,41 +512,122 @@ export default function FormRAB({
                       <label className='block text-sm font-medium text-primary mb-2'>
                         Status
                       </label>
-                      <select
-                        {...field}
-                        disabled={watchedStatus === "approved"}
-                        className={`w-full p-3 border rounded-lg text-base appearance-none focus:outline-none focus:ring-2 focus:border-transparent transition-colors bg-surface hover:bg-surface-secondary disabled:bg-surface-muted disabled:cursor-not-allowed ${
-                          errors.status
-                            ? "border-error focus:ring-error/20"
-                            : "border-gray-300 focus:ring-brand-primary/60"
-                        }`}
-                        aria-describedby={
-                          errors.status ? "status-error" : undefined
-                        }
-                        onChange={(e) => {
-                          if (e.target.value === "approved") {
-                            const confirmed = window.confirm(
-                              "Dokumen yang sudah disetujui tidak dapat diedit atau dihapus. Apakah Anda yakin ingin menyetujui dokumen ini?"
+                      {isEdit ? (
+                        // Edit mode: Status badge buttons
+                        <div className='flex gap-2'>
+                          {[
+                            { value: "draft", label: "Draft" },
+                            { value: "sent", label: "Terkirim" },
+                            { value: "approved", label: "Disetujui" },
+                          ].map((status) => {
+                            const getStatusStyle = (
+                              statusValue: string
+                            ): React.CSSProperties => {
+                              switch (statusValue) {
+                                case "draft":
+                                  return {
+                                    backgroundColor:
+                                      "var(--color-bg-warning-surface)",
+                                    color: "var(--color-text-warning)",
+                                    borderColor: "var(--color-border-warning)",
+                                  };
+                                case "sent":
+                                  return {
+                                    backgroundColor:
+                                      "var(--color-bg-info-surface)",
+                                    color: "var(--color-text-info)",
+                                    borderColor: "var(--color-border-info)",
+                                  };
+                                case "approved":
+                                  return {
+                                    backgroundColor:
+                                      "var(--color-bg-success-surface)",
+                                    color: "var(--color-text-success)",
+                                    borderColor: "var(--color-border-success)",
+                                  };
+                                default:
+                                  return {
+                                    backgroundColor: "#f3f4f6",
+                                    color: "#4b5563",
+                                    borderColor: "#d1d5db",
+                                  };
+                              }
+                            };
+
+                            const baseClasses =
+                              "px-4 py-2 rounded-lg font-medium border transition-colors disabled:opacity-50 disabled:cursor-not-allowed";
+                            const isSelected = field.value === status.value;
+                            const statusStyle = getStatusStyle(status.value);
+
+                            return (
+                              <button
+                                key={status.value}
+                                type='button'
+                                disabled={
+                                  originalStatus === "approved" &&
+                                  status.value !== "approved"
+                                }
+                                className={`${baseClasses} ${
+                                  isSelected
+                                    ? "ring-2 ring-brand-primary/50"
+                                    : "opacity-60 hover:opacity-100"
+                                }`}
+                                style={statusStyle}
+                                onClick={() => {
+                                  if (
+                                    status.value === "approved" &&
+                                    field.value !== "approved"
+                                  ) {
+                                    const confirmed = window.confirm(
+                                      "Dokumen yang sudah disetujui tidak dapat diedit atau dihapus. Apakah Anda yakin ingin menyetujui dokumen ini?"
+                                    );
+                                    if (!confirmed) return;
+                                  }
+                                  field.onChange(status.value);
+                                }}
+                              >
+                                {status.label}
+                              </button>
                             );
-                            if (!confirmed) {
-                              setValue(
-                                "status",
-                                (watchedStatus || "draft") as
-                                  | "draft"
-                                  | "sent"
-                                  | "approved"
-                              );
-                              return;
-                            }
+                          })}
+                        </div>
+                      ) : (
+                        // Create mode: Dropdown select
+                        <select
+                          {...field}
+                          className={`w-full p-3 border rounded-lg text-base appearance-none focus:outline-none focus:ring-2 focus:border-transparent transition-colors bg-surface hover:bg-surface-secondary ${
+                            errors.status
+                              ? "border-error focus:ring-error/20"
+                              : "border-gray-300 focus:ring-brand-primary/60"
+                          }`}
+                          aria-describedby={
+                            errors.status ? "status-error" : undefined
                           }
-                          field.onChange(e);
-                        }}
-                      >
-                        <option value=''>Pilih Status</option>
-                        <option value='draft'>Draft</option>
-                        <option value='sent'>Terkirim</option>
-                        <option value='approved'>Disetujui</option>
-                      </select>
+                          onChange={(e) => {
+                            if (e.target.value === "approved") {
+                              const confirmed = window.confirm(
+                                "Dokumen yang sudah disetujui tidak dapat diedit atau dihapus. Apakah Anda yakin ingin menyetujui dokumen ini?"
+                              );
+                              if (!confirmed) {
+                                setValue(
+                                  "status",
+                                  (watchedStatus || "draft") as
+                                    | "draft"
+                                    | "sent"
+                                    | "approved"
+                                );
+                                return;
+                              }
+                            }
+                            field.onChange(e);
+                          }}
+                        >
+                          <option value=''>Pilih Status</option>
+                          <option value='draft'>Draft</option>
+                          <option value='sent'>Terkirim</option>
+                          <option value='approved'>Disetujui</option>
+                        </select>
+                      )}
                       {errors.status && (
                         <span
                           id='status-error'
@@ -544,144 +644,63 @@ export default function FormRAB({
             </div>
 
             {/* Section Ongkos Kirim */}
-            <div className='bg-surface rounded-xl shadow overflow-hidden mt-4'>
+            <div className='bg-surface rounded-xl shadow border border-gray-200 overflow-hidden mt-4'>
               <div className='p-4 border-b border-gray-200'>
                 <h2 className='text-lg font-semibold flex items-center gap-2'>
-                  <span className='text-brand-accent'>📋</span>
+                  <Truck size={20} className='text-primary' />
                   Ongkos Kirim
                 </h2>
               </div>
 
-              <div className='p-4 space-y-6'>
-                {/* Location Section */}
-                <div className='space-y-4'>
-                  <h3 className='text-md font-medium text-primary'>
-                    Lokasi Proyek
-                  </h3>
-                  <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
-                    <FormSelect
-                      name='location_provinsi'
-                      label='Provinsi *'
-                      control={control}
-                      errors={errors}
-                      disabled={
-                        watchedStatus === "sent" || watchedStatus === "approved"
-                      }
-                      options={[...new Set(ongkir.map((o) => o.provinsi))].map(
-                        (provinsi) => ({
-                          value: provinsi,
-                          label: provinsi,
-                        })
-                      )}
-                    />
+              <div className='p-4'>
+                <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
+                  <FormSelect
+                    name='location_provinsi'
+                    label='Provinsi *'
+                    control={control}
+                    errors={errors}
+                    disabled={
+                      isEdit &&
+                      (watchedStatus === "sent" || watchedStatus === "approved")
+                    }
+                    options={[...new Set(ongkir.map((o) => o.provinsi))].map(
+                      (provinsi) => ({
+                        value: provinsi,
+                        label: provinsi,
+                      })
+                    )}
+                  />
 
-                    <FormSelect
-                      name='location_kabupaten'
-                      label='Kabupaten *'
-                      control={control}
-                      errors={errors}
-                      disabled={
-                        watchedStatus === "sent" || watchedStatus === "approved"
-                      }
-                      options={kabupatenOptions.map((kabupaten) => ({
-                        value: kabupaten,
-                        label: kabupaten,
-                      }))}
-                    />
+                  <FormSelect
+                    name='location_kabupaten'
+                    label='Kabupaten *'
+                    control={control}
+                    errors={errors}
+                    disabled={
+                      isEdit &&
+                      (watchedStatus === "sent" || watchedStatus === "approved")
+                    }
+                    options={kabupatenOptions.map((kabupaten) => ({
+                      value: kabupaten,
+                      label: kabupaten,
+                    }))}
+                  />
 
-                    <FormField
-                      name='location_address'
-                      label='Alamat Lengkap'
-                      control={control}
-                      errors={errors}
-                      disabled={
-                        watchedStatus === "sent" || watchedStatus === "approved"
-                      }
-                      placeholder='Alamat detail proyek'
-                    />
-                  </div>
-                </div>
-
-                {/* Client Profile Section */}
-                <div className='space-y-4'>
-                  <h3 className='text-md font-medium text-primary'>
-                    Profil Client
-                  </h3>
-                  <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
-                    <FormField
-                      name='client_profile.nama'
-                      label='Nama Client *'
-                      control={control}
-                      errors={errors}
-                      disabled={
-                        watchedStatus === "sent" || watchedStatus === "approved"
-                      }
-                      placeholder='Nama lengkap client'
-                    />
-
-                    <FormField
-                      name='client_profile.no_hp'
-                      label='No HP Client'
-                      control={control}
-                      errors={errors}
-                      disabled={
-                        watchedStatus === "sent" || watchedStatus === "approved"
-                      }
-                      placeholder='081234567890'
-                    />
-
-                    <FormField
-                      name='client_profile.email'
-                      label='Email Client'
-                      type='email'
-                      control={control}
-                      errors={errors}
-                      disabled={
-                        watchedStatus === "sent" || watchedStatus === "approved"
-                      }
-                      placeholder='client@email.com'
-                    />
-                  </div>
-                </div>
-
-                {/* Project Profile Section */}
-                <div className='space-y-4'>
-                  <h3 className='text-md font-medium text-primary'>
-                    Profil Proyek
-                  </h3>
-                  <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
-                    <FormSelect
-                      name='project_profile.kategori'
-                      label='Kategori Proyek *'
-                      control={control}
-                      errors={errors}
-                      disabled={
-                        watchedStatus === "sent" || watchedStatus === "approved"
-                      }
-                      options={[
-                        { value: "residential", label: "Residential" },
-                        { value: "commercial", label: "Commercial" },
-                        { value: "industrial", label: "Industrial" },
-                        { value: "public", label: "Public" },
-                      ]}
-                    />
-
-                    <FormTextarea
-                      name='project_profile.deskripsi'
-                      label='Deskripsi Proyek'
-                      control={control}
-                      errors={errors}
-                      disabled={
-                        watchedStatus === "sent" || watchedStatus === "approved"
-                      }
-                      placeholder='Deskripsi detail proyek'
-                      rows={1}
-                    />
-                  </div>
+                  <FormField
+                    name='location_address'
+                    label='Alamat Lengkap'
+                    control={control}
+                    errors={errors}
+                    disabled={
+                      isEdit &&
+                      (watchedStatus === "sent" || watchedStatus === "approved")
+                    }
+                    placeholder='Alamat detail proyek'
+                  />
                 </div>
 
                 {/* Estimasi Pengiriman */}
-                <div className='space-y-4'>
+                <div className='mt-4'>
                   <FormField
                     name='estimasi_pengiriman'
                     label='Estimasi Pengiriman'
@@ -689,8 +708,104 @@ export default function FormRAB({
                     control={control}
                     errors={errors}
                     disabled={
-                      watchedStatus === "sent" || watchedStatus === "approved"
+                      isEdit &&
+                      (watchedStatus === "sent" || watchedStatus === "approved")
                     }
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Section Profil Client */}
+            <div className='bg-surface rounded-xl shadow border border-gray-200 overflow-hidden mt-4'>
+              <div className='p-4 border-b border-gray-200'>
+                <h2 className='text-lg font-semibold flex items-center gap-2'>
+                  <User size={20} className='text-primary' />
+                  Profil Client
+                </h2>
+              </div>
+
+              <div className='p-4'>
+                <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                  <FormField
+                    name='client_profile.nama'
+                    label='Nama Client *'
+                    control={control}
+                    errors={errors}
+                    disabled={
+                      isEdit &&
+                      (watchedStatus === "sent" || watchedStatus === "approved")
+                    }
+                    placeholder='Nama lengkap client'
+                  />
+
+                  <FormField
+                    name='client_profile.no_hp'
+                    label='No HP Client'
+                    control={control}
+                    errors={errors}
+                    disabled={
+                      isEdit &&
+                      (watchedStatus === "sent" || watchedStatus === "approved")
+                    }
+                    placeholder='081234567890'
+                  />
+
+                  <FormField
+                    name='client_profile.email'
+                    label='Email Client'
+                    type='email'
+                    control={control}
+                    errors={errors}
+                    disabled={
+                      isEdit &&
+                      (watchedStatus === "sent" || watchedStatus === "approved")
+                    }
+                    placeholder='client@email.com'
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Section Profil Proyek */}
+            <div className='bg-surface rounded-xl shadow border border-gray-200 overflow-hidden mt-4'>
+              <div className='p-4 border-b border-gray-200'>
+                <h2 className='text-lg font-semibold flex items-center gap-2'>
+                  <Building size={20} className='text-primary' />
+                  Profil Proyek
+                </h2>
+              </div>
+
+              <div className='p-4'>
+                <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                  <FormSelect
+                    name='project_profile.kategori'
+                    label='Kategori Proyek *'
+                    control={control}
+                    errors={errors}
+                    disabled={
+                      isEdit &&
+                      (watchedStatus === "sent" || watchedStatus === "approved")
+                    }
+                    options={[
+                      { value: "residential", label: "Residential" },
+                      { value: "commercial", label: "Commercial" },
+                      { value: "industrial", label: "Industrial" },
+                      { value: "public", label: "Public" },
+                    ]}
+                  />
+
+                  <FormTextarea
+                    name='project_profile.deskripsi'
+                    label='Deskripsi Proyek'
+                    control={control}
+                    errors={errors}
+                    disabled={
+                      isEdit &&
+                      (watchedStatus === "sent" || watchedStatus === "approved")
+                    }
+                    placeholder='Deskripsi detail proyek'
+                    rows={1}
                   />
                 </div>
               </div>
@@ -719,8 +834,9 @@ export default function FormRAB({
                         name={field.name}
                         ref={field.ref}
                         disabled={
-                          watchedStatus === "sent" ||
-                          watchedStatus === "approved"
+                          isEdit &&
+                          (watchedStatus === "sent" ||
+                            watchedStatus === "approved")
                         }
                         className='h-5 w-5 rounded text-brand-primary disabled:cursor-not-allowed'
                       />
@@ -748,7 +864,11 @@ export default function FormRAB({
                               onChange={(e) =>
                                 field.onChange(parseFloat(e.target.value) || 0)
                               }
-                              disabled={watchedStatus === "approved"}
+                              disabled={
+                                isEdit &&
+                                (watchedStatus === "sent" ||
+                                  watchedStatus === "approved")
+                              }
                               type='number'
                               className={`w-full p-3 border rounded-lg text-base focus:outline-none focus:ring-2 focus:border-transparent transition-colors bg-surface hover:bg-surface-secondary ${
                                 errors.perimeter
@@ -780,7 +900,7 @@ export default function FormRAB({
                               onChange={(e) =>
                                 field.onChange(parseFloat(e.target.value) || 0)
                               }
-                              disabled={watchedStatus === "approved"}
+                              disabled={isEdit && watchedStatus === "approved"}
                               type='number'
                               className={`w-full p-3 border rounded-lg text-base focus:outline-none focus:ring-2 focus:border-transparent transition-colors bg-surface hover:bg-surface-secondary ${
                                 errors.tinggi_lantai
@@ -809,7 +929,11 @@ export default function FormRAB({
                           </label>
                           <select
                             {...field}
-                            disabled={watchedStatus === "approved"}
+                            disabled={
+                              isEdit &&
+                              (watchedStatus === "sent" ||
+                                watchedStatus === "approved")
+                            }
                             className={`w-full p-3 border rounded-lg text-base appearance-none focus:outline-none focus:ring-2 focus:border-transparent transition-colors bg-surface hover:bg-surface-secondary ${
                               errors.panel_dinding_id
                                 ? "border-error focus:ring-error/20"
@@ -850,7 +974,11 @@ export default function FormRAB({
                         onBlur={field.onBlur}
                         name={field.name}
                         ref={field.ref}
-                        disabled={watchedStatus === "approved"}
+                        disabled={
+                          isEdit &&
+                          (watchedStatus === "sent" ||
+                            watchedStatus === "approved")
+                        }
                         className='h-5 w-5 rounded text-brand-primary'
                       />
                       <span className='font-medium text-green-800'>
@@ -887,7 +1015,9 @@ export default function FormRAB({
                                   <button
                                     type='button'
                                     onClick={() => remove(i)}
-                                    disabled={watchedStatus === "approved"}
+                                    disabled={
+                                      isEdit && watchedStatus === "approved"
+                                    }
                                     className='text-error text-xs hover:text-error-dark'
                                   >
                                     Hapus
@@ -913,7 +1043,9 @@ export default function FormRAB({
                                         parseFloat(e.target.value) || 0
                                       )
                                     }
-                                    disabled={watchedStatus === "approved"}
+                                    disabled={
+                                      isEdit && watchedStatus === "approved"
+                                    }
                                     type='number'
                                     className='w-full p-2 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:border-transparent transition-colors bg-surface hover:bg-surface-secondary'
                                     step='0.01'
@@ -937,7 +1069,9 @@ export default function FormRAB({
                                         parseFloat(e.target.value) || 0
                                       )
                                     }
-                                    disabled={watchedStatus === "approved"}
+                                    disabled={
+                                      isEdit && watchedStatus === "approved"
+                                    }
                                     type='number'
                                     className='w-full p-2 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:border-transparent transition-colors bg-surface hover:bg-surface-secondary'
                                     step='0.01'
@@ -951,7 +1085,7 @@ export default function FormRAB({
                       <button
                         type='button'
                         onClick={() => tambahBidang({ panjang: 0, lebar: 0 })}
-                        disabled={watchedStatus === "approved"}
+                        disabled={isEdit && watchedStatus === "approved"}
                         className='flex items-center gap-2 text-brand-primary font-medium'
                       >
                         <Plus size={18} />
@@ -969,7 +1103,11 @@ export default function FormRAB({
                           </label>
                           <select
                             {...field}
-                            disabled={watchedStatus === "approved"}
+                            disabled={
+                              isEdit &&
+                              (watchedStatus === "sent" ||
+                                watchedStatus === "approved")
+                            }
                             className={`w-full p-3 border rounded-lg text-base appearance-none focus:outline-none focus:ring-2 focus:border-transparent transition-colors bg-surface hover:bg-surface-secondary ${
                               errors.panel_lantai_id
                                 ? "border-error focus:ring-error/20"
@@ -1013,14 +1151,17 @@ export default function FormRAB({
               <div className='p-4 space-y-4'>
                 {/* Info message */}
                 {!watchedHitungDinding && !watchedHitungLantai && (
-                  <div className='bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4'>
+                  <div
+                    className='border border-red-200 rounded-lg p-4 mb-4'
+                    style={{ backgroundColor: "#fef2f2" }}
+                  >
                     <div className='flex items-center gap-2'>
-                      <Calculator className='text-blue-800' size={20} />
+                      <Calculator className='text-red-600' size={20} />
                       <div>
-                        <h3 className='font-medium text-blue-800'>
+                        <h3 className='font-medium text-red-800'>
                           Pilih Jenis Perhitungan
                         </h3>
-                        <p className='text-blue-800 text-sm'>
+                        <p className='text-red-700 text-sm'>
                           Centang "Hitung Dinding" atau "Hitung Lantai" untuk
                           melihat hasil perhitungan.
                         </p>
@@ -1211,7 +1352,8 @@ export default function FormRAB({
             {/* Save Button */}
             <div className='mt-4 hidden md:block'>
               <button
-                type='submit'
+                type='button'
+                onClick={handleSubmit(handleFormSubmit)}
                 disabled={isSubmitting || !isValid}
                 className='w-full bg-brand-primary hover:bg-brand-primary/90 text-white font-semibold py-3 px-6 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
               >
@@ -1220,7 +1362,7 @@ export default function FormRAB({
             </div>
 
             {/* Mobile Save Button */}
-            <div className='mt-4 md:hidden sticky b-0 '>
+            <div className='fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-200 md:hidden z-10'>
               <button
                 type='button'
                 onClick={handleSubmit(handleFormSubmit)}

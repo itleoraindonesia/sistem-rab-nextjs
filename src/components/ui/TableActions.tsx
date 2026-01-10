@@ -32,19 +32,10 @@ export default function TableActions({
       {onEdit && (
         <button
           onClick={() => onEdit(item)}
-          className='btn btn-ghost btn-sm text-secondary hover:text-secondary-focus'
+          className='btn btn-ghost btn-sm text-primary hover:text-primary-focus'
           title='Edit'
         >
           <Edit3 size={16} />
-        </button>
-      )}
-      {onDelete && (
-        <button
-          onClick={() => onDelete(item)}
-          className='btn btn-ghost btn-sm text-error hover:text-error-focus'
-          title='Hapus'
-        >
-          <Trash2 size={16} />
         </button>
       )}
       {customActions}

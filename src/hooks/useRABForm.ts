@@ -19,7 +19,7 @@ interface UseRABFormResult {
   error: string | null;
   noRefGenerated: boolean;
   hasil: any; // Add hasil to return interface
-  onSubmit: (data: RABFormData, hasil?: any) => Promise<void>;
+  onSubmit: (data: RABFormData, hasil?: any) => Promise<{ id: string } | void>;
   saveHandler: (hasil?: any) => Promise<void>;
   generateNoRef: () => void;
 }
@@ -336,7 +336,8 @@ export function useRABForm(): UseRABFormResult {
 
         if (error) throw error;
 
-        // Component will handle redirect logic
+        // Return the created record ID for redirect logic
+        return { id: result.id };
       } catch (err) {
         console.error("Error submitting:", err);
         alert("Gagal membuat RAB: " + (err as Error).message);

@@ -8,6 +8,18 @@ import TableActions from "../ui/TableActions";
 import SearchBar from "../ui/SearchBar";
 import { formatRupiah, translateStatus } from "../../lib/utils";
 
+const formatTanggal = (dateString: string) => {
+  const date = new Date(dateString);
+  const day = date.getDate();
+  const monthNames = [
+    'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
+    'Jul', 'Ags', 'Sep', 'Okt', 'Nov', 'Des'
+  ];
+  const month = monthNames[date.getMonth()];
+  const year = date.getFullYear();
+  return `${day} ${month} ${year}`;
+};
+
 interface RABDocument {
   id: string;
   no_ref: string;
@@ -128,6 +140,17 @@ export default function RABTable({
       render: columnRenderers.status,
     },
     {
+      key: "created_at",
+      header: "Tanggal Dibuat",
+      className: "text-center",
+      sortable: true,
+      render: (value, item) => (
+        <div className='text-center text-sm text-gray-600'>
+          {formatTanggal(value)}
+        </div>
+      ),
+    },
+    {
       key: "actions",
       header: "Action",
       className: "text-center",
@@ -136,7 +159,6 @@ export default function RABTable({
           item={item}
           onView={() => router?.push(`/rab/${item.id}`)}
           onEdit={() => router?.push(`/rab/edit/${item.id}`)}
-          onDelete={() => onDelete(item.id, item.project_name, item.status)}
         />
       ),
     },

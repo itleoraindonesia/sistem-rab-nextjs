@@ -127,7 +127,7 @@ export function useRABCalculation(
       let jumlahTrukLantai = 0;
       let biayaAngkutan = 0;
 
-      if (ongkirData) {
+      if (ongkirData && (hitung_dinding || hitung_lantai)) {
         // Hitung truk untuk dinding
         if (hitung_dinding && panelDinding && lembarDinding > 0) {
           jumlahTrukDinding = Math.ceil(lembarDinding / panelDinding.jumlah_per_truck);
@@ -138,20 +138,18 @@ export function useRABCalculation(
           jumlahTrukLantai = Math.ceil(lembarLantai / panelLantai.jumlah_per_truck);
         }
 
-        // Total truk dan biaya angkutan
+        // Total truk dan biaya angkutan - hanya jika ada truk yang dibutuhkan
         const totalTruk = jumlahTrukDinding + jumlahTrukLantai;
-        biayaAngkutan = totalTruk * ongkirData.biaya;
+        if (totalTruk > 0) {
+          biayaAngkutan = totalTruk * ongkirData.biaya;
+        }
       }
 
       const grandTotal = subtotalDinding + subtotalLantai + biayaAngkutan;
 
-      return {
+      const result: CalculationResult = {
         luasLantai,
         luasDinding,
-        lembarDinding,
-        lembarLantai,
-        titikJointDinding,
-        titikJointLantai,
         subtotalDinding,
         subtotalLantai,
         biayaOngkir: biayaAngkutan,
@@ -160,7 +158,7 @@ export function useRABCalculation(
           ...(hitung_dinding && panelDinding
             ? [
                 {
-                  desc: `Panel ${panelDinding.name}`,
+                  desc: `${panelDinding.name}`,
                   qty: lembarDinding,
                   unit_price: panelDinding.harga,
                   amount: lembarDinding * panelDinding.harga,
@@ -184,7 +182,7 @@ export function useRABCalculation(
           ...(hitung_lantai && panelLantai
             ? [
                 {
-                  desc: `Panel ${panelLantai.name}`,
+                  desc: `${panelLantai.name}`,
                   qty: lembarLantai,
                   unit_price: panelLantai.harga,
                   amount: lembarLantai * panelLantai.harga,
@@ -213,7 +211,15 @@ export function useRABCalculation(
             amount: biayaAngkutan,
           }] : []),
         ].filter((item) => item.amount > 0),
-      };
+      }
+
+      // Only include optional fields when they have meaningful values
+      if (lembarDinding > 0) result.lembarDinding = lembarDinding
+      if (lembarLantai > 0) result.lembarLantai = lembarLantai
+      if (titikJointDinding > 0) result.titikJointDinding = titikJointDinding
+      if (titikJointLantai > 0) result.titikJointLantai = titikJointLantai
+
+      return result
     },
     [panels, ongkir, parameters, masterLoading]
   );
