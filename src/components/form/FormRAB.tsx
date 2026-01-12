@@ -512,122 +512,85 @@ export default function FormRAB({
                       <label className='block text-sm font-medium text-primary mb-2'>
                         Status
                       </label>
-                      {isEdit ? (
-                        // Edit mode: Status badge buttons
-                        <div className='flex gap-2'>
-                          {[
-                            { value: "draft", label: "Draft" },
-                            { value: "sent", label: "Terkirim" },
-                            { value: "approved", label: "Disetujui" },
-                          ].map((status) => {
-                            const getStatusStyle = (
-                              statusValue: string
-                            ): React.CSSProperties => {
-                              switch (statusValue) {
-                                case "draft":
-                                  return {
-                                    backgroundColor:
-                                      "var(--color-bg-warning-surface)",
-                                    color: "var(--color-text-warning)",
-                                    borderColor: "var(--color-border-warning)",
-                                  };
-                                case "sent":
-                                  return {
-                                    backgroundColor:
-                                      "var(--color-bg-info-surface)",
-                                    color: "var(--color-text-info)",
-                                    borderColor: "var(--color-border-info)",
-                                  };
-                                case "approved":
-                                  return {
-                                    backgroundColor:
-                                      "var(--color-bg-success-surface)",
-                                    color: "var(--color-text-success)",
-                                    borderColor: "var(--color-border-success)",
-                                  };
-                                default:
-                                  return {
-                                    backgroundColor: "#f3f4f6",
-                                    color: "#4b5563",
-                                    borderColor: "#d1d5db",
-                                  };
-                              }
-                            };
-
-                            const baseClasses =
-                              "px-4 py-2 rounded-lg font-medium border transition-colors disabled:opacity-50 disabled:cursor-not-allowed";
-                            const isSelected = field.value === status.value;
-                            const statusStyle = getStatusStyle(status.value);
-
-                            return (
-                              <button
-                                key={status.value}
-                                type='button'
-                                disabled={
-                                  originalStatus === "approved" &&
-                                  status.value !== "approved"
-                                }
-                                className={`${baseClasses} ${
-                                  isSelected
-                                    ? "ring-2 ring-brand-primary/50"
-                                    : "opacity-60 hover:opacity-100"
-                                }`}
-                                style={statusStyle}
-                                onClick={() => {
-                                  if (
-                                    status.value === "approved" &&
-                                    field.value !== "approved"
-                                  ) {
-                                    const confirmed = window.confirm(
-                                      "Dokumen yang sudah disetujui tidak dapat diedit atau dihapus. Apakah Anda yakin ingin menyetujui dokumen ini?"
-                                    );
-                                    if (!confirmed) return;
-                                  }
-                                  field.onChange(status.value);
-                                }}
-                              >
-                                {status.label}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      ) : (
-                        // Create mode: Dropdown select
-                        <select
-                          {...field}
-                          className={`w-full p-3 border rounded-lg text-base appearance-none focus:outline-none focus:ring-2 focus:border-transparent transition-colors bg-surface hover:bg-surface-secondary ${
-                            errors.status
-                              ? "border-error focus:ring-error/20"
-                              : "border-gray-300 focus:ring-brand-primary/60"
-                          }`}
-                          aria-describedby={
-                            errors.status ? "status-error" : undefined
-                          }
-                          onChange={(e) => {
-                            if (e.target.value === "approved") {
-                              const confirmed = window.confirm(
-                                "Dokumen yang sudah disetujui tidak dapat diedit atau dihapus. Apakah Anda yakin ingin menyetujui dokumen ini?"
-                              );
-                              if (!confirmed) {
-                                setValue(
-                                  "status",
-                                  (watchedStatus || "draft") as
-                                    | "draft"
-                                    | "sent"
-                                    | "approved"
-                                );
-                                return;
-                              }
+                      {/* Status badge buttons (both create and edit mode) */}
+                      <div className='flex gap-2'>
+                        {[
+                          { value: "draft", label: "Draft" },
+                          { value: "sent", label: "Terkirim" },
+                          { value: "approved", label: "Disetujui" },
+                        ].map((status) => {
+                          const getStatusStyle = (
+                            statusValue: string
+                          ): React.CSSProperties => {
+                            switch (statusValue) {
+                              case "draft":
+                                return {
+                                  backgroundColor:
+                                    "var(--color-bg-warning-surface)",
+                                  color: "var(--color-text-warning)",
+                                  borderColor: "var(--color-border-warning)",
+                                };
+                              case "sent":
+                                return {
+                                  backgroundColor:
+                                    "var(--color-bg-info-surface)",
+                                  color: "var(--color-text-info)",
+                                  borderColor: "var(--color-border-info)",
+                                };
+                              case "approved":
+                                return {
+                                  backgroundColor:
+                                    "var(--color-bg-success-surface)",
+                                  color: "var(--color-text-success)",
+                                  borderColor: "var(--color-border-success)",
+                                };
+                              default:
+                                return {
+                                  backgroundColor: "#f3f4f6",
+                                  color: "#4b5563",
+                                  borderColor: "#d1d5db",
+                                };
                             }
-                            field.onChange(e);
-                          }}
-                        >
-                          <option value=''>Pilih Status</option>
-                          <option value='draft'>Draft</option>
-                          <option value='sent'>Terkirim</option>
-                          <option value='approved'>Disetujui</option>
-                        </select>
-                      )}
+                          };
+
+                          const baseClasses =
+                            "px-4 py-2 rounded-lg font-medium border transition-colors disabled:opacity-50 disabled:cursor-not-allowed";
+                          const isSelected = field.value === status.value;
+                          const statusStyle = getStatusStyle(status.value);
+
+                          return (
+                            <button
+                              key={status.value}
+                              type='button'
+                              disabled={
+                                isEdit &&
+                                originalStatus === "approved" &&
+                                status.value !== "approved"
+                              }
+                              className={`${baseClasses} ${
+                                isSelected
+                                  ? "ring-2 ring-brand-primary/50"
+                                  : "opacity-60 hover:opacity-100"
+                              }`}
+                              style={statusStyle}
+                              onClick={() => {
+                                if (
+                                  status.value === "approved" &&
+                                  field.value !== "approved"
+                                ) {
+                                  const confirmed = window.confirm(
+                                    "Dokumen yang sudah disetujui tidak dapat diedit atau dihapus. Apakah Anda yakin ingin menyetujui dokumen ini?"
+                                  );
+                                  if (!confirmed) return;
+                                }
+                                field.onChange(status.value);
+                              }}
+                            >
+                              {status.label}
+                            </button>
+                          );
+                        })}
+                      </div>
                       {errors.status && (
                         <span
                           id='status-error'
@@ -855,7 +818,7 @@ export default function FormRAB({
                         control={control}
                         render={({ field }) => (
                           <div>
-                            <label className='block text-xs text-muted mb-1'>
+                            <label className='block text-xs font-medium text-green-700 mb-1'>
                               Panjang Perimeter (m)
                             </label>
                             <input
@@ -891,7 +854,7 @@ export default function FormRAB({
                         control={control}
                         render={({ field }) => (
                           <div>
-                            <label className='block text-xs text-muted mb-1'>
+                            <label className='block text-xs font-medium text-green-700 mb-1'>
                               Tinggi Lantai (m)
                             </label>
                             <input
@@ -924,7 +887,7 @@ export default function FormRAB({
                       control={control}
                       render={({ field }) => (
                         <div>
-                          <label className='block text-xs text-muted mb-1'>
+                          <label className='block text-xs font-medium text-green-700 mb-1'>
                             Panel Dinding
                           </label>
                           <select
@@ -991,7 +954,7 @@ export default function FormRAB({
                 {watchedHitungLantai && (
                   <div className='p-3 space-y-3 bg-surface'>
                     <div>
-                      <label className='block text-xs text-muted mb-2'>
+                      <label className='block text-xs font-medium text-green-700 mb-2'>
                         Bidang (Lantai)
                       </label>
                       {fields?.map((field, i) => (
@@ -1032,7 +995,7 @@ export default function FormRAB({
                               control={control}
                               render={({ field: fieldItem }) => (
                                 <div>
-                                  <label className='block text-xs text-muted mb-1'>
+                                  <label className='block text-xs font-medium text-green-700 mb-1'>
                                     Panjang (m)
                                   </label>
                                   <input
@@ -1058,7 +1021,7 @@ export default function FormRAB({
                               control={control}
                               render={({ field: fieldItem }) => (
                                 <div>
-                                  <label className='block text-xs text-muted mb-1'>
+                                  <label className='block text-xs font-medium text-green-700 mb-1'>
                                     Lebar (m)
                                   </label>
                                   <input
@@ -1098,7 +1061,7 @@ export default function FormRAB({
                       control={control}
                       render={({ field }) => (
                         <div>
-                          <label className='block text-xs text-muted mb-1'>
+                          <label className='block text-xs font-medium text-green-700 mb-1'>
                             Panel Lantai
                           </label>
                           <select
