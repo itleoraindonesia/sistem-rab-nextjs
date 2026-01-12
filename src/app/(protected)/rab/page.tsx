@@ -2,12 +2,13 @@
 
 import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, FileDown } from "lucide-react";
+import { Plus, FileDown, AlertTriangle } from "lucide-react";
 import * as XLSX from "xlsx";
 import { supabase } from "../../../lib/supabaseClient";
-import RABTable from "../../../components/tables/RABTable";
-import SearchBar from "../../../components/ui/SearchBar";
+import { RABDataTable } from "../../../components/tables/RABDataTable";
 import { Card, CardContent } from "../../../components/ui";
+import Button from "../../../components/ui/Button";
+import { Alert, AlertDescription, AlertTitle } from "../../../components/ui/alert";
 
 export default function ListRAB() {
   const [dokumen, setDokumen] = useState<any[]>([]);
@@ -31,7 +32,7 @@ export default function ListRAB() {
       const { data: documentsData, error: documentsError } = await supabase
         .from("rab_documents")
         .select(
-          "id, no_ref, project_name, location_kabupaten, client_profile, status, total, created_at"
+          "id, no_ref, project_name, location_kabupaten, client_profile, snapshot, status, total, created_at"
         )
         .is("deleted_at", null)
         .order("created_at", { ascending: false });
@@ -139,80 +140,55 @@ export default function ListRAB() {
   };
 
   return (
-    <div className='max-w-7xl mx-auto p-4 md:p-6'>
-      {/* Header Section - Outside Card */}
-      <div className='mb-4'>
-        <div>
-          <h1 className='text-xl md:text-2xl font-bold text-brand-primary'>
-            Dokumen RAB
-          </h1>
-          <p className='text-gray-600 text-sm md:text-base'>
-            Kelola semua penawaran Anda
-          </p>
+    <div className="container mx-auto">
+      <div className="space-y-6">
+        {/* Header */}
+        <div className='mb-4'>
+          <h1 className='text-2xl font-bold text-brand-primary'>Dokumen RAB</h1>
+          <p className='text-gray-600'>Kelola semua penawaran Anda</p>
         </div>
+
+        {/* Actions Row */}
+        <div className="flex flex-col gap-4 sm:flex-row sm:justify-end">
+          <Button variant="outline" onClick={exportToExcel}>
+            <FileDown className="mr-2 h-4 w-4" />
+            Export Excel
+          </Button>
+          <Button onClick={() => router.push("/rab/baru")}>
+            <Plus className="mr-2 h-4 w-4" />
+            Buat Baru
+          </Button>
+        </div>
+
+        {/* Table */}
+        <Card>
+          <CardContent className="p-0">
+            {error ? (
+              <div className="p-6">
+                <Alert variant="destructive">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertTitle>Gagal Memuat Data</AlertTitle>
+                  <AlertDescription>{error}</AlertDescription>
+                  <Button
+                    variant="outline"
+                    onClick={loadDokumen}
+                    className="mt-4"
+                  >
+                    Coba Lagi
+                  </Button>
+                </Alert>
+              </div>
+            ) : (
+              <RABDataTable
+                data={dokumen}
+                loading={loading}
+                onDelete={handleDelete}
+              />
+            )}
+
+          </CardContent>
+        </Card>
       </div>
-
-      {/* Search Bar - Outside Card */}
-      <div className='mb-4 md:mb-6'>
-        <SearchBar
-          placeholder='Cari proyek, lokasi, atau no ref...'
-          value={search}
-          onChange={setSearch}
-          className='w-full'
-        />
-      </div>
-
-      {/* Action Buttons - Outside Card */}
-      <div className='mb-6 flex gap-2 md:gap-4 md:justify-end'>
-        <button
-          onClick={exportToExcel}
-          className='flex items-center justify-center gap-2 border border-gray-300 rounded-md btn-secondary w-1/3 md:flex-none md:w-48'
-        >
-          <FileDown size={16} />
-          <span className='hidden sm:inline'>Export Excel</span>
-          <span className='sm:hidden'>Export</span>
-        </button>
-
-        {/* Spacer untuk center alignment di mobile */}
-        <div className='w-1/3 md:hidden'></div>
-
-        <button
-          onClick={() => router.push("/rab/baru")}
-          className='flex items-center justify-center gap-2 bg-brand-primary hover:bg-brand-dark text-white px-3 py-2 md:px-4 md:py-2 rounded-lg text-sm md:text-base w-1/3 md:flex-none md:w-48'
-        >
-          <Plus size={16} />
-          <span>Buat Baru</span>
-        </button>
-      </div>
-
-      {/* Table Area - Inside Card Container */}
-      <Card>
-        <CardContent className='p-0'>
-          {error ? (
-            <div className='bg-red-50 border border-red-200 rounded-lg p-6 text-center m-6'>
-              <div className='text-red-600 text-4xl mb-4'>⚠️</div>
-              <h3 className='text-lg font-medium text-red-900 mb-2'>
-                Gagal Memuat Data
-              </h3>
-              <p className='text-red-700 mb-4'>{error}</p>
-              <button
-                onClick={loadDokumen}
-                className='bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg'
-              >
-                Coba Lagi
-              </button>
-            </div>
-          ) : (
-            <RABTable
-              data={dokumen}
-              loading={loading}
-              search={search}
-              onSearchChange={setSearch}
-              onDelete={handleDelete}
-            />
-          )}
-        </CardContent>
-      </Card>
     </div>
   );
 }

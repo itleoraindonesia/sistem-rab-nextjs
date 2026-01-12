@@ -1,138 +1,116 @@
 import type { Config } from "tailwindcss";
 
 const config: Config = {
+  darkMode: ["class", "class"],
   content: [
-    "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
-    "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
-    "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
+    "./pages/**/*.{ts,tsx}",
+    "./components/**/*.{ts,tsx}",
+    "./app/**/*.{ts,tsx}",
+    "./src/**/*.{ts,tsx}",
   ],
+  prefix: "",
   theme: {
-    extend: {
-      colors: {
-        // Brand colors
-        "brand": {
-          primary: "var(--color-brand-primary)",
-          accent: "var(--color-brand-accent)",
-          dark: "var(--color-brand-dark)",
-        },
-
-        // App primary color (shadcn-style alias)
-        "primary": {
-          DEFAULT: "var(--color-brand-primary)",
-          foreground: "var(--color-primary-foreground)",
-        },
-
-        // Surface colors
-        "bg": {
-          "surface": "var(--color-bg-surface)",
-          "surface-secondary": "var(--color-bg-surface-secondary)",
-          "surface-muted": "var(--color-bg-surface-muted)",
-          "surface-hover": "var(--color-bg-surface-hover)",
-          "gray-200": "var(--color-bg-gray-200)",
-          "gray-300": "var(--color-bg-gray-300)",
-          "gray-hover": "var(--color-bg-gray-hover)",
-        },
-
-        // Aliases so utilities match the classes used in components
-        "surface": {
-          DEFAULT: "var(--color-bg-surface)",
-          secondary: "var(--color-bg-surface-secondary)",
-          muted: "var(--color-bg-surface-muted)",
-          hover: "var(--color-bg-surface-hover)",
-        },
-
-        // Text colors
-        "text": {
-          "primary": "var(--color-text-primary)",
-          "secondary": "var(--color-text-secondary)",
-          "muted": "var(--color-text-muted)",
-          "subtle": "var(--color-text-subtle)",
-          "inverse": "var(--color-text-inverse)",
-          "gray-500": "var(--color-text-gray-500)",
-          "gray-600": "var(--color-text-gray-600)",
-          "gray-800": "var(--color-text-gray-800)",
-        },
-
-        // Direct text aliases (used as utilities like `text-secondary`, `text-muted`, etc.)
-        "text-secondary": "var(--color-text-secondary)",
-        "muted": "var(--color-text-muted)",
-        "inverse": "var(--color-text-inverse)",
-        "muted-foreground": "var(--color-muted-foreground)",
-
-        // Border colors
-        "border": {
-          "default": "var(--color-border-default)",
-          "secondary": "var(--color-border-secondary)",
-          "focus": "var(--color-border-focus)",
-          "gray-200": "var(--color-border-gray-200)",
-          "gray-300": "var(--color-border-gray-300)",
-        },
-
-        // Default border alias (for `border-default`)
-        "default": "var(--color-border-default)",
-
-        // Status colors - Error
-        "error": {
-          surface: "var(--color-bg-error-surface)",
-          DEFAULT: "var(--color-text-error)",
-          dark: "var(--color-text-error-dark)",
-          darker: "var(--color-text-error-darker)",
-        },
-
-        // Status colors - Success
-        "success": {
-          "surface": "var(--color-bg-success-surface)",
-          "DEFAULT": "var(--color-bg-success)",
-          "hover": "var(--color-bg-success-hover)",
-          "text": "var(--color-text-success)",
-          "text-dark": "var(--color-text-success-dark)",
-          "text-darker": "var(--color-text-success-darker)",
-          "text-darkest": "var(--color-text-success-darkest)",
-        },
-
-        // Status colors - Warning
-        "warning": {
-          surface: "var(--color-bg-warning-surface)",
-          DEFAULT: "var(--color-text-warning)",
-          dark: "var(--color-text-warning-dark)",
-          darker: "var(--color-text-warning-darker)",
-        },
-
-        // Status colors - Info
-        "info": {
-          surface: "var(--color-bg-info-surface)",
-          DEFAULT: "var(--color-text-info)",
-          dark: "var(--color-text-info-dark)",
-          darker: "var(--color-text-info-darker)",
-        },
-
-        // Component colors (shadcn-style)
-        "secondary": {
-          DEFAULT: "var(--color-secondary)",
-          foreground: "var(--color-secondary-foreground)",
-        },
-        "accent": {
-          DEFAULT: "var(--color-accent)",
-          foreground: "var(--color-accent-foreground)",
-        },
-        "destructive": {
-          DEFAULT: "var(--color-destructive)",
-          foreground: "var(--color-destructive-foreground)",
-        },
-        "card": {
-          DEFAULT: "var(--color-card)",
-          foreground: "var(--color-card-foreground)",
-        },
-        "input": "var(--color-input)",
-        "ring": "var(--color-ring)",
-        "primary-foreground": "var(--color-primary-foreground)",
-        "secondary-foreground": "var(--color-secondary-foreground)",
-        "accent-foreground": "var(--color-accent-foreground)",
-        "destructive-foreground": "var(--color-destructive-foreground)",
-        "card-foreground": "var(--color-card-foreground)",
-      },
-    },
+  	container: {
+  		center: true,
+  		padding: '2rem',
+  		screens: {
+  			'2xl': '1400px'
+  		}
+  	},
+  	extend: {
+  		colors: {
+  			border: 'hsl(var(--border))',
+  			input: 'hsl(var(--input))',
+  			ring: 'hsl(var(--ring))',
+  			background: 'hsl(var(--background))',
+  			foreground: 'hsl(var(--foreground))',
+  			primary: {
+  				DEFAULT: 'hsl(var(--primary))',
+  				foreground: 'hsl(var(--primary-foreground))'
+  			},
+  			secondary: {
+  				DEFAULT: 'hsl(var(--secondary))',
+  				foreground: 'hsl(var(--secondary-foreground))'
+  			},
+  			destructive: {
+  				DEFAULT: 'hsl(var(--destructive))',
+  				foreground: 'hsl(var(--destructive-foreground))'
+  			},
+  			muted: {
+  				DEFAULT: 'hsl(var(--muted))',
+  				foreground: 'hsl(var(--muted-foreground))'
+  			},
+  			accent: {
+  				DEFAULT: 'hsl(var(--accent))',
+  				foreground: 'hsl(var(--accent-foreground))'
+  			},
+  			popover: {
+  				DEFAULT: 'hsl(var(--popover))',
+  				foreground: 'hsl(var(--popover-foreground))'
+  			},
+  			card: {
+  				DEFAULT: 'hsl(var(--card))',
+  				foreground: 'hsl(var(--card-foreground))'
+  			},
+  			brand: {
+  				primary: '#095540',
+  				accent: '#cdde00',
+  				dark: '#053a2c'
+  			},
+  			surface: {
+  				DEFAULT: '#ffffff',
+  				secondary: '#fafafa',
+  				muted: '#f4f5f7',
+  				hover: '#f0f2f4'
+  			},
+  			text: {
+  				primary: '#1f2933',
+  				secondary: '#3f4b56',
+  				muted: '#6b7280',
+  				subtle: '#9aa3ad',
+  				inverse: '#ffffff'
+  			},
+  			sidebar: {
+  				DEFAULT: 'hsl(var(--sidebar-background))',
+  				foreground: 'hsl(var(--sidebar-foreground))',
+  				primary: 'hsl(var(--sidebar-primary))',
+  				'primary-foreground': 'hsl(var(--sidebar-primary-foreground))',
+  				accent: 'hsl(var(--sidebar-accent))',
+  				'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
+  				border: 'hsl(var(--sidebar-border))',
+  				ring: 'hsl(var(--sidebar-ring))'
+  			}
+  		},
+  		borderRadius: {
+  			lg: 'var(--radius)',
+  			md: 'calc(var(--radius) - 2px)',
+  			sm: 'calc(var(--radius) - 4px)'
+  		},
+  		keyframes: {
+  			'accordion-down': {
+  				from: {
+  					height: '0'
+  				},
+  				to: {
+  					height: 'var(--radix-accordion-content-height)'
+  				}
+  			},
+  			'accordion-up': {
+  				from: {
+  					height: 'var(--radix-accordion-content-height)'
+  				},
+  				to: {
+  					height: '0'
+  				}
+  			}
+  		},
+  		animation: {
+  			'accordion-down': 'accordion-down 0.2s ease-out',
+  			'accordion-up': 'accordion-up 0.2s ease-out'
+  		}
+  	}
   },
+  plugins: [require("tailwindcss-animate")],
 };
 
 export default config;

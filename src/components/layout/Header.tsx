@@ -1,34 +1,70 @@
 "use client";
 
 import Link from "next/link";
-import { useAuth } from "../../context/AuthContext";
-import Image from "next/image";
+import { usePathname } from "next/navigation";
+import { SidebarTrigger } from "@/components/ui/sidebar";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 
 export default function Header() {
-  const { logout } = useAuth();
+  const pathname = usePathname();
+
+  // Generate breadcrumbs based on current path
+  const generateBreadcrumbs = () => {
+    const segments = pathname.split('/').filter(Boolean);
+    const breadcrumbs = [{ name: 'Dashboard', path: '/' }];
+
+    let currentPath = '';
+    segments.forEach((segment, index) => {
+      currentPath += `/${segment}`;
+
+      // Skip the first segment if it's the main protected route
+      if (index === 0 && segment === 'rab') {
+        breadcrumbs.push({ name: 'Dokumen RAB', path: currentPath });
+      } else if (segment === 'baru') {
+        breadcrumbs.push({ name: 'Buat Baru', path: currentPath });
+      } else if (segment === 'edit') {
+        breadcrumbs.push({ name: 'Edit', path: currentPath });
+      } else if (segment === 'master') {
+        breadcrumbs.push({ name: 'Master Data', path: currentPath });
+      } else if (!isNaN(Number(segment))) {
+        // ID parameter - don't add to breadcrumbs
+        return;
+      }
+    });
+
+    return breadcrumbs;
+  };
+
+  const breadcrumbs = generateBreadcrumbs();
 
   return (
-    <header className='sticky top-0 md:hidden bg-brand-primary text-white shadow-md z-50'>
-      <div className='w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
-        <div className='flex items-center justify-between h-16'>
-          <Link href='/' className='flex items-center gap-3 md:hidden'>
-            <div className=' rounded-lg flex items-center justify-center'>
-              <Image src='/logo-only.png' width={48} height={48} alt='logo' />
+    <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
+      <SidebarTrigger className="-ml-1" />
+      <Breadcrumb>
+        <BreadcrumbList>
+          {breadcrumbs.map((crumb, index) => (
+            <div key={crumb.path} className="flex items-center">
+              {index > 0 && <BreadcrumbSeparator />}
+              <BreadcrumbItem>
+                {index === breadcrumbs.length - 1 ? (
+                  <BreadcrumbPage>{crumb.name}</BreadcrumbPage>
+                ) : (
+                  <BreadcrumbLink href={crumb.path}>
+                    {crumb.name}
+                  </BreadcrumbLink>
+                )}
+              </BreadcrumbItem>
             </div>
-            <div>
-              <h1 className='text-lg font-bold'>Sistem RAB</h1>
-              <p className='text-xs opacity-80'>Hitung Cepat & Akurat</p>
-            </div>
-          </Link>
-
-          <button
-            onClick={logout}
-            className='text-sm text-white/80 hover:text-white transition-colors md:hidden'
-          >
-            Keluar
-          </button>
-        </div>
-      </div>
+          ))}
+        </BreadcrumbList>
+      </Breadcrumb>
     </header>
   );
 }

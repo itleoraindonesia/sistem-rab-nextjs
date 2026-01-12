@@ -164,11 +164,13 @@ export default function Dashboard() {
   };
 
   return (
-    <div className='w-full max-w-7xl mx-auto p-4 md:p-0'>
-      <div className='mb-4'>
-        <h1 className='text-2xl font-bold text-brand-primary'>Dashboard</h1>
-        <p className='text-gray-600'>Ringkasan aktivitas sistem RAB Panel</p>
-      </div>
+    <div className='container mx-auto'>
+      <div className='space-y-6'>
+        {/* Header */}
+        <div className='mb-4'>
+          <h1 className='text-2xl font-bold text-brand-primary'>Dashboard</h1>
+          <p className='text-gray-600'>Ringkasan aktivitas sistem RAB Panel</p>
+        </div>
 
       {/* Statistik */}
       <div className='grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-8'>
@@ -342,6 +344,7 @@ export default function Dashboard() {
         >
           <Plus size={24} />
         </button>
+      </div>
       </div>
     </div>
   );
