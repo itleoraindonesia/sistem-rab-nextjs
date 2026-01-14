@@ -67,3 +67,14 @@ export interface RABDocument {
   created_at: string;
   updated_at: string;
 }
+
+export interface Client {
+  id: number;
+  nama: string;
+  whatsapp: string;
+  kebutuhan: "Pagar" | "Gudang" | "Kos/Kontrakan" | "Toko/Ruko" | "Rumah" | "Villa" | "Hotel" | "Rumah Sakit" | "Panel Saja";
+  lokasi: string;
+  luasan: number | null;
+  created_at: string;
+  updated_at: string;
+}

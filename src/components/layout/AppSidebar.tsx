@@ -3,7 +3,7 @@
 import * as React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { LayoutDashboard, FileText, Package, Home, LogOut, User, ClipboardCheck, CheckSquare } from "lucide-react"
+import { LayoutDashboard, FileText, Package, Home, LogOut, User, ClipboardCheck, CheckSquare, Users } from "lucide-react"
 import { useAuth } from "../../context/AuthContext"
 import {
   Sidebar,
@@ -30,6 +30,12 @@ const navItems = [
     activeColor: "green", // Warna untuk child routes
   },
   {
+    name: "CRM",
+    path: "/crm",
+    icon: Users,
+    children: ["/crm/input", "/crm/clients"],
+  },
+  {
     name: "Dokumen",
     path: "/dokumen",
     icon: FileText,
@@ -40,18 +46,11 @@ const navItems = [
     ],
   },
   {
-    name: "Review",
-    path: "/dokumen/review",
+    name: "Dokumen Perlu Tindakan",
+    path: "/dokumen/perlu-tindakan",
     icon: ClipboardCheck,
-    children: [],
-    badge: 3, // Mock count - will be dynamic from database
-  },
-  {
-    name: "Approval",
-    path: "/dokumen/approval",
-    icon: CheckSquare,
-    children: [],
-    badge: 2, // Mock count - will be dynamic from database
+    children: ["/dokumen/review", "/dokumen/approval"],
+    badge: 5, // Total dari review (3) + approval (2)
   },
   {
     name: "Master Data",
@@ -145,7 +144,15 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                         // Custom labels for different menu types
                         let childLabel = "Buat RAB Baru"
                         
-                        if (childPath === "/master/panel") {
+                        if (childPath === "/crm/input") {
+                          childLabel = "Input Data"
+                        } else if (childPath === "/crm/clients") {
+                          childLabel = "Daftar Client"
+                        } else if (childPath === "/dokumen/review") {
+                          childLabel = "Review (3)"
+                        } else if (childPath === "/dokumen/approval") {
+                          childLabel = "Approval (2)"
+                        } else if (childPath === "/master/panel") {
                           childLabel = "Data Panel"
                         } else if (childPath === "/master/ongkir") {
                           childLabel = "Data Ongkir"
