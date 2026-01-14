@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Header from "../../components/layout/Header";
 import { AppSidebar } from "../../components/layout/AppSidebar";
@@ -10,6 +10,7 @@ import {
   SidebarInset,
   SidebarProvider,
   SidebarTrigger,
+  useSidebar,
 } from "@/components/ui/sidebar";
 
 export default function ProtectedLayout({
@@ -84,8 +85,47 @@ export default function ProtectedLayout({
     setIsFormValid(isValid);
   };
 
+  // Component to handle sidebar effects inside the provider
+  function SidebarEffects() {
+    const { openMobile, setOpenMobile, isMobile } = useSidebar();
+    const prevPathnameRef = useRef<string | undefined>(undefined);
+
+    // Prevent scroll when mobile sidebar is open
+    useEffect(() => {
+      if (openMobile && isMobile) {
+        document.body.classList.add('overflow-hidden');
+      } else {
+        document.body.classList.remove('overflow-hidden');
+      }
+
+      // Cleanup on unmount
+      return () => {
+        document.body.classList.remove('overflow-hidden');
+      };
+    }, [openMobile, isMobile]);
+
+    // Auto-close mobile sidebar when changing pages (not on initial load)
+    useEffect(() => {
+      const prevPathname = prevPathnameRef.current;
+      prevPathnameRef.current = pathname;
+
+      // Only close if pathname actually changed (not initial load)
+      // Add a small delay to allow navigation to complete first
+      if (prevPathname && prevPathname !== pathname && openMobile && isMobile) {
+        const timeoutId = setTimeout(() => {
+          setOpenMobile(false);
+        }, 100); // Small delay to allow navigation to complete
+
+        return () => clearTimeout(timeoutId);
+      }
+    }, [pathname, setOpenMobile, openMobile, isMobile]);
+
+    return null;
+  }
+
   return (
     <SidebarProvider>
+      <SidebarEffects />
       <AppSidebar />
       <SidebarInset>
         <Header />

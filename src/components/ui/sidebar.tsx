@@ -275,7 +275,15 @@ const SidebarTrigger = React.forwardRef<
   React.ElementRef<typeof Button>,
   React.ComponentProps<typeof Button>
 >(({ className, onClick, ...props }, ref) => {
-  const { toggleSidebar } = useSidebar()
+  const { toggleSidebar, isMobile, setOpenMobile, openMobile } = useSidebar()
+
+  const handleToggle = () => {
+    if (isMobile) {
+      setOpenMobile(!openMobile)
+    } else {
+      toggleSidebar()
+    }
+  }
 
   return (
     <Button
@@ -286,7 +294,7 @@ const SidebarTrigger = React.forwardRef<
       className={cn("h-7 w-7", className)}
       onClick={(event: React.MouseEvent<HTMLButtonElement>) => {
         onClick?.(event)
-        toggleSidebar()
+        handleToggle()
       }}
       {...props}
     >

@@ -36,7 +36,7 @@ export default function CRMDashboard() {
     }
 
     try {
-      const { data: clients, error } = await supabase
+      const { data: clients, error } = await supabase!
         .from('clients')
         .select('*')
         .order('created_at', { ascending: false });
@@ -48,19 +48,21 @@ export default function CRMDashboard() {
         return;
       }
 
+      const typedClients = clients as Client[];
+
       // Calculate stats
       const now = new Date();
       const startOfWeek = new Date(now);
       startOfWeek.setDate(now.getDate() - 7);
       const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-      const thisWeek = clients.filter(c => new Date(c.created_at) >= startOfWeek).length;
-      const thisMonth = clients.filter(c => new Date(c.created_at) >= startOfMonth).length;
+      const thisWeek = typedClients.filter(c => new Date(c.created_at) >= startOfWeek).length;
+      const thisMonth = typedClients.filter(c => new Date(c.created_at) >= startOfMonth).length;
 
       // By Lokasi (Kabupaten/Kota)
       const lokasiMap = new Map<string, number>();
-      clients.forEach(c => {
-        const lokasi = c.lokasi.trim();
+      typedClients.forEach(c => {
+        const lokasi = c.kabupaten; // Use kabupaten instead of lokasi
         lokasiMap.set(lokasi, (lokasiMap.get(lokasi) || 0) + 1);
       });
       const byLokasi = Array.from(lokasiMap.entries())
@@ -70,7 +72,7 @@ export default function CRMDashboard() {
 
       // By Kebutuhan
       const kebutuhanMap = new Map<string, number>();
-      clients.forEach(c => {
+      typedClients.forEach(c => {
         kebutuhanMap.set(c.kebutuhan, (kebutuhanMap.get(c.kebutuhan) || 0) + 1);
       });
       const byKebutuhan = Array.from(kebutuhanMap.entries())
@@ -79,7 +81,7 @@ export default function CRMDashboard() {
 
       // By Month (last 6 months)
       const monthMap = new Map<string, number>();
-      clients.forEach(c => {
+      typedClients.forEach(c => {
         const date = new Date(c.created_at);
         const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
         monthMap.set(monthKey, (monthMap.get(monthKey) || 0) + 1);
@@ -98,7 +100,7 @@ export default function CRMDashboard() {
       }
 
       setStats({
-        total: clients.length,
+        total: typedClients.length,
         thisMonth,
         thisWeek,
         byLokasi,

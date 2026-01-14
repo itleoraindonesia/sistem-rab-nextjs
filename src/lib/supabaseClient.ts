@@ -73,6 +73,7 @@ export interface Client {
   nama: string;
   whatsapp: string;
   kebutuhan: "Pagar" | "Gudang" | "Kos/Kontrakan" | "Toko/Ruko" | "Rumah" | "Villa" | "Hotel" | "Rumah Sakit" | "Panel Saja";
+  produk?: string; // Product/service type the client is interested in
   kabupaten: string;
   provinsi: string;
   lokasi?: string; // Optional for backward compatibility

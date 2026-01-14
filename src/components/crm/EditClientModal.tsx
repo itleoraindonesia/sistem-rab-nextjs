@@ -73,10 +73,12 @@ export default function EditClientModal({ client, isOpen, onClose, onSuccess }: 
         updated_at: new Date().toISOString(),
       };
 
-      const { error: updateError } = await supabase
+      const result = await (supabase as any)
         .from('clients')
         .update(updateData)
         .eq('id', client.id);
+
+      const { error: updateError } = result as any;
 
       if (updateError) throw updateError;
 

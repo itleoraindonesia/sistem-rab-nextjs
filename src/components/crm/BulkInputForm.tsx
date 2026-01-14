@@ -69,10 +69,10 @@ export default function BulkInputForm() {
     
     try {
       const dataToInsert = formatForDatabase(parsedData);
-      
-      const { data, error } = await supabase
+
+      const { data, error } = await supabase!
         .from('clients')
-        .insert(dataToInsert)
+        .insert(dataToInsert as any)
         .select();
 
       if (error) throw error;

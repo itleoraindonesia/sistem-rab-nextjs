@@ -145,7 +145,7 @@ async function findKabupatenMatch(
       // Remove duplicates based on kabupaten name
       const uniqueMatches = Array.from(
         new Map(data.map((item: any) => [item.kabupaten, item])).values()
-      );
+      ) as Array<{provinsi: string; kabupaten: string}>;
 
       if (uniqueMatches.length === 1) {
         // Only 1 fuzzy match - safe to use
