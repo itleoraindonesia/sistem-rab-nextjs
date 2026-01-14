@@ -21,19 +21,21 @@ import {
 } from "@/components/ui/sidebar"
 
 const navItems = [
-  { name: "Dashboard", path: "/", icon: LayoutDashboard, children: [] },
+  { name: "Dashboard", path: "/", icon: LayoutDashboard, children: [], allowedRoles: ["admin", "user", "guest"] },
   {
     name: "Dokumen RAB",
     path: "/rab",
     icon: FileText,
     children: [],
     activeColor: "green", // Warna untuk child routes
+    allowedRoles: ["admin", "user", "guest"],
   },
   {
     name: "CRM",
     path: "/crm",
     icon: Users,
     children: ["/crm/input", "/crm/clients"],
+    allowedRoles: ["admin", "user", "guest"],
   },
   {
     name: "Dokumen",
@@ -44,6 +46,7 @@ const navItems = [
       "/dokumen/memo",
       "/dokumen/mom",
     ],
+    allowedRoles: ["admin", "user"], // Hidden from guest
   },
   {
     name: "Dokumen Perlu Tindakan",
@@ -51,18 +54,26 @@ const navItems = [
     icon: ClipboardCheck,
     children: ["/dokumen/review", "/dokumen/approval"],
     badge: 5, // Total dari review (3) + approval (2)
+    allowedRoles: ["admin", "user"], // Hidden from guest
   },
   {
     name: "Master Data",
     path: "/master",
     icon: Package,
     children: ["/master/panel", "/master/ongkir"], // Child route patterns
+    allowedRoles: ["admin", "user"], // Hidden from guest
   },
 ]
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname()
   const { user, logout } = useAuth()
+
+  // Filter menu items based on user role
+  const visibleNavItems = navItems.filter(item => {
+    const userRole = user?.role || "user"
+    return item.allowedRoles.includes(userRole)
+  })
 
   // Helper function to check if current path is child of parent
   const isChildRoute = (item: (typeof navItems)[0]) => {
@@ -117,13 +128,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <SidebarGroup>
           <SidebarGroupLabel>Navigasi</SidebarGroupLabel>
           <SidebarMenu>
-            {navItems.map((item) => {
+            {visibleNavItems.map((item) => {
               const Icon = item.icon
               const { isActive, isChildActive } = getNavItemState(item)
 
               return (
                 <SidebarMenuItem key={item.name}>
-                  <SidebarMenuButton asChild isActive={isActive}>
+                  <SidebarMenuButton asChild isActive={isActive} hasActiveChild={isChildActive}>
                     <Link href={item.path} className="flex items-center justify-between w-full">
                       <div className="flex items-center gap-2">
                         <Icon className="size-4" />

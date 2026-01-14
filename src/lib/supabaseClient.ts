@@ -73,7 +73,9 @@ export interface Client {
   nama: string;
   whatsapp: string;
   kebutuhan: "Pagar" | "Gudang" | "Kos/Kontrakan" | "Toko/Ruko" | "Rumah" | "Villa" | "Hotel" | "Rumah Sakit" | "Panel Saja";
-  lokasi: string;
+  kabupaten: string;
+  provinsi: string;
+  lokasi?: string; // Optional for backward compatibility
   luasan: number | null;
   created_at: string;
   updated_at: string;

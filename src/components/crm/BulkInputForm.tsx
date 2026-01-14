@@ -1,17 +1,18 @@
 'use client';
 
 import { useState } from 'react';
-import { parseCSV, ParsedRow, formatForDatabase } from '@/lib/crm/parsers';
+import { parseCSV, enrichWithProvinsi, ParsedRow, formatForDatabase } from '@/lib/crm/parsers';
 import { supabase } from '@/lib/supabaseClient';
 
-const EXAMPLE_CSV = `Nama, WA, Kebutuhan, Lokasi, Luasan
-Budi Santoso, 08123456789, Rumah, Depok, 200
-Ani Wijaya, 628124567890, Pagar, Bandung, 50
-Dodi Hermawan, 08125678901, Kos/Kontrakan, Solo, 150`;
+const EXAMPLE_CSV = `Nama, WA, Kebutuhan, Produk, Kabupaten/Kota, Luasan/Keliling
+Budi Santoso, 08123456789, Rumah, Panel Beton, Depok, 200
+Ani Wijaya, 628124567890, Pagar, Pagar Beton, Bandung, 50
+Dodi Hermawan, 08125678901, Kos/Kontrakan, Sandwich Panel, Surakarta, 150`;
 
 export default function BulkInputForm() {
   const [inputText, setInputText] = useState('');
   const [parsedData, setParsedData] = useState<ParsedRow[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveResult, setSaveResult] = useState<{
     success: boolean;
@@ -20,13 +21,26 @@ export default function BulkInputForm() {
     message: string;
   } | null>(null);
 
-  const handleInputChange = (text: string) => {
+  const handleInputChange = async (text: string) => {
     setInputText(text);
     setSaveResult(null);
     
     if (text.trim()) {
-      const parsed = parseCSV(text);
-      setParsedData(parsed);
+      setIsLoading(true);
+      try {
+        // Parse CSV
+        const parsed = parseCSV(text);
+        
+        // Enrich with provinsi lookup from master_ongkir
+        const enriched = await enrichWithProvinsi(parsed, supabase);
+        
+        setParsedData(enriched);
+      } catch (error) {
+        console.error('Error parsing CSV:', error);
+        setParsedData([]);
+      } finally {
+        setIsLoading(false);
+      }
     } else {
       setParsedData([]);
     }
@@ -38,17 +52,23 @@ export default function BulkInputForm() {
       return;
     }
 
-    const validRows = parsedData.filter(row => row.isValid);
+    // Check if ALL rows are valid - no partial submissions allowed
+    const hasInvalidRows = parsedData.some(row => !row.isValid);
     
-    if (validRows.length === 0) {
-      alert('Tidak ada data valid untuk disimpan');
+    if (hasInvalidRows) {
+      alert('Semua data harus valid sebelum submit. Perbaiki error terlebih dahulu.');
+      return;
+    }
+
+    if (parsedData.length === 0) {
+      alert('Tidak ada data untuk disimpan');
       return;
     }
 
     setIsSaving(true);
     
     try {
-      const dataToInsert = formatForDatabase(validRows);
+      const dataToInsert = formatForDatabase(parsedData);
       
       const { data, error } = await supabase
         .from('clients')
@@ -58,13 +78,12 @@ export default function BulkInputForm() {
       if (error) throw error;
 
       const inserted = data?.length || 0;
-      const skipped = parsedData.length - validRows.length;
 
       setSaveResult({
         success: true,
         inserted,
-        skipped,
-        message: `✅ Berhasil menyimpan ${inserted} data${skipped > 0 ? `, ${skipped} data di-skip (ada error)` : ''}`,
+        skipped: 0,
+        message: `✅ Berhasil menyimpan ${inserted} data`,
       });
 
       // Clear form after success
@@ -112,8 +131,11 @@ export default function BulkInputForm() {
           }}
         />
         <p className="text-xs text-gray-500 mt-2">
-          Format: Nama, WA, Kebutuhan, Lokasi, Luasan (pisahkan dengan koma atau tab)
+          Format: Nama, WA, Kebutuhan, Produk, Kabupaten/Kota, Luasan/Keliling (pisahkan dengan koma atau tab)
         </p>
+        {isLoading && (
+          <p className="text-xs text-blue-600 mt-1">🔍 Mencari provinsi dari database...</p>
+        )}
       </div>
 
       {/* Preview Table */}
@@ -121,11 +143,11 @@ export default function BulkInputForm() {
         <div className="border border-gray-200 rounded-lg overflow-hidden">
           <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
             <h3 className="font-semibold">
-              PREVIEW DATA ({parsedData.length} rows parsed)
+              Preview Data Klien ({parsedData.length} baris data telah dianalisis)
             </h3>
             <div className="flex gap-4 mt-1 text-sm">
               {validCount > 0 && (
-                <span className="text-green-600">✅ {validCount} valid</span>
+                <span className="text-green-600">✓ {validCount} data valid</span>
               )}
               {errorCount > 0 && (
                 <span className="text-red-600">❌ {errorCount} error</span>
@@ -137,12 +159,14 @@ export default function BulkInputForm() {
             <table className="w-full text-sm">
               <thead className="bg-gray-100 border-b border-gray-200">
                 <tr>
-                  <th className="px-3 py-2 text-left">#</th>
+                  <th className="px-3 py-2 text-left">No</th>
                   <th className="px-3 py-2 text-left">Nama</th>
                   <th className="px-3 py-2 text-left">WhatsApp</th>
                   <th className="px-3 py-2 text-left">Kebutuhan</th>
-                  <th className="px-3 py-2 text-left">Lokasi</th>
-                  <th className="px-3 py-2 text-left">Luasan</th>
+                  <th className="px-3 py-2 text-left">Produk</th>
+                  <th className="px-3 py-2 text-left">Kabupaten/Kota</th>
+                  <th className="px-3 py-2 text-left">Provinsi</th>
+                  <th className="px-3 py-2 text-left">Luasan/Keliling</th>
                 </tr>
               </thead>
               <tbody>
@@ -154,9 +178,9 @@ export default function BulkInputForm() {
                     }`}
                   >
                     <td className="px-3 py-2">
-                      {row.isValid ? '✅' : '❌'} {row.row}
+                      {row.isValid ? '✓' : '❌'} {row.row}
                     </td>
-                    <td className="px-3 py-2">
+                    <td className="px-3 py-2 capitalize">
                       {row.nama || <span className="text-gray-400">-</span>}
                       {row.errors.find(e => e.field === 'nama') && (
                         <div className="text-xs text-red-600 mt-1">
@@ -181,10 +205,30 @@ export default function BulkInputForm() {
                       )}
                     </td>
                     <td className="px-3 py-2">
-                      {row.lokasi || <span className="text-gray-400">-</span>}
-                      {row.errors.find(e => e.field === 'lokasi') && (
+                      {row.produk || <span className="text-gray-400">-</span>}
+                      {row.errors.find((e: any) => e.field === 'produk') && (
                         <div className="text-xs text-red-600 mt-1">
-                          {row.errors.find(e => e.field === 'lokasi')?.message}
+                          {row.errors.find((e: any) => e.field === 'produk')?.message}
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-3 py-2 capitalize">
+                      {row.kabupaten || <span className="text-gray-400">-</span>}
+                      {row.errors.find(e => e.field === 'kabupaten') && (
+                        <div className="text-xs text-red-600 mt-1">
+                          {row.errors.find(e => e.field === 'kabupaten')?.message}
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-3 py-2">
+                      {row.provinsi ? (
+                        <span className="text-green-700 font-medium">{row.provinsi}</span>
+                      ) : (
+                        <span className="text-gray-400 italic">auto</span>
+                      )}
+                      {row.errors.find(e => e.field === 'provinsi') && (
+                        <div className="text-xs text-red-600 mt-1">
+                          {row.errors.find(e => e.field === 'provinsi')?.message}
                         </div>
                       )}
                     </td>
@@ -224,10 +268,10 @@ export default function BulkInputForm() {
         <div className="flex gap-3">
           <button
             onClick={handleSave}
-            disabled={isSaving || validCount === 0}
+            disabled={isSaving || errorCount > 0}
             className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed font-medium"
           >
-            {isSaving ? 'Menyimpan...' : `Simpan ${validCount} Data Valid`}
+            {isSaving ? 'Menyimpan...' : 'Simpan'}
           </button>
           
           <button

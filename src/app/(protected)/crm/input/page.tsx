@@ -3,7 +3,7 @@ import Link from 'next/link';
 
 export default function CRMInputPage() {
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen">
       <div className="max-w-6xl mx-auto p-6">
         {/* Breadcrumb */}
         <div className="mb-6">
@@ -26,6 +26,8 @@ export default function CRMInputPage() {
           <h3 className="font-semibold text-blue-900 mb-2">💡 Tips:</h3>
           <ul className="text-sm text-blue-800 space-y-1">
             <li>• Copy-paste langsung dari Excel atau Google Sheets</li>
+            <li>• Format: <strong>Nama, WA, Kebutuhan, Kabupaten/Kota, Luasan</strong></li>
+            <li>• Provinsi akan otomatis terisi dari database berdasarkan Kabupaten</li>
             <li>• Format WA otomatis dinormalisasi (08xxx → 628xxx)</li>
             <li>• Kebutuhan tidak case-sensitive (rumah = RUMAH = Rumah)</li>
             <li>• Luasan boleh kosong (opsional)</li>

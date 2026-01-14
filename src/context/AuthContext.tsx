@@ -4,7 +4,7 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 
 interface User {
   username: string;
-  role?: "admin" | "user"; // Optional role, defaults to 'user'
+  role?: "admin" | "user" | "guest"; // Optional role, defaults to 'user'
 }
 
 interface AuthContextType {
@@ -24,6 +24,7 @@ const DEFAULT_USERS = [
   { username: "admin", password: "leora123", role: "admin" as const },
   { username: "user1", password: "user123", role: "user" as const },
   { username: "user2", password: "user456", role: "user" as const },
+  { username: "guest", password: "guest123", role: "guest" as const },
 ];
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {

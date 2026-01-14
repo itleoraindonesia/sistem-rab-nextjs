@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Client, supabase } from '@/lib/supabaseClient';
 import { formatWhatsAppDisplay, formatDate, formatLuasan } from '@/lib/crm/formatters';
 import { VALID_KEBUTUHAN } from '@/lib/crm/validators';
+import EditClientModal from './EditClientModal';
 
 interface ClientsTableProps {
   onClientSelect?: (client: Client) => void;
@@ -16,6 +17,8 @@ export default function ClientsTable({ onClientSelect }: ClientsTableProps) {
   const [filterKebutuhan, setFilterKebutuhan] = useState<string>('');
   const [sortBy, setSortBy] = useState<'created_at' | 'nama'>('created_at');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     fetchClients();
@@ -63,7 +66,8 @@ export default function ClientsTable({ onClientSelect }: ClientsTableProps) {
       const matchesSearch = 
         client.nama.toLowerCase().includes(search) ||
         client.whatsapp.includes(search) ||
-        client.lokasi.toLowerCase().includes(search);
+        (client.kabupaten && client.kabupaten.toLowerCase().includes(search)) ||
+        (client.provinsi && client.provinsi.toLowerCase().includes(search));
       
       if (!matchesSearch) return false;
     }
@@ -96,7 +100,7 @@ export default function ClientsTable({ onClientSelect }: ClientsTableProps) {
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Nama, WA, atau Lokasi..."
+              placeholder="Nama, WA, Kabupaten, atau Provinsi..."
               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
@@ -132,8 +136,9 @@ export default function ClientsTable({ onClientSelect }: ClientsTableProps) {
       </div>
 
       {/* Results Count */}
-      <div className="text-sm text-gray-600">
-        Menampilkan {filteredClients.length} dari {clients.length} client
+      <div className="flex items-center justify-between text-sm text-gray-600">
+        <span>Menampilkan {filteredClients.length} dari {clients.length} client</span>
+        <span className="text-blue-600 italic">💡 Klik untuk edit data</span>
       </div>
 
       {/* Table */}
@@ -151,8 +156,9 @@ export default function ClientsTable({ onClientSelect }: ClientsTableProps) {
                 </th>
                 <th className="px-4 py-3 text-left">WhatsApp</th>
                 <th className="px-4 py-3 text-left">Kebutuhan</th>
-                <th className="px-4 py-3 text-left">Lokasi</th>
-                <th className="px-4 py-3 text-left">Luasan</th>
+                <th className="px-4 py-3 text-left">Kabupaten/Kota</th>
+                <th className="px-4 py-3 text-left">Provinsi</th>
+                <th className="px-4 py-3 text-left">Luasan/Keliling</th>
                 <th 
                   className="px-4 py-3 text-left cursor-pointer hover:bg-gray-100"
                   onClick={() => handleSort('created_at')}
@@ -164,7 +170,7 @@ export default function ClientsTable({ onClientSelect }: ClientsTableProps) {
             <tbody>
               {filteredClients.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
+                  <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
                     Tidak ada data client
                   </td>
                 </tr>
@@ -173,7 +179,11 @@ export default function ClientsTable({ onClientSelect }: ClientsTableProps) {
                   <tr
                     key={client.id}
                     className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer"
-                    onClick={() => onClientSelect?.(client)}
+                    onClick={() => {
+                      setSelectedClient(client);
+                      setIsModalOpen(true);
+                      onClientSelect?.(client);
+                    }}
                   >
                     <td className="px-4 py-3 text-gray-500">{index + 1}</td>
                     <td className="px-4 py-3 font-medium">{client.nama}</td>
@@ -185,7 +195,8 @@ export default function ClientsTable({ onClientSelect }: ClientsTableProps) {
                         {client.kebutuhan}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-gray-600">{client.lokasi}</td>
+                    <td className="px-4 py-3 text-gray-600 capitalize">{client.kabupaten || '-'}</td>
+                    <td className="px-4 py-3 text-gray-600">{client.provinsi || '-'}</td>
                     <td className="px-4 py-3 text-gray-600">
                       {formatLuasan(client.luasan, client.kebutuhan)}
                     </td>
@@ -199,6 +210,19 @@ export default function ClientsTable({ onClientSelect }: ClientsTableProps) {
           </table>
         </div>
       </div>
+
+      {/* Edit Modal */}
+      <EditClientModal
+        client={selectedClient}
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false);
+          setSelectedClient(null);
+        }}
+        onSuccess={() => {
+          fetchClients(); // Refresh the list
+        }}
+      />
     </div>
   );
 }

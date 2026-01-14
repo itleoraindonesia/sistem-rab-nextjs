@@ -8,7 +8,9 @@ export interface ClientData {
   nama: string;
   whatsapp: string;
   kebutuhan: string;
-  lokasi: string;
+  produk: string;
+  kabupaten: string;
+  provinsi: string;
   luasan: string | number | null;
 }
 
@@ -25,6 +27,19 @@ export const VALID_KEBUTUHAN = [
   'Panel Saja',
 ] as const;
 
+// Valid produk options
+export const VALID_PRODUK = [
+  'Panel Beton',
+  'Pagar Beton',
+  'Sandwich Panel',
+  'Panel Surya',
+  'Plastik Board',
+  'Ponton Terapung',
+  'Jasa Konstruksi',
+  'Jasa Renovasi',
+  'Jasa RAB / Gambar',
+] as const;
+
 // Flexible matching for kebutuhan
 const KEBUTUHAN_ALIASES: Record<string, string> = {
   'kos': 'Kos/Kontrakan',
@@ -37,6 +52,21 @@ const KEBUTUHAN_ALIASES: Record<string, string> = {
   'rs': 'Rumah Sakit',
   'rumahsakit': 'Rumah Sakit',
   'panel': 'Panel Saja',
+};
+
+// Flexible matching for produk
+const PRODUK_ALIASES: Record<string, string> = {
+  'panel': 'Panel Beton',
+  'pagar': 'Pagar Beton',
+  'sandwich': 'Sandwich Panel',
+  'surya': 'Panel Surya',
+  'solar': 'Panel Surya',
+  'plastik': 'Plastik Board',
+  'ponton': 'Ponton Terapung',
+  'konstruksi': 'Jasa Konstruksi',
+  'renovasi': 'Jasa Renovasi',
+  'rab': 'Jasa RAB / Gambar',
+  'gambar': 'Jasa RAB / Gambar',
 };
 
 // Validate WhatsApp number format
@@ -103,6 +133,30 @@ export function normalizeKebutuhan(kebutuhan: string): string {
   return kebutuhan.trim();
 }
 
+// Normalize produk (case-insensitive, flexible matching)
+export function normalizeProduk(produk: string): string {
+  if (!produk) return '';
+  
+  const cleaned = produk.trim().toLowerCase();
+  
+  // Check aliases first
+  if (PRODUK_ALIASES[cleaned]) {
+    return PRODUK_ALIASES[cleaned];
+  }
+  
+  // Check exact match (case-insensitive)
+  const exactMatch = VALID_PRODUK.find(
+    (valid) => valid.toLowerCase() === cleaned
+  );
+  
+  if (exactMatch) {
+    return exactMatch;
+  }
+  
+  // Return original if no match
+  return produk.trim();
+}
+
 // Validate client data
 export function validateClient(data: ClientData): ValidationError[] {
   const errors: ValidationError[] = [];
@@ -139,20 +193,37 @@ export function validateClient(data: ClientData): ValidationError[] {
     });
   }
   
-  // Validate lokasi (hanya kabupaten/kota)
-  if (!data.lokasi || data.lokasi.trim().length < 3) {
+  // Validate produk
+  const normalizedProduk = normalizeProduk(data.produk);
+  if (!data.produk || data.produk.trim().length === 0) {
     errors.push({
-      field: 'lokasi',
-      message: 'Lokasi harus minimal 3 karakter',
+      field: 'produk',
+      message: `Produk tidak valid. Pilihan: ${VALID_PRODUK.join(', ')}`,
+    });
+  } else if (!VALID_PRODUK.includes(normalizedProduk as any)) {
+    errors.push({
+      field: 'produk',
+      message: `Produk tidak valid. Pilihan: ${VALID_PRODUK.join(', ')}`,
     });
   }
   
-  if (data.lokasi && data.lokasi.length > 100) {
+  // Validate kabupaten
+  if (!data.kabupaten || data.kabupaten.trim().length < 3) {
     errors.push({
-      field: 'lokasi',
-      message: 'Lokasi maksimal 100 karakter',
+      field: 'kabupaten',
+      message: 'Kabupaten/Kota harus minimal 3 karakter',
     });
   }
+  
+  if (data.kabupaten && data.kabupaten.length > 100) {
+    errors.push({
+      field: 'kabupaten',
+      message: 'Kabupaten/Kota maksimal 100 karakter',
+    });
+  }
+  
+  // Note: provinsi validation is skipped here since it's auto-populated
+  // The enrichWithProvinsi function will handle kabupaten lookup validation
   
   // Validate luasan (optional, but must be valid if provided)
   if (data.luasan !== null && data.luasan !== undefined && data.luasan !== '') {
