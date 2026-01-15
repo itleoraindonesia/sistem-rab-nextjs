@@ -2,18 +2,18 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { LayoutDashboard, FileText, Package, Home, LogOut } from "lucide-react";
-import { useAuth } from "../../context/AuthContext";
 import Image from "next/image";
+import { supabase } from "../../lib/supabase/client";
 
 const navItems = [
   { name: "Dashboard", path: "/", icon: LayoutDashboard, children: [] },
   {
     name: "Dokumen RAB",
-    path: "/rab",
+    path: "/produk-rab",
     icon: FileText,
-    children: ["/rab/baru", "/rab/edit", "/rab/print"], // Child route patterns
+    children: ["/produk-rab/baru", "/produk-rab/edit", "/produk-rab/print"], // Child route patterns
     activeColor: "green", // Warna untuk child routes
   },
   { name: "Master Data", path: "/master", icon: Package, children: [] },
@@ -36,7 +36,8 @@ export default function Navbar({
 }: NavbarProps) {
   const [isMobile, setIsMobile] = useState(false);
   const pathname = usePathname();
-  const { user, logout } = useAuth();
+  const router = useRouter();
+  const [user, setUser] = useState<{ username: string } | null>(null);
 
   useEffect(() => {
     const checkScreen = () => setIsMobile(window.innerWidth < 768);
@@ -45,14 +46,29 @@ export default function Navbar({
     return () => window.removeEventListener("resize", checkScreen);
   }, []);
 
+  useEffect(() => {
+    const fetchUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        setUser({ username: session.user.email?.split('@')[0] || 'User' });
+      }
+    };
+    fetchUser();
+  }, []);
+
+  const logout = async () => {
+    await supabase.auth.signOut();
+    router.push('/login');
+  };
+
   // Helper function to check if current path is child of parent
   const isChildRoute = (item: (typeof navItems)[0]) => {
     if (!item.children || item.children.length === 0) return false;
 
     // Special handling for RAB routes - simplified logic
-    if (item.path === "/rab") {
-      // If path starts with /rab/ but is not exactly /rab, it's a child route
-      if (pathname.startsWith("/rab/") && pathname !== "/rab") {
+    if (item.path === "/produk-rab") {
+      // If path starts with /produk-rab/ but is not exactly /produk-rab, it's a child route
+      if (pathname.startsWith("/produk-rab/") && pathname !== "/produk-rab") {
         return true;
       }
     }

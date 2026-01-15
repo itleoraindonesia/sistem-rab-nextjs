@@ -219,13 +219,13 @@ export const columns: ColumnDef<RABDocument>[] = [
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>Actions</DropdownMenuLabel>
             <DropdownMenuItem asChild>
-              <Link href={`/rab/${item.id}`}>
+              <Link href={`/produk-rab/${item.id}`}>
                 <Eye className="mr-2 h-4 w-4" />
                 Lihat Detail
               </Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
-              <Link href={`/rab/edit/${item.id}`}>
+              <Link href={`/produk-rab/edit/${item.id}`}>
                 <Pencil className="mr-2 h-4 w-4" />
                 Edit
               </Link>
