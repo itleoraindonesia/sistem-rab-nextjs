@@ -2,9 +2,8 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "../../../../lib/supabaseClient";
+import { supabase } from "../../../../lib/supabase/client";
 import { MasterOngkirDataTable } from "../../../../components/tables/MasterOngkirDataTable";
-import { useAuth } from "../../../../context/AuthContext";
 
 interface Ongkir {
   id?: string;
@@ -14,14 +13,44 @@ interface Ongkir {
 }
 
 export default function MasterOngkirPage() {
-  const { user } = useAuth();
-  const isAdmin = user?.role === 'admin';
-
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [authLoading, setAuthLoading] = useState(true);
   const [ongkir, setOngkir] = useState<Ongkir[]>([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
+  useEffect(() => {
+    const checkUserRole = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          const { data: userData } = await supabase
+            .from('users')
+            .select('role')
+            .eq('id', session.user.id)
+            .single();
+          
+          setIsAdmin(userData?.role === 'admin');
+        }
+      } catch (error) {
+        console.error("Error checking user role:", error);
+      } finally {
+        setAuthLoading(false);
+      }
+    };
+
+    checkUserRole();
+  }, []);
+
   // Check if user has admin access
+  if (authLoading) {
+    return (
+      <div className="flex h-[50vh] items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-primary"></div>
+      </div>
+    );
+  }
+
   if (!isAdmin) {
     return (
       <div className='p-4 max-w-7xl mx-auto'>

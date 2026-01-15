@@ -12,30 +12,53 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 
+// Map segment paths to readable names
+const BREADCRUMB_MAP: Record<string, string> = {
+  "produk-rab": "Dokumen RAB",
+  "dokumen": "Administrasi",
+  "crm": "Marketing (CRM)",
+  "supply-chain": "Supply Chain",
+  "master": "Master Data",
+  "meeting": "Meeting",
+  "baru": "Buat Baru",
+  "edit": "Edit",
+  "panel-lantai-dinding": "Panel Lantai & Dinding",
+  "pagar-beton": "Pagar Beton",
+  "dashboard": "Dashboard",
+  "surat-keluar": "Surat Keluar",
+  "memo": "Memo",
+  "mom": "MoM",
+  "review": "Review",
+  "approval": "Approval",
+  "clients": "Clients",
+  "input": "Input",
+  "panel": "Data Panel",
+  "ongkir": "Data Ongkir",
+  "pr": "Purchase Request",
+  "po": "Purchase Order",
+  "list-material": "List Material"
+};
+
 export default function Header() {
   const pathname = usePathname();
 
   // Generate breadcrumbs based on current path
   const generateBreadcrumbs = () => {
     const segments = pathname.split('/').filter(Boolean);
-    const breadcrumbs = [{ name: 'Dashboard', path: '/' }];
+    const breadcrumbs = [{ name: 'Dashboard', path: '/' }]; // Always start with Dashboard
 
     let currentPath = '';
     segments.forEach((segment, index) => {
       currentPath += `/${segment}`;
+      
+      // Ignore dynamic ID segments (alphanumeric with length > 10 usually IDs)
+      // or straightforward numbers
+      const isId = segment.length > 20 || !isNaN(Number(segment)); 
+      
+      const name = BREADCRUMB_MAP[segment] || segment.charAt(0).toUpperCase() + segment.slice(1).replace(/-/g, ' ');
 
-      // Skip the first segment if it's the main protected route
-      if (index === 0 && segment === 'rab') {
-        breadcrumbs.push({ name: 'Dokumen RAB', path: currentPath });
-      } else if (segment === 'baru') {
-        breadcrumbs.push({ name: 'Buat Baru', path: currentPath });
-      } else if (segment === 'edit') {
-        breadcrumbs.push({ name: 'Edit', path: currentPath });
-      } else if (segment === 'master') {
-        breadcrumbs.push({ name: 'Master Data', path: currentPath });
-      } else if (!isNaN(Number(segment))) {
-        // ID parameter - don't add to breadcrumbs
-        return;
+      if (!isId) {
+        breadcrumbs.push({ name, path: currentPath });
       }
     });
 
@@ -45,26 +68,33 @@ export default function Header() {
   const breadcrumbs = generateBreadcrumbs();
 
   return (
-    <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
-      <SidebarTrigger className="-ml-1" />
-      <Breadcrumb>
-        <BreadcrumbList>
-          {breadcrumbs.map((crumb, index) => (
-            <div key={crumb.path} className="flex items-center">
-              {index > 0 && <BreadcrumbSeparator />}
-              <BreadcrumbItem>
-                {index === breadcrumbs.length - 1 ? (
-                  <BreadcrumbPage>{crumb.name}</BreadcrumbPage>
-                ) : (
-                  <BreadcrumbLink href={crumb.path}>
-                    {crumb.name}
-                  </BreadcrumbLink>
-                )}
-              </BreadcrumbItem>
-            </div>
-          ))}
-        </BreadcrumbList>
-      </Breadcrumb>
+    <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4 sticky top-0 bg-background z-10 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12 shadow-sm">
+      <div className="flex items-center gap-2 px-4">
+        <SidebarTrigger className="-ml-1" />
+        <div className="h-6 w-px bg-slate-200 dark:bg-slate-800" />
+        <Breadcrumb>
+          <BreadcrumbList>
+            {breadcrumbs.map((crumb, index) => {
+              const isLast = index === breadcrumbs.length - 1;
+              
+              return (
+                <div key={crumb.path} className="flex items-center">
+                  {index > 0 && <BreadcrumbSeparator className="mx-2" />}
+                  <BreadcrumbItem>
+                    {isLast ? (
+                      <BreadcrumbPage>{crumb.name}</BreadcrumbPage>
+                    ) : (
+                      <BreadcrumbLink href={crumb.path}>
+                        {crumb.name}
+                      </BreadcrumbLink>
+                    )}
+                  </BreadcrumbItem>
+                </div>
+              );
+            })}
+          </BreadcrumbList>
+        </Breadcrumb>
+      </div>
     </header>
   );
 }

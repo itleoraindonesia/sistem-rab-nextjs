@@ -1,25 +1,40 @@
-'use client';
+"use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useAuth } from "../../../context/AuthContext";
+import { supabase } from "../../../lib/supabase/client";
 
 export default function MasterData() {
-  const { user } = useAuth();
-  const isAdmin = user?.role === 'admin';
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  // Check if user has admin access
-  if (!isAdmin) {
+  useEffect(() => {
+    const checkUserRole = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          const { data: userData } = await supabase
+            .from('users')
+            .select('role')
+            .eq('id', session.user.id)
+            .single();
+          
+          setIsAdmin(userData?.role === 'admin');
+        }
+      } catch (error) {
+        console.error("Error checking user role:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkUserRole();
+  }, []);
+
+  if (loading) {
     return (
-      <div className='p-4 max-w-7xl mx-auto'>
-        <div className='text-center py-20'>
-          <div className='text-6xl mb-4'>🔒</div>
-          <h1 className='text-2xl font-bold text-gray-900 mb-2'>
-            Akses Terbatas
-          </h1>
-          <p className='text-gray-600'>
-            Anda tidak memiliki akses ke halaman Master Data
-          </p>
-        </div>
+      <div className="flex h-[50vh] items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-primary"></div>
       </div>
     );
   }

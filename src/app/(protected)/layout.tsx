@@ -4,8 +4,8 @@ import { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Header from "../../components/layout/Header";
 import { AppSidebar } from "../../components/layout/AppSidebar";
-import { useAuth } from "../../context/AuthContext";
 import { FormProvider } from "../../context/FormContext";
+import { supabase } from "../../lib/supabase/client";
 import {
   SidebarInset,
   SidebarProvider,
@@ -17,41 +17,34 @@ export default function ProtectedLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
-  const [isMobile, setIsMobile] = useState(false);
-  const [isFormValid, setIsFormValid] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isFormValid, setIsFormValid] = useState(true);
 
-  // Responsive screen detection
+  // Check authentication status
   useEffect(() => {
-    const checkScreen = () => {
-      const mobile = window.innerWidth < 768;
-      const tablet = window.innerWidth >= 768 && window.innerWidth < 1024;
-      setIsMobile(mobile);
-
-      // Optional: Add body classes for responsive styling
-      document.body.classList.toggle("mobile-view", mobile);
-      document.body.classList.toggle("tablet-view", tablet);
-      document.body.classList.toggle("desktop-view", window.innerWidth >= 1024);
+    const checkAuth = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!session) {
+          router.push(`/login?redirect=${pathname}`);
+        } else {
+          setIsAuthenticated(true);
+        }
+      } catch (error) {
+        console.error("Error checking auth:", error);
+        router.push(`/login?redirect=${pathname}`);
+      } finally {
+        setIsLoading(false);
+      }
     };
 
-    checkScreen();
-    window.addEventListener("resize", checkScreen);
-    return () => window.removeEventListener("resize", checkScreen);
-  }, []);
-
-  // Check if current route is form route
-  const isFormRoute =
-    pathname === "/rab/baru" || pathname.startsWith("/rab/edit/");
-
-  // Redirect if not authenticated - move to useEffect to avoid setState during render
-  useEffect(() => {
-    if (!isAuthenticated && !isLoading) {
-      router.push(`/login?redirect=${pathname}`);
-    }
-  }, [isAuthenticated, isLoading, pathname, router]);
+    checkAuth();
+  }, [router, pathname]);
 
   // Loading state
   if (isLoading) {

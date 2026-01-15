@@ -9,3 +9,5 @@ export {
 } from "./Card";
 export { Input } from "./input";
 export { Label } from "./label";
+export { Textarea } from "./textarea";
+export { RichTextEditor } from "./RichTextEditor";
