@@ -8,9 +8,11 @@ import Button from "../../../../../components/ui/Button"
 import { Input } from "../../../../../components/ui/input"
 import { Label } from "../../../../../components/ui/label"
 import { Alert, AlertDescription, AlertTitle } from "../../../../../components/ui/alert"
+import { RichTextEditor } from "../../../../../components/ui"
 
 export default function BuatMemoPage() {
   const router = useRouter()
+  const [isiMemo, setIsiMemo] = React.useState('')
 
   return (
     <div className="container mx-auto">
@@ -59,14 +61,22 @@ export default function BuatMemoPage() {
 
                 <div>
                   <Label htmlFor="content">Isi Memo *</Label>
-                  <textarea
-                    id="content"
-                    rows={10}
-                    className="w-full border rounded-md p-3"
-                    placeholder="Tulis isi memo di sini... (akan menggunakan rich text editor)"
+                  <RichTextEditor
+                    value={isiMemo}
+                    onChange={setIsiMemo}
+                    placeholder={`Sehubungan dengan...
+
+Dengan ini diberitahukan bahwa...
+
+Untuk itu, dimohon agar...
+
+Demikian memo ini disampaikan, atas perhatian dan kerjasamanya diucapkan terima kasih.
+
+[Gunakan toolbar di atas untuk memformat teks memo]`}
+                    className="mt-2"
                   />
                   <p className="text-sm text-gray-500 mt-1">
-                    💡 Akan menggunakan rich text editor (TipTap/Quill) untuk formatting
+                    💡 Rich text editor dengan toolbar lengkap untuk memformat memo profesional
                   </p>
                 </div>
               </div>

@@ -3,7 +3,7 @@ import Link from 'next/link';
 
 export default function CRMInputPage() {
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-white">
       <div className="max-w-6xl mx-auto p-6">
         {/* Breadcrumb */}
         <div className="mb-6">
@@ -22,7 +22,7 @@ export default function CRMInputPage() {
         </div>
 
         {/* Help Section */}
-        <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div className="mt-6 bg-white border border-gray-200 rounded-lg p-4">
           <h3 className="font-semibold text-blue-900 mb-2">💡 Tips:</h3>
           <ul className="text-sm text-blue-800 space-y-1">
             <li>• Copy-paste langsung dari Excel atau Google Sheets</li>

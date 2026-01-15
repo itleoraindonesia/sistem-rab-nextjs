@@ -2,16 +2,36 @@
 
 import * as React from "react"
 import { useRouter } from "next/navigation"
-import { ArrowLeft, Save, Send, Upload, X } from "lucide-react"
+import { ArrowLeft, Save, Send, Upload, X, Plus, Trash2 } from "lucide-react"
 import { Card, CardContent } from "../../../../../components/ui"
 import Button from "../../../../../components/ui/Button"
 import { Input } from "../../../../../components/ui/input"
 import { Label } from "../../../../../components/ui/label"
 import { Alert, AlertDescription, AlertTitle } from "../../../../../components/ui/alert"
+import { RichTextEditor } from "../../../../../components/ui"
+import { KATEGORI_SURAT } from "../page"
+
+// Instansi options
+const INSTANSI_OPTIONS = [
+  "PT Maju Mandiri Gemilang Terang",
+  "PT Leora Konstruksi Indonesia",
+]
+
+interface Signature {
+  id: string
+  name: string
+  position: string
+  order: number
+}
 
 export default function BuatSuratKeluarPage() {
   const router = useRouter()
   const [attachments, setAttachments] = React.useState<Array<{ id: string; name: string; size: string }>>([])
+  const [signatures, setSignatures] = React.useState<Signature[]>([
+    { id: "1", name: "", position: "", order: 1 }
+  ])
+  const [hasLampiran, setHasLampiran] = React.useState(false)
+  const [isiSurat, setIsiSurat] = React.useState('')
 
   const handleAddFile = () => {
     // Mock file addition - in real app, this would open file picker
@@ -27,6 +47,26 @@ export default function BuatSuratKeluarPage() {
     setAttachments(attachments.filter(file => file.id !== id))
   }
 
+  const handleAddSignature = () => {
+    const newSignature: Signature = {
+      id: Date.now().toString(),
+      name: "",
+      position: "",
+      order: signatures.length + 1
+    }
+    setSignatures([...signatures, newSignature])
+  }
+
+  const handleRemoveSignature = (id: string) => {
+    setSignatures(signatures.filter(sig => sig.id !== id))
+  }
+
+  const handleSignatureChange = (id: string, field: 'name' | 'position', value: string) => {
+    setSignatures(signatures.map(sig => 
+      sig.id === id ? { ...sig, [field]: value } : sig
+    ))
+  }
+
   return (
     <div className="container mx-auto">
       <div className="space-y-6">
@@ -37,99 +77,362 @@ export default function BuatSuratKeluarPage() {
           </Button>
           <div>
             <h1 className="text-2xl font-bold text-brand-primary">Buat Surat Keluar Baru</h1>
-            <p className="text-gray-600">Isi form di bawah untuk membuat surat keluar</p>
+            <p className="text-gray-600">Isi form dengan 5 section sesuai format surat resmi</p>
           </div>
         </div>
 
         {/* Info Alert */}
-        <Alert className="bg-rose-50 border-rose-200">
-          <AlertTitle className="text-rose-900">Preview Mode - Form Fields</AlertTitle>
-          <AlertDescription className="text-rose-800">
-            Form ini menampilkan semua field yang akan ada di database. Belum ada fungsi simpan.
+        <Alert className="bg-blue-50 border-blue-200">
+          <AlertTitle className="text-blue-900">Format Surat Baru</AlertTitle>
+          <AlertDescription className="text-blue-800">
+            Form ini mengikuti struktur: <strong>Identitas → Konten → Pengirim → Penerima → Lampiran & TTD</strong>
+            <br />
+            Nomor surat akan di-generate otomatis setelah approved.
           </AlertDescription>
         </Alert>
 
         {/* Form */}
         <Card>
           <CardContent className="p-6">
-            <form className="space-y-6">
-              {/* Basic Info Section */}
+            <form className="space-y-8">
+              {/* Section 1: Identitas Surat */}
               <div className="space-y-4">
-                <h3 className="text-lg font-semibold border-b pb-2">Informasi Dasar</h3>
+                <div className="flex items-center gap-2 border-b pb-2">
+                  <div className="w-8 h-8 rounded-full bg-brand-primary text-white flex items-center justify-center font-bold text-sm">
+                    1
+                  </div>
+                  <h3 className="text-lg font-semibold">Identitas Surat</h3>
+                </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="title">Judul Surat *</Label>
-                    <Input id="title" placeholder="Contoh: Surat Penawaran Proyek..." />
+                    <Label htmlFor="no_ref">Nomor Surat</Label>
+                    <Input 
+                      id="no_ref" 
+                      disabled 
+                      placeholder="Auto-generated setelah approved"
+                      className="bg-gray-50"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Akan dibuat otomatis saat surat di-approve
+                    </p>
                   </div>
                   
                   <div>
-                    <Label htmlFor="recipient">Penerima *</Label>
-                    <Input id="recipient" placeholder="Nama perusahaan/instansi penerima" />
+                    <Label htmlFor="instansi">Instansi *</Label>
+                    <select 
+                      id="instansi"
+                      className="w-full border rounded-md p-2 h-10"
+                      defaultValue=""
+                    >
+                      <option value="" disabled>Pilih Instansi</option>
+                      {INSTANSI_OPTIONS.map((inst) => (
+                        <option key={inst} value={inst}>{inst}</option>
+                      ))}
+                    </select>
                   </div>
+
+                  <div>
+                    <Label htmlFor="kategori">Kategori Surat *</Label>
+                    <select 
+                      id="kategori"
+                      className="w-full border rounded-md p-2 h-10"
+                      defaultValue=""
+                    >
+                      <option value="" disabled>Pilih Kategori</option>
+                      {KATEGORI_SURAT.map((kat) => (
+                        <option key={kat} value={kat}>{kat}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="tanggal">Tanggal *</Label>
+                    <Input 
+                      id="tanggal" 
+                      type="date"
+                      defaultValue={new Date().toISOString().split('T')[0]}
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Default: hari ini
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Section 2: Konten Surat */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 border-b pb-2">
+                  <div className="w-8 h-8 rounded-full bg-brand-primary text-white flex items-center justify-center font-bold text-sm">
+                    2
+                  </div>
+                  <h3 className="text-lg font-semibold">Konten Surat</h3>
                 </div>
 
                 <div>
-                  <Label htmlFor="content">Isi Surat *</Label>
-                  <textarea
-                    id="content"
-                    rows={10}
-                    className="w-full border rounded-md p-3"
-                    placeholder="Tulis isi surat di sini... (akan menggunakan rich text editor)"
+                  <Label htmlFor="perihal">Perihal *</Label>
+                  <Input 
+                    id="perihal" 
+                    placeholder="Contoh: Penawaran Proyek Perumahan Griya Asri"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Ringkasan singkat isi surat
+                  </p>
+                </div>
+
+                <div>
+                  <Label htmlFor="isi_surat">Isi Surat *</Label>
+                  <RichTextEditor
+                    value={isiSurat}
+                    onChange={setIsiSurat}
+                    placeholder={`Dengan hormat,
+
+Bersama ini kami sampaikan bahwa...
+
+Demikian surat ini kami sampaikan, atas perhatian dan kerjasamanya kami ucapkan terima kasih.
+
+Hormat kami,
+
+
+[Gunakan toolbar di atas untuk memformat teks surat]`}
+                    className="mt-2"
                   />
                   <p className="text-sm text-gray-500 mt-1">
-                    💡 Akan menggunakan rich text editor (TipTap/Quill) untuk formatting
+                    💡 Rich text editor dengan toolbar lengkap untuk formatting surat profesional
                   </p>
                 </div>
               </div>
 
-              {/* Attachment Section */}
+              {/* Section 3: Pengirim */}
               <div className="space-y-4">
-                <h3 className="text-lg font-semibold border-b pb-2">Lampiran</h3>
-                
-                <div>
-                  <Label htmlFor="attachment">Upload File (Opsional)</Label>
-                  <div className="mt-2">
-                    <Button type="button" variant="outline" onClick={handleAddFile}>
-                      <Upload className="mr-2 h-4 w-4" />
-                      Tambah File
-                    </Button>
-                    <p className="text-sm text-gray-500 mt-2">
-                      Max 5MB per file - PDF, DOC, DOCX, JPG, PNG
-                    </p>
+                <div className="flex items-center gap-2 border-b pb-2">
+                  <div className="w-8 h-8 rounded-full bg-brand-primary text-white flex items-center justify-center font-bold text-sm">
+                    3
+                  </div>
+                  <h3 className="text-lg font-semibold">Pengirim</h3>
+                </div>
+
+                <div className="bg-green-50 p-4 rounded-md border border-green-200">
+                  <p className="text-sm text-green-800 mb-3">
+                    ✓ Data pengirim akan diisi otomatis dari informasi login Anda
+                  </p>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <Label className="text-green-900">Departemen</Label>
+                      <Input 
+                        disabled 
+                        placeholder="Sales & Marketing"
+                        className="bg-white"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-green-900">Nama</Label>
+                      <Input 
+                        disabled 
+                        placeholder="John Doe"
+                        className="bg-white"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-green-900">Email</Label>
+                      <Input 
+                        disabled 
+                        placeholder="john.doe@company.com"
+                        className="bg-white"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Section 4: Penerima */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 border-b pb-2">
+                  <div className="w-8 h-8 rounded-full bg-brand-primary text-white flex items-center justify-center font-bold text-sm">
+                    4
+                  </div>
+                  <h3 className="text-lg font-semibold">Penerima</h3>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="penerima_instansi">Nama Instansi *</Label>
+                    <Input 
+                      id="penerima_instansi" 
+                      placeholder="PT Maju Jaya Konstruksi"
+                    />
                   </div>
 
-                  {/* File List */}
-                  {attachments.length > 0 && (
-                    <div className="mt-4 space-y-2">
-                      <p className="text-sm font-medium">File yang akan diupload ({attachments.length}):</p>
-                      {attachments.map((file) => (
-                        <div
-                          key={file.id}
-                          className="flex items-center justify-between p-3 bg-blue-50 border border-blue-200 rounded-md"
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 bg-blue-500 rounded flex items-center justify-center text-white text-xs font-bold">
-                              📄
+                  <div>
+                    <Label htmlFor="penerima_nama">Nama Penerima *</Label>
+                    <Input 
+                      id="penerima_nama" 
+                      placeholder="Budi Santoso"
+                    />
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <Label htmlFor="penerima_alamat">Alamat *</Label>
+                    <Input 
+                      id="penerima_alamat" 
+                      placeholder="Jl. Sudirman No. 123, Jakarta Pusat"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="penerima_whatsapp">WhatsApp Number *</Label>
+                    <Input 
+                      id="penerima_whatsapp" 
+                      type="tel"
+                      placeholder="+62812345678"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="penerima_email">Email *</Label>
+                    <Input 
+                      id="penerima_email" 
+                      type="email"
+                      placeholder="budi@majujaya.co.id"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Section 5: Lampiran & Tanda Tangan */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 border-b pb-2">
+                  <div className="w-8 h-8 rounded-full bg-brand-primary text-white flex items-center justify-center font-bold text-sm">
+                    5
+                  </div>
+                  <h3 className="text-lg font-semibold">Lampiran & Tanda Tangan</h3>
+                </div>
+
+                {/* Lampiran */}
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    <input 
+                      type="checkbox" 
+                      id="has_lampiran"
+                      checked={hasLampiran}
+                      onChange={(e) => setHasLampiran(e.target.checked)}
+                      className="w-4 h-4"
+                    />
+                    <Label htmlFor="has_lampiran" className="cursor-pointer">
+                      Surat ini memiliki lampiran dokumen
+                    </Label>
+                  </div>
+
+                  {hasLampiran && (
+                    <div className="ml-7 space-y-3">
+                      <div>
+                        <Button type="button" variant="outline" onClick={handleAddFile}>
+                          <Upload className="mr-2 h-4 w-4" />
+                          Upload File
+                        </Button>
+                        <p className="text-sm text-gray-500 mt-2">
+                          Max 5MB per file - PDF, DOC, DOCX, JPG, PNG
+                        </p>
+                      </div>
+
+                      {/* File List */}
+                      {attachments.length > 0 && (
+                        <div className="space-y-2">
+                          <p className="text-sm font-medium">File yang akan diupload ({attachments.length}):</p>
+                          {attachments.map((file) => (
+                            <div
+                              key={file.id}
+                              className="flex items-center justify-between p-3 bg-blue-50 border border-blue-200 rounded-md"
+                            >
+                              <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 bg-blue-500 rounded flex items-center justify-center text-white text-xs font-bold">
+                                  📄
+                                </div>
+                                <div>
+                                  <p className="text-sm font-medium">{file.name}</p>
+                                  <p className="text-xs text-gray-600">{file.size}</p>
+                                </div>
+                              </div>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleRemoveFile(file.id)}
+                                className="text-red-600 hover:text-red-800 hover:bg-red-50"
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
                             </div>
-                            <div>
-                              <p className="text-sm font-medium">{file.name}</p>
-                              <p className="text-xs text-gray-600">{file.size}</p>
-                            </div>
-                          </div>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleRemoveFile(file.id)}
-                            className="text-red-600 hover:text-red-800 hover:bg-red-50"
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
+                          ))}
                         </div>
-                      ))}
+                      )}
                     </div>
                   )}
+                </div>
+
+                {/* Tanda Tangan */}
+                <div className="space-y-3 pt-4 border-t">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-base font-semibold">Kolom Tanda Tangan *</Label>
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      size="sm"
+                      onClick={handleAddSignature}
+                    >
+                      <Plus className="mr-2 h-4 w-4" />
+                      Tambah TTD
+                    </Button>
+                  </div>
+                  <p className="text-sm text-gray-600">
+                    Field TTD akan muncul di PDF. User bisa tanda tangan manual atau digital.
+                  </p>
+
+                  <div className="space-y-3">
+                    {signatures.map((sig, index) => (
+                      <div 
+                        key={sig.id}
+                        className="p-4 border rounded-md bg-gray-50"
+                      >
+                        <div className="flex items-start justify-between mb-3">
+                          <p className="text-sm font-medium text-gray-700">
+                            Tanda Tangan #{index + 1}
+                          </p>
+                          {signatures.length > 1 && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleRemoveSignature(sig.id)}
+                              className="text-red-600 hover:text-red-800 hover:bg-red-50 -mt-2"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          <div>
+                            <Label htmlFor={`sig_name_${sig.id}`}>Nama *</Label>
+                            <Input 
+                              id={`sig_name_${sig.id}`}
+                              placeholder="John Doe"
+                              value={sig.name}
+                              onChange={(e) => handleSignatureChange(sig.id, 'name', e.target.value)}
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor={`sig_position_${sig.id}`}>Jabatan *</Label>
+                            <Input 
+                              id={`sig_position_${sig.id}`}
+                              placeholder="Manager"
+                              value={sig.position}
+                              onChange={(e) => handleSignatureChange(sig.id, 'position', e.target.value)}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
 
@@ -140,11 +443,11 @@ export default function BuatSuratKeluarPage() {
                 <div className="bg-blue-50 p-4 rounded-md">
                   <h4 className="font-medium text-blue-900 mb-2">Alur Persetujuan:</h4>
                   <ol className="list-decimal list-inside space-y-1 text-sm text-blue-800">
-                    <li>Draft (Anda sedang di sini)</li>
+                    <li><strong>Draft</strong> (Anda sedang di sini)</li>
                     <li>Submit → Menunggu Review</li>
                     <li>Review oleh Reviewer → Approve/Request Revision</li>
                     <li>Approval oleh Approver → Approve/Reject</li>
-                    <li>Published → Surat siap dikirim</li>
+                    <li><strong>Published</strong> → Surat siap dikirim (Nomor surat di-generate)</li>
                   </ol>
                 </div>
 

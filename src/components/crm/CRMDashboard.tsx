@@ -8,7 +8,7 @@ interface DashboardStats {
   total: number;
   thisMonth: number;
   thisWeek: number;
-  byLokasi: { name: string; value: number }[];
+  byKabupaten: { name: string; value: number }[];
   byKebutuhan: { name: string; value: number }[];
   byMonth: { name: string; value: number }[];
 }
@@ -18,22 +18,28 @@ export default function CRMDashboard() {
     total: 0,
     thisMonth: 0,
     thisWeek: 0,
-    byLokasi: [],
+    byKabupaten: [],
     byKebutuhan: [],
     byMonth: [],
   });
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchStats();
   }, []);
 
   const fetchStats = async () => {
+    console.log('CRMDashboard: Starting to fetch stats...');
+
     if (!supabase) {
-      console.error('Supabase not configured');
+      console.error('CRMDashboard: Supabase client not available');
+      setStats(prevStats => ({ ...prevStats, total: -1 })); // Special flag for no supabase
       setLoading(false);
       return;
     }
+
+    console.log('CRMDashboard: Supabase client available, fetching data...');
 
     try {
       const { data: clients, error } = await supabase
@@ -41,12 +47,20 @@ export default function CRMDashboard() {
         .select('*')
         .order('created_at', { ascending: false });
 
+      console.log('CRMDashboard: Query result:', { clients: clients?.length, error });
+
+      // Type assertion to fix TypeScript errors
+      const typedClients = clients as Client[] | null;
+
       if (error) throw error;
 
-      if (!clients) {
+      if (!typedClients || typedClients.length === 0) {
+        console.log('CRMDashboard: No clients data available');
         setLoading(false);
         return;
       }
+
+      console.log('CRMDashboard: Processing', typedClients.length, 'clients');
 
       // Calculate stats
       const now = new Date();
@@ -54,32 +68,39 @@ export default function CRMDashboard() {
       startOfWeek.setDate(now.getDate() - 7);
       const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-      const thisWeek = clients.filter(c => new Date(c.created_at) >= startOfWeek).length;
-      const thisMonth = clients.filter(c => new Date(c.created_at) >= startOfMonth).length;
+      const thisWeek = typedClients.filter(c => new Date(c.created_at) >= startOfWeek).length;
+      const thisMonth = typedClients.filter(c => new Date(c.created_at) >= startOfMonth).length;
 
-      // By Lokasi (Kabupaten/Kota)
-      const lokasiMap = new Map<string, number>();
-      clients.forEach(c => {
-        const lokasi = c.lokasi.trim();
-        lokasiMap.set(lokasi, (lokasiMap.get(lokasi) || 0) + 1);
+      // By Kabupaten
+      const kabupatenMap = new Map<string, number>();
+      typedClients.forEach(c => {
+        if (c.lokasi) {
+          kabupatenMap.set(c.lokasi, (kabupatenMap.get(c.lokasi) || 0) + 1);
+        }
       });
-      const byLokasi = Array.from(lokasiMap.entries())
+      console.log('CRMDashboard: kabupatenMap size:', kabupatenMap.size, 'entries:', Array.from(kabupatenMap.entries()));
+      const byKabupaten = Array.from(kabupatenMap.entries())
         .map(([name, value]) => ({ name, value }))
         .sort((a, b) => b.value - a.value)
         .slice(0, 10);
+      console.log('CRMDashboard: byKabupaten:', byKabupaten);
 
       // By Kebutuhan
       const kebutuhanMap = new Map<string, number>();
-      clients.forEach(c => {
-        kebutuhanMap.set(c.kebutuhan, (kebutuhanMap.get(c.kebutuhan) || 0) + 1);
+      typedClients.forEach(c => {
+        if (c.kebutuhan) {
+          kebutuhanMap.set(c.kebutuhan, (kebutuhanMap.get(c.kebutuhan) || 0) + 1);
+        }
       });
+      console.log('CRMDashboard: kebutuhanMap size:', kebutuhanMap.size, 'entries:', Array.from(kebutuhanMap.entries()));
       const byKebutuhan = Array.from(kebutuhanMap.entries())
         .map(([name, value]) => ({ name, value }))
         .sort((a, b) => b.value - a.value);
+      console.log('CRMDashboard: byKebutuhan:', byKebutuhan);
 
       // By Month (last 6 months)
       const monthMap = new Map<string, number>();
-      clients.forEach(c => {
+      typedClients.forEach(c => {
         const date = new Date(c.created_at);
         const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
         monthMap.set(monthKey, (monthMap.get(monthKey) || 0) + 1);
@@ -97,16 +118,26 @@ export default function CRMDashboard() {
         });
       }
 
-      setStats({
-        total: clients.length,
+      console.log('CRMDashboard: Stats calculated:', {
+        total: typedClients.length,
         thisMonth,
         thisWeek,
-        byLokasi,
+        byKabupaten: byKabupaten.length,
+        byKebutuhan: byKebutuhan.length,
+        byMonth: last6Months.length
+      });
+
+      setStats({
+        total: typedClients.length,
+        thisMonth,
+        thisWeek,
+        byKabupaten,
         byKebutuhan,
         byMonth: last6Months,
       });
     } catch (error) {
       console.error('Error fetching stats:', error);
+      setError(error instanceof Error ? error.message : 'Failed to load dashboard data');
     } finally {
       setLoading(false);
     }
@@ -116,6 +147,30 @@ export default function CRMDashboard() {
     return (
       <div className="flex items-center justify-center py-12">
         <div className="text-gray-500">Loading dashboard...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="text-center">
+          <div className="text-red-500 mb-2">❌ Error loading dashboard</div>
+          <div className="text-gray-600 text-sm">{error}</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (stats.total === -1) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="text-center">
+          <div className="text-orange-500 mb-2">⚠️ Database connection unavailable</div>
+          <div className="text-gray-600 text-sm">
+            Please check your Supabase configuration and try again.
+          </div>
+        </div>
       </div>
     );
   }
@@ -142,10 +197,10 @@ export default function CRMDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* By Lokasi */}
         <div className="bg-white p-6 rounded-lg border border-gray-200">
-          <h3 className="text-lg font-semibold mb-4">📍 Clients by Lokasi</h3>
-          {stats.byLokasi.length > 0 ? (
+          <h3 className="text-lg font-semibold mb-4">📍 Clients by Kabupaten</h3>
+          {stats.byKabupaten.length > 0 ? (
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={stats.byLokasi}>
+              <BarChart data={stats.byKabupaten}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} fontSize={12} />
                 <YAxis />

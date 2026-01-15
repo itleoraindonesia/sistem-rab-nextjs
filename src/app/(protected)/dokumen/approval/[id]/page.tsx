@@ -2,47 +2,70 @@
 
 import * as React from "react"
 import { useRouter } from "next/navigation"
-import { ArrowLeft, CheckCircle, XCircle, FileDown, MessageSquare, Hash, Send, BarChart3 } from "lucide-react"
+import { ArrowLeft, CheckCircle, XCircle, MessageSquare, BarChart3 } from "lucide-react"
 import { Card, CardContent } from "../../../../../components/ui"
 import Button from "../../../../../components/ui/Button"
 import { Label } from "../../../../../components/ui/label"
 import { Alert, AlertDescription, AlertTitle } from "../../../../../components/ui/alert"
+import { SuratDetailView } from "../../../../../components/SuratDetailView"
 
 // Mock document data - in real app, this would come from URL params and database
 const mockDocument = {
   id: "1",
   type: "Surat Keluar",
-  title: "Surat Penawaran Proyek Perumahan Griya Asri",
-  recipient: "PT Maju Jaya Konstruksi",
-  content: `Kepada Yth,
-Direktur PT Maju Jaya Konstruksi
-Di tempat
-
-Dengan hormat,
-
-Bersama surat ini, kami dari PT Leora Indonesia bermaksud mengajukan penawaran kerjasama untuk Proyek Pembangunan Perumahan Griya Asri yang berlokasi di Tangerang Selatan.
-
-Kami telah melakukan survey lokasi dan menyiapkan proposal lengkap yang mencakup:
-1. Rencana Anggaran Biaya (RAB) detail
-2. Timeline pengerjaan proyek
-3. Spesifikasi material yang akan digunakan
-4. Portfolio proyek sejenis yang telah kami kerjakan
-
-Kami berharap dapat bekerjasama dengan PT Maju Jaya Konstruksi dalam proyek ini.
-
-Demikian surat penawaran ini kami sampaikan. Atas perhatian dan kerjasamanya, kami ucapkan terima kasih.
-
-Hormat kami,
-PT Leora Indonesia`,
-  attachment: {
-    name: "proposal-griya-asri.pdf",
-    size: "2.3 MB",
+  
+  // Section 1: Identitas Surat
+  no_ref: null, // akan di-generate setelah approved
+  instansi: "PT Leora Konstruksi Indonesia",
+  kategori_surat: "Surat Penawaran",
+  tanggal: "2026-01-10T10:00:00Z",
+  
+  // Section 2: Konten Surat
+  perihal: "Penawaran Proyek Perumahan Griya Asri",
+  isi_surat: `<p>Kepada Yth,<br>Direktur PT Maju Jaya Konstruksi<br>Di tempat</p>
+<p>Dengan hormat,</p>
+<p>Bersama surat ini, kami dari PT Leora Indonesia bermaksud mengajukan penawaran kerjasama untuk Proyek Pembangunan Perumahan Griya Asri yang berlokasi di Tangerang Selatan.</p>
+<p>Kami telah melakukan survey lokasi dan menyiapkan proposal lengkap yang mencakup:</p>
+<ol>
+<li>Rencana Anggaran Biaya (RAB) detail</li>
+<li>Timeline pengerjaan proyek</li>
+<li>Spesifikasi material yang akan digunakan</li>
+<li>Portfolio proyek sejenis yang telah kami kerjakan</li>
+</ol>
+<p>Kami berharap dapat bekerjasama dengan PT Maju Jaya Konstruksi dalam proyek ini.</p>
+<p>Demikian surat penawaran ini kami sampaikan. Atas perhatian dan kerjasamanya, kami ucapkan terima kasih.</p>
+<p>Hormat kami,<br>PT Leora Indonesia</p>`,
+  
+  // Section 3: Pengirim
+  pengirim: {
+    dept: "Sales & Marketing",
+    name: "John Doe",
+    email: "john.doe@leora.co.id",
   },
+  
+  // Section 4: Penerima
+  penerima: {
+    nama_instansi: "PT Maju Jaya Konstruksi",
+    nama_penerima: "Budi Santoso",
+    alamat: "Jl. Sudirman No. 123, Jakarta Pusat",
+    whatsapp: "+62812345678",
+    email: "budi@majujaya.co.id",
+  },
+  
+  // Section 5: Lampiran & Tanda Tangan
+  has_lampiran: true,
+  lampiran_files: ["proposal-griya-asri.pdf", "rab-detail.xlsx"],
+  signatures: [
+    { name: "John Doe", position: "Sales Manager", order: 1 },
+    { name: "Jane Smith", position: "Director", order: 2 },
+  ],
+  
+  // Workflow info
   submitter: "John Doe",
   submitted_at: "2026-01-10T10:00:00Z",
   reviewed_by: "Manager Review",
   reviewed_at: "2026-01-11T09:00:00Z",
-  review_notes: "Dokumen sudah sesuai, siap untuk approval",
+  review_notes: "Dokumen sudah sesuai dengan format baru (5 section). Semua field terisi lengkap. Siap untuk approval final.",
   priority: "normal",
   status: "reviewed",
 }
@@ -70,7 +93,7 @@ export default function ApprovalDetailPage() {
   }
 
   return (
-    <div className="container mx-auto max-w-4xl">
+    <div className="container mx-auto max-w-5xl">
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4 mb-4">
@@ -83,45 +106,23 @@ export default function ApprovalDetailPage() {
           </div>
         </div>
 
-        {/* Document Info Card */}
+        {/* Status Badge */}
         <Card>
-          <CardContent className="p-6">
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded text-sm font-semibold">
-                  {mockDocument.type}
-                </span>
-                <span className="px-3 py-1 bg-green-100 text-green-800 rounded text-sm font-semibold">
-                  ✓ Sudah Di-review
-                </span>
-              </div>
-
-              <div>
-                <h2 className="text-xl font-bold mb-2">{mockDocument.title}</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                  <div>
-                    <span className="text-gray-600">Penerima:</span>
-                    <p className="font-medium">{mockDocument.recipient}</p>
-                  </div>
-                  <div>
-                    <span className="text-gray-600">Diajukan oleh:</span>
-                    <p className="font-medium">{mockDocument.submitter}</p>
-                  </div>
-                  <div>
-                    <span className="text-gray-600">Tanggal Pengajuan:</span>
-                    <p className="font-medium">
-                      {new Date(mockDocument.submitted_at).toLocaleDateString("id-ID", {
-                        day: "2-digit",
-                        month: "long",
-                        year: "numeric",
-                      })}
-                    </p>
-                  </div>
-                  <div>
-                    <span className="text-gray-600">Di-review oleh:</span>
-                    <p className="font-medium">{mockDocument.reviewed_by}</p>
-                  </div>
-                </div>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2">
+              <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded text-sm font-semibold">
+                {mockDocument.type}
+              </span>
+              <span className="px-3 py-1 bg-green-100 text-green-800 rounded text-sm font-semibold">
+                ✓ Sudah Di-review
+              </span>
+              <div className="ml-auto text-sm text-gray-600">
+                Diajukan oleh: <strong>{mockDocument.submitter}</strong> pada{" "}
+                {new Date(mockDocument.submitted_at).toLocaleDateString("id-ID", {
+                  day: "2-digit",
+                  month: "long",
+                  year: "numeric",
+                })}
               </div>
             </div>
           </CardContent>
@@ -143,36 +144,8 @@ export default function ApprovalDetailPage() {
           </CardContent>
         </Card>
 
-        {/* Document Content */}
-        <Card>
-          <CardContent className="p-6">
-            <h3 className="text-lg font-semibold mb-4">Isi Surat</h3>
-            <div className="bg-gray-50 p-6 rounded-md border border-gray-200">
-              <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed">
-                {mockDocument.content}
-              </pre>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Attachment */}
-        {mockDocument.attachment && (
-          <Card>
-            <CardContent className="p-6">
-              <h3 className="text-lg font-semibold mb-4">Lampiran</h3>
-              <div className="flex items-center justify-between p-4 bg-blue-50 rounded-md border border-blue-200">
-                <div className="flex items-center gap-3">
-                  <FileDown className="h-8 w-8 text-blue-600" />
-                  <div>
-                    <p className="font-medium">{mockDocument.attachment.name}</p>
-                    <p className="text-sm text-gray-600">{mockDocument.attachment.size}</p>
-                  </div>
-                </div>
-                <Button variant="outline">Lihat File</Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+        {/* Document Detail - Using Reusable Component */}
+        <SuratDetailView data={mockDocument} showSectionNumbers={true} />
 
         {/* Approval Action Panel */}
         <Card className="border-2 border-blue-200">
@@ -184,9 +157,10 @@ export default function ApprovalDetailPage() {
               <AlertDescription className="text-blue-800">
                 <ul className="list-disc list-inside space-y-1 text-sm mt-2">
                   <li>Dokumen sudah melalui tahap review dan dinyatakan sesuai</li>
+                  <li>Periksa kembali kelengkapan 5 section (Identitas, Konten, Pengirim, Penerima, Lampiran & TTD)</li>
                   <li>Jika Anda setuju, klik "Approve" untuk mempublikasikan dokumen</li>
                   <li>Jika ada yang tidak sesuai, klik "Reject" dan berikan alasan penolakan</li>
-                  <li>Setelah di-approve, nomor surat akan otomatis di-generate</li>
+                  <li><strong>Setelah di-approve, nomor surat akan otomatis di-generate</strong></li>
                 </ul>
               </AlertDescription>
             </Alert>
@@ -276,7 +250,7 @@ export default function ApprovalDetailPage() {
                 </div>
                 <div>
                   <p className="font-medium text-gray-400">Published</p>
-                  <p className="text-sm text-gray-400">After approval</p>
+                  <p className="text-sm text-gray-400">After approval (nomor surat di-generate)</p>
                 </div>
               </div>
             </div>
