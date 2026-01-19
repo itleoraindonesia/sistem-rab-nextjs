@@ -108,19 +108,27 @@ export default function CRMDashboard() {
       // 4. By Week (last 7 days including today)
       const weekMap = new Map<string, number>();
       const today = new Date();
+      
+      // Helper to get local YYYY-MM-DD to avoid timezone issues with toISOString()
+      const getLocalDateKey = (d: Date) => {
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      };
 
       // Initialize last 7 days with 0 count
       for (let i = 6; i >= 0; i--) {
         const date = new Date(today);
         date.setDate(today.getDate() - i);
-        const dateKey = date.toISOString().split('T')[0]; // YYYY-MM-DD format
+        const dateKey = getLocalDateKey(date);
         weekMap.set(dateKey, 0);
       }
 
       // Count clients per day
       typedClients.forEach(c => {
         const clientDate = new Date(c.created_at);
-        const dateKey = clientDate.toISOString().split('T')[0];
+        const dateKey = getLocalDateKey(clientDate);
 
         // Only count if within last 7 days
         if (weekMap.has(dateKey)) {
@@ -131,12 +139,13 @@ export default function CRMDashboard() {
       // Convert to chart format with day names
       const byWeek = Array.from(weekMap.entries())
         .map(([dateKey, count]) => {
-          const date = new Date(dateKey + 'T00:00:00');
+          // Parse as local date to ensure correct day name
+          const [y, m, d] = dateKey.split('-').map(Number);
+          const date = new Date(y, m - 1, d);
+          
           const dayNames = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
           const dayIndex = date.getDay();
           const dayName = dayNames[dayIndex];
-
-
 
           return {
             day: dayName,
