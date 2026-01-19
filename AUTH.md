@@ -8,10 +8,11 @@ Sistem RAB Leora menggunakan **Supabase Auth** untuk authentication dan authoriz
 
 1. [Setup](#setup)
 2. [User Roles](#user-roles)
-3. [Database Schema](#database-schema)
-4. [Authentication Flow](#authentication-flow)
-5. [Usage Examples](#usage-examples)
-6. [Security](#security)
+3. [Role-Based Access Control (RBAC)](#role-based-access-control-rbac)
+4. [Database Schema](#database-schema)
+5. [Authentication Flow](#authentication-flow)
+6. [Usage Examples](#usage-examples)
+7. [Security](#security)
 
 ---
 
@@ -109,28 +110,118 @@ type UserRole = 'admin' | 'manager' | 'reviewer' | 'approver' | 'user'
 
 ---
 
+## Role-Based Access Control (RBAC)
+
+### Overview
+
+Sistem menggunakan **Role-Based Access Control (RBAC)** dengan department-based permissions untuk mengatur akses user ke berbagai modul aplikasi.
+
+### Department List
+
+- **Corsec**: Corporate Security
+- **Finance**: Keuangan & Accounting
+- **Human Capital**: SDM & HR (sebelumnya HR)
+- **Konstruksi**: Teknik & Konstruksi (sebelumnya IT)
+- **Marketing**: Pemasaran & Sales
+- **PBD**: Product Business Development (Full Access)
+- **SCM**: Supply Chain Management
+
+### Permission System
+
+#### Manager Permissions by Department
+
+| Department | Dashboard | Dokumen | Produk & RAB | CRM | Master Data | Meeting | Supply Chain |
+|------------|-----------|---------|--------------|-----|-------------|---------|--------------|
+| **Corsec** | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ |
+| **Finance** | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ | ❌ |
+| **Human Capital** | ✅ | ✅ | ❌ | ❌ | ❌ | ✅ | ❌ |
+| **Konstruksi** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
+| **Marketing** | ✅ | ❌ | ❌ | ✅ | ❌ | ✅ | ❌ |
+| **PBD** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **SCM** | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ |
+
+#### Role Permissions
+
+- **Admin**: Full access semua modul
+- **Manager**: Department-based access sesuai tabel di atas
+- **Reviewer**: Create + Submit + Review dokumen
+- **Approver**: Create + Submit + Approve dokumen
+- **User**: Create own + Submit + View limited
+
+### Frontend Implementation
+
+#### Permission Hooks
+
+```tsx
+import { usePermissions } from '@/hooks/usePermissions'
+
+function MyComponent() {
+  const { hasPermission, canAccess, user } = usePermissions()
+
+  if (!hasPermission('dokumen.create')) {
+    return <div>Access Denied</div>
+  }
+
+  return <CreateDocumentForm />
+}
+```
+
+#### Permission Guards
+
+```tsx
+import { PermissionGuard, RoleGuard } from '@/components/auth/PermissionGuard'
+
+// Permission-based rendering
+<PermissionGuard permissions={['dokumen.create']}>
+  <CreateButton />
+</PermissionGuard>
+
+// Role-based rendering
+<RoleGuard roles={['admin', 'manager']}>
+  <AdminPanel />
+</RoleGuard>
+```
+
+#### Route Protection
+
+```tsx
+import { requirePermission } from '@/lib/auth/routeGuard'
+
+export default async function AdminPage() {
+  const user = await requirePermission('users.manage')
+  // Page content - auto redirect if no permission
+}
+```
+
+### Menu Filtering
+
+Sidebar menu otomatis di-filter berdasarkan user permissions dan department. Menu yang tidak diizinkan akan disembunyikan.
+
+---
+
 ## Database Schema
 
 ### Users Table
 
 ```sql
 CREATE TABLE public.users (
-  id UUID PRIMARY KEY REFERENCES auth.users(id),
-  nik VARCHAR(50) UNIQUE NOT NULL,
-  username VARCHAR(100) UNIQUE NOT NULL,
-  email VARCHAR(255) UNIQUE NOT NULL,
-  nama VARCHAR(255) NOT NULL,
-  jabatan VARCHAR(100),
-  departemen VARCHAR(100),
-  no_hp VARCHAR(50),
-  instansi_id UUID REFERENCES public.instansi(id),
-  role user_role DEFAULT 'user',
-  is_active BOOLEAN DEFAULT true,
-  avatar_url TEXT,
-  signature_image TEXT,
-  last_login_at TIMESTAMP WITH TIME ZONE,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  nik character varying NOT NULL UNIQUE,
+  username character varying NOT NULL UNIQUE,
+  email character varying NOT NULL UNIQUE,
+  nama character varying NOT NULL,
+  jabatan character varying,
+  departemen character varying,
+  no_hp character varying,
+  role USER-DEFINED DEFAULT 'user'::user_role,
+  is_active boolean DEFAULT true,
+  avatar_url text,
+  signature_image text,
+  last_login_at timestamp with time zone,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT users_pkey PRIMARY KEY (id),
+  CONSTRAINT users_id_fkey FOREIGN KEY (id) REFERENCES auth.users(id)
 );
 ```
 
@@ -152,18 +243,25 @@ CREATE TABLE public.instansi (
 
 - PT Maju Mandiri Gemilang Terang
 - PT Leora Konstruksi Indonesia
-- PT Niskala Teknologi
 
 ---
 
 ## Authentication Flow
 
-### Login Flow
+### Login Flow (Magic Link)
 
 ```
-User enters email + password
+User enters email
         ↓
-supabase.auth.signInWithPassword()
+supabase.auth.signInWithOtp() - Send magic link
+        ↓
+Email sent to user inbox
+        ↓
+User clicks magic link in email
+        ↓
+Redirect to /auth/callback with token
+        ↓
+supabase.auth.exchangeCodeForSession()
         ↓
 Session created (stored in cookies)
         ↓
@@ -213,10 +311,12 @@ Profile is created with:
 ```tsx
 import { supabase } from '@/lib/supabase/client'
 
-// Login
-const { data, error } = await supabase.auth.signInWithPassword({
+// Login with Magic Link
+const { data, error } = await supabase.auth.signInWithOtp({
   email: 'user@example.com',
-  password: 'password123'
+  options: {
+    emailRedirectTo: `${window.location.origin}/auth/callback`
+  }
 })
 
 // Logout
@@ -231,6 +331,19 @@ const { data: user } = await supabase
   .select('*')
   .eq('id', session.user.id)
   .single()
+
+// Permission checking
+import { usePermissions } from '@/hooks/usePermissions'
+
+function MyComponent() {
+  const { hasPermission, user } = usePermissions()
+
+  if (!hasPermission('dokumen.create')) {
+    return <div>Access Denied</div>
+  }
+
+  return <CreateDocumentForm />
+}
 ```
 
 ### Server Component
@@ -393,9 +506,20 @@ SELECT * FROM auth.users WHERE email = 'user@example.com';
 ## Next Steps
 
 1. **Create first admin user** via Supabase Dashboard
-2. **Update user role** to 'admin' in database
-3. **Test login** at `/login`
-4. **Implement protected routes** (optional)
-5. **Create register page** (optional)
+2. **Update user role & department** in database (set role='admin', departemen='PBD' for full access)
+3. **Test magic link login** at `/login`
+4. **Setup RBAC permissions** - assign roles & departments to users
+5. **Test permission system** with different user accounts
+6. **Implement additional route protection** as needed
+7. **Create user management UI** (optional)
+
+## RBAC Setup Checklist
+
+- [ ] Create users with different roles (admin, manager, reviewer, approver, user)
+- [ ] Assign departments to manager users (Corsec, Finance, Human Capital, Konstruksi, Marketing, PBD, SCM)
+- [ ] Test menu filtering for each role/department combination
+- [ ] Test route access restrictions
+- [ ] Verify permission guards work correctly
+- [ ] Test unauthorized access redirects
 
 For detailed setup instructions, see: `supabase/README.md`
