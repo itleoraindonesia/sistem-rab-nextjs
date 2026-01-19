@@ -299,7 +299,7 @@ Profile is created with:
 - `email` from auth.users
 - `nama` from metadata or email
 - `username` from metadata or email prefix
-- `nik` auto-generated: `NIK-{uuid}`
+- `nik` form metadata
 - `role` default: `user`
 
 ---
