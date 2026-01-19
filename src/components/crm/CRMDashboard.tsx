@@ -38,7 +38,6 @@ export default function CRMDashboard() {
   }, []);
 
   const fetchStats = async () => {
-    console.log('CRMDashboard: Starting to fetch stats...');
 
     if (!supabase) {
       console.error('CRMDashboard: Supabase client not available');
@@ -81,6 +80,8 @@ export default function CRMDashboard() {
         .map(([name, value]) => ({ name, value }))
         .sort((a, b) => b.value - a.value)
         .slice(0, 10);
+
+
 
       // 3. By Status (Pipeline)
       const statusMap = new Map<string, number>();
@@ -132,7 +133,10 @@ export default function CRMDashboard() {
         .map(([dateKey, count]) => {
           const date = new Date(dateKey + 'T00:00:00');
           const dayNames = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
-          const dayName = dayNames[date.getDay()];
+          const dayIndex = date.getDay();
+          const dayName = dayNames[dayIndex];
+
+
 
           return {
             day: dayName,
@@ -140,6 +144,8 @@ export default function CRMDashboard() {
             count: count
           };
         });
+
+
 
       setStats({
         total: typedClients.length,
@@ -215,7 +221,7 @@ export default function CRMDashboard() {
                 <XAxis dataKey="name" angle={-45} textAnchor="end" height={80} fontSize={11} />
                 <YAxis
                   interval={0}
-                  domain={['dataMin', 'dataMax']}
+                  domain={[0, 'dataMax']}
                   allowDecimals={false}
                 />
                 <Tooltip />
