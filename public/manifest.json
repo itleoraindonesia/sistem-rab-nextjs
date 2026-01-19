@@ -1,7 +1,7 @@
 {
-  "name": "Sistem RAB",
-  "short_name": "Sistem RAB",
-  "description": "Sistem Rencana Anggaran Biaya",
+  "name": "Sistem Leora",
+  "short_name": "Sistem Leora",
+  "description": "Sistem Manajemen Leora",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#f8fafc",
