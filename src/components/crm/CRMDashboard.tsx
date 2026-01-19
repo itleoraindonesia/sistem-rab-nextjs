@@ -10,7 +10,7 @@ interface DashboardStats {
   closing: number;
   byKabupaten: { name: string; value: number }[];
   byStatus: { name: string; value: number }[];
-  byMonth: { name: string; value: number }[];
+  byWeek: { day: string; date: string; count: number }[];
 }
 
 const COLORS = [
@@ -28,7 +28,7 @@ export default function CRMDashboard() {
     closing: 0,
     byKabupaten: [],
     byStatus: [],
-    byMonth: [],
+    byWeek: [],
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -104,25 +104,42 @@ export default function CRMDashboard() {
       });
 
 
-      // 4. By Month (last 6 months)
-      const monthMap = new Map<string, number>();
+      // 4. By Week (last 7 days including today)
+      const weekMap = new Map<string, number>();
+      const today = new Date();
+
+      // Initialize last 7 days with 0 count
+      for (let i = 6; i >= 0; i--) {
+        const date = new Date(today);
+        date.setDate(today.getDate() - i);
+        const dateKey = date.toISOString().split('T')[0]; // YYYY-MM-DD format
+        weekMap.set(dateKey, 0);
+      }
+
+      // Count clients per day
       typedClients.forEach(c => {
-        const date = new Date(c.created_at);
-        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-        monthMap.set(monthKey, (monthMap.get(monthKey) || 0) + 1);
+        const clientDate = new Date(c.created_at);
+        const dateKey = clientDate.toISOString().split('T')[0];
+
+        // Only count if within last 7 days
+        if (weekMap.has(dateKey)) {
+          weekMap.set(dateKey, (weekMap.get(dateKey) || 0) + 1);
+        }
       });
 
-      const last6Months = [];
-      for (let i = 5; i >= 0; i--) {
-        const d = new Date();
-        d.setMonth(d.getMonth() - i);
-        const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-        const monthName = d.toLocaleDateString('id-ID', { month: 'short' });
-        last6Months.push({
-          name: monthName,
-          value: monthMap.get(monthKey) || 0,
+      // Convert to chart format with day names
+      const byWeek = Array.from(weekMap.entries())
+        .map(([dateKey, count]) => {
+          const date = new Date(dateKey + 'T00:00:00');
+          const dayNames = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
+          const dayName = dayNames[date.getDay()];
+
+          return {
+            day: dayName,
+            date: dateKey,
+            count: count
+          };
         });
-      }
 
       setStats({
         total: typedClients.length,
@@ -130,7 +147,7 @@ export default function CRMDashboard() {
         closing: closingCount,
         byKabupaten,
         byStatus,
-        byMonth: last6Months,
+        byWeek,
       });
     } catch (error) {
       console.error('Error fetching stats:', error);
@@ -207,17 +224,27 @@ export default function CRMDashboard() {
         </div>
       </div>
 
-      {/* Leads Trend */}
+      {/* Weekly Trend */}
       <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
-        <h3 className="text-lg font-semibold mb-4">📈 Tren Data Masuk (6 Bulan Terakhir)</h3>
-        {stats.byMonth.length > 0 ? (
+        <h3 className="text-lg font-semibold mb-4">📈 Tren Data Masuk (7 Hari Terakhir)</h3>
+        {stats.byWeek.length > 0 ? (
           <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={stats.byMonth}>
+            <LineChart data={stats.byWeek}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
+              <XAxis dataKey="day" />
               <YAxis />
-              <Tooltip />
-              <Line type="monotone" dataKey="value" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 8 }} />
+              <Tooltip
+                labelFormatter={(label) => `Hari: ${label}`}
+                formatter={(value, name) => [value, 'Jumlah Data']}
+              />
+              <Line
+                type="monotone"
+                dataKey="count"
+                stroke="hsl(var(--primary))"
+                strokeWidth={3}
+                dot={{ r: 6 }}
+                activeDot={{ r: 10 }}
+              />
             </LineChart>
           </ResponsiveContainer>
         ) : (
