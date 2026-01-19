@@ -175,7 +175,7 @@ export default function EditClientModal({ isOpen, onClose, client, onSuccess }: 
                 <input
                   type="text"
                   {...register('nama')}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none capitalize ${errors.nama ? 'border-red-500' : 'border-gray-300'}`}
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary outline-none capitalize ${errors.nama ? 'border-red-500' : 'border-gray-300'}`}
                 />
                 {errors.nama && <p className="text-xs text-red-500 mt-1">{errors.nama.message}</p>}
               </div>
@@ -185,7 +185,7 @@ export default function EditClientModal({ isOpen, onClose, client, onSuccess }: 
                 <input
                   type="text"
                   {...register('whatsapp')}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none ${errors.whatsapp ? 'border-red-500' : 'border-gray-300'}`}
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary outline-none ${errors.whatsapp ? 'border-red-500' : 'border-gray-300'}`}
                 />
                 {errors.whatsapp && <p className="text-xs text-red-500 mt-1">{errors.whatsapp.message}</p>}
               </div>
@@ -197,7 +197,7 @@ export default function EditClientModal({ isOpen, onClose, client, onSuccess }: 
                   <input
                     type="text"
                     {...register('instagram_username')}
-                    className="w-full pl-7 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none border-gray-300"
+                    className="w-full pl-7 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary outline-none border-gray-300"
                   />
                 </div>
               </div>
@@ -208,7 +208,7 @@ export default function EditClientModal({ isOpen, onClose, client, onSuccess }: 
                   type="text"
                   list="kabupaten-list"
                   {...register('kabupaten')}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none capitalize ${errors.kabupaten ? 'border-red-500' : 'border-gray-300'}`}
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary outline-none capitalize ${errors.kabupaten ? 'border-red-500' : 'border-gray-300'}`}
                   placeholder="Ketik untuk mencari..."
                 />
                 <datalist id="kabupaten-list">
@@ -226,7 +226,7 @@ export default function EditClientModal({ isOpen, onClose, client, onSuccess }: 
                 <label className="block text-sm font-medium text-gray-700 mb-1">Status Pipeline</label>
                 <select
                   {...register('status')}
-                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none font-medium bg-white border-gray-300"
+                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary outline-none font-medium bg-white border-gray-300"
                 >
                   {PIPELINE_STAGES.map(stage => (
                     <option key={stage} value={stage}>{stage.replace(/_/g, ' ')}</option>
@@ -238,7 +238,7 @@ export default function EditClientModal({ isOpen, onClose, client, onSuccess }: 
                 <label className="block text-sm font-medium text-gray-700 mb-1">Kebutuhan</label>
                 <select
                   {...register('kebutuhan')}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white ${errors.kebutuhan ? 'border-red-500' : 'border-gray-300'}`}
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary outline-none bg-white ${errors.kebutuhan ? 'border-red-500' : 'border-gray-300'}`}
                 >
                   <option value="">Pilih Kebutuhan</option>
                   {VALID_KEBUTUHAN.map(k => (
@@ -252,7 +252,7 @@ export default function EditClientModal({ isOpen, onClose, client, onSuccess }: 
                 <label className="block text-sm font-medium text-gray-700 mb-1">Produk</label>
                  <select
                   {...register('produk')}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white ${errors.produk ? 'border-red-500' : 'border-gray-300'}`}
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary outline-none bg-white ${errors.produk ? 'border-red-500' : 'border-gray-300'}`}
                 >
                   <option value="">- Belum ada produk -</option>
                   {Array.from(VALID_PRODUCTS).map(p => (
@@ -269,7 +269,7 @@ export default function EditClientModal({ isOpen, onClose, client, onSuccess }: 
                       type="number"
                       step="any"
                       {...register('luasan')}
-                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none ${errors.luasan ? 'border-red-500' : 'border-gray-300'}`}
+                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary outline-none ${errors.luasan ? 'border-red-500' : 'border-gray-300'}`}
                     />
                     <span className="text-sm text-gray-500 shrink-0">
                       {(kebutuhanValue === 'Pagar' || kebutuhanValue === 'Pagar Beton') ? 'm (lari)' : 'm²'}
@@ -292,7 +292,7 @@ export default function EditClientModal({ isOpen, onClose, client, onSuccess }: 
             <button
               type="submit"
               disabled={loading || !isDirty} // Optional: Disable if nothing changed (isDirty)
-              className="px-5 py-2 text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-lg hover:shadow-xl transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              className="px-5 py-2 text-white bg-primary hover:bg-primary/90 rounded-lg shadow-lg hover:shadow-xl transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
               {loading ? (
                 <>

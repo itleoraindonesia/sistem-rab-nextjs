@@ -366,7 +366,7 @@ export default function BulkInputForm() {
             value={inputText}
             onChange={(e) => handleInputChange(e.target.value)}
             placeholder={trackingSource === 'instagram_only' ? EXAMPLE_CSV_INSTAGRAM : EXAMPLE_CSV_WHATSAPP}
-            className="w-full min-h-[300px] p-4 border border-gray-300 rounded-lg font-mono text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-y"
+            className="w-full min-h-[300px] p-4 border border-gray-300 rounded-lg font-mono text-sm focus:ring-2 focus:ring-primary focus:border-transparent resize-y"
             style={{ 
               lineHeight: '1.5',
               tabSize: 4,
@@ -617,7 +617,7 @@ export default function BulkInputForm() {
           <button
             onClick={handleSave}
             disabled={isSaving || validCount === 0}
-            className="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed font-medium shadow-sm active:scale-[0.98] transition-transform"
+            className="w-full sm:w-auto px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:bg-gray-300 disabled:cursor-not-allowed font-medium shadow-sm active:scale-[0.98] transition-transform"
           >
             {isSaving ? 'Menyimpan...' : `Simpan ${validCount} Data Valid`}
           </button>

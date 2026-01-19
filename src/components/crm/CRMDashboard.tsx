@@ -13,7 +13,13 @@ interface DashboardStats {
   byMonth: { name: string; value: number }[];
 }
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658', '#d0ed57'];
+const COLORS = [
+  'hsl(var(--chart-1))', 
+  'hsl(var(--chart-2))', 
+  'hsl(var(--chart-3))', 
+  'hsl(var(--chart-4))', 
+  'hsl(var(--chart-5))'
+];
 
 export default function CRMDashboard() {
   const [stats, setStats] = useState<DashboardStats>({
@@ -146,14 +152,14 @@ export default function CRMDashboard() {
           <div className="text-sm text-gray-600 mb-1">Total Data</div>
           <div className="text-3xl font-bold text-gray-900">{stats.total}</div>
         </div>
-        <div className="bg-white p-4 md:p-6 rounded-lg border border-gray-200 shadow-sm border-l-4 border-l-orange-400">
+        <div className="bg-white p-4 md:p-6 rounded-lg border border-gray-200 shadow-sm border-l-4 border-l-primary/40">
           <div className="text-sm text-gray-600 mb-1">Prospek (Pipeline)</div>
-          <div className="text-2xl md:text-3xl font-bold text-orange-600">{stats.prospek}</div>
+          <div className="text-2xl md:text-3xl font-bold text-primary/80">{stats.prospek}</div>
           <p className="text-xs text-gray-400 mt-1">Lead, Nego, Quotation, Follow Up</p>
         </div>
-        <div className="bg-white p-4 md:p-6 rounded-lg border border-gray-200 shadow-sm border-l-4 border-l-green-500">
+        <div className="bg-white p-4 md:p-6 rounded-lg border border-gray-200 shadow-sm border-l-4 border-l-primary">
           <div className="text-sm text-gray-600 mb-1">Closing (Deal)</div>
-          <div className="text-2xl md:text-3xl font-bold text-green-600">{stats.closing}</div>
+          <div className="text-2xl md:text-3xl font-bold text-primary">{stats.closing}</div>
           <p className="text-xs text-gray-400 mt-1">Invoice, WIP, Finish</p>
         </div>
       </div>
@@ -170,7 +176,7 @@ export default function CRMDashboard() {
                 <XAxis type="number" />
                 <YAxis dataKey="name" type="category" width={110} fontSize={11} />
                 <Tooltip />
-                <Bar dataKey="value" fill="#8884d8">
+                <Bar dataKey="value" fill="hsl(var(--primary))">
                   {stats.byStatus.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
@@ -192,7 +198,7 @@ export default function CRMDashboard() {
                 <XAxis dataKey="name" angle={-45} textAnchor="end" height={80} fontSize={11} />
                 <YAxis />
                 <Tooltip />
-                <Bar dataKey="value" fill="#3b82f6" />
+                <Bar dataKey="value" fill="hsl(var(--primary))" />
               </BarChart>
             </ResponsiveContainer>
           ) : (
@@ -211,7 +217,7 @@ export default function CRMDashboard() {
               <XAxis dataKey="name" />
               <YAxis />
               <Tooltip />
-              <Line type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 8 }} />
+              <Line type="monotone" dataKey="value" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 8 }} />
             </LineChart>
           </ResponsiveContainer>
         ) : (

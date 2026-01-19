@@ -21,7 +21,7 @@ export default function CRMDashboardPage() {
             </Link>
             <Link
               href="/crm/input"
-              className="inline-flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium border border-transparent"
+              className="flex-1 sm:flex-none inline-flex items-center justify-center px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90 transition-colors shadow-sm"
             >
               + Input Data Baru
             </Link>

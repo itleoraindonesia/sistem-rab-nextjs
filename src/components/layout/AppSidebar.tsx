@@ -21,6 +21,7 @@ import {
   SidebarMenuSubItem,
   useSidebar,
 } from "@/components/ui/sidebar"
+import Image from "next/image"
 
 const navItems = [
   { name: "Dashboard", path: "/", icon: LayoutDashboard, children: [] },
@@ -181,15 +182,17 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" asChild>
+            <SidebarMenuButton className={`w-full ${isCollapsed ? 'justify-center' : ''}`} size="lg" asChild>
               <Link href="/">
                 <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                  <Home className="size-4" />
+                  <Image src="/logo-only.png" alt="Logo" width={20} height={20} />
                 </div>
-                <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold">Sistem RAB Leora</span>
-                  <span className="truncate text-xs">Hitung Cepat & Akurat</span>
-                </div>
+                {!isCollapsed && (
+                  <div className="grid flex-1 text-left text-sm leading-tight text-sidebar-foreground">
+                     <span className="truncate font-semibold">Sistem Leora</span>
+                     <span className="truncate text-xs text-muted-foreground">Aplikasi Internal Manajemen</span>
+                  </div>
+                )}
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>

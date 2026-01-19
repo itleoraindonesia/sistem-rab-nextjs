@@ -13,20 +13,14 @@ export default function CRMInputPage() {
         </div>
 
         {/* Help Section */}
-        <div className="mt-6 bg-white border border-gray-200 rounded-lg p-4">
-          <h3 className="font-semibold text-blue-900 mb-2">💡 Tips:</h3>
-          <ul className="text-sm text-blue-800 space-y-1">
-            <li>• <strong>Pilih sumber data terlebih dahulu</strong> (Instagram atau WhatsApp)</li>
-            <li>• <strong>Instagram:</strong> 7 kolom - Username, Nama, WA, Kebutuhan, Produk, Kabupaten, Luasan</li>
-            <li>• <strong>WhatsApp:</strong> 6 kolom - Nama, WA, Kebutuhan, Produk, Kabupaten, Luasan</li>
-            <li>• Copy-paste langsung dari Excel atau Google Sheets</li>
-            <li>• Format WA otomatis dinormalisasi (08xxx → 628xxx)</li>
-            <li>• Kebutuhan tidak case-sensitive (rumah = RUMAH = Rumah)</li>
-            <li>• Lokasi harus berupa nama Kabupaten/Kota yang valid</li>
-            <li>• Sistem akan memberikan saran jika kabupaten tidak ditemukan</li>
-            <li>• Luasan boleh kosong (opsional)</li>
-            <li>• <strong>Duplicate handling:</strong> Data Instagram dengan WA sama akan update data WhatsApp existing</li>
-            <li>• Data dengan error akan di-skip otomatis saat save</li>
+        <div className="mt-8 bg-gray-50 border border-gray-200 rounded-lg p-4">
+          <h3 className="font-semibold text-gray-700 mb-2 text-sm">💡 Tips Input Cepat:</h3>
+          <ul className="text-xs text-gray-600 space-y-1.5 list-disc list-inside">
+            <li><strong>Pilih sumber data</strong> (IG/WA) sebelum paste.</li>
+            <li><strong>Format IG (7 kolom):</strong> Username, Nama, WA, Kebutuhan, Produk, Kabupaten, Luasan.</li>
+            <li><strong>Format WA (6 kolom):</strong> Nama, WA, Kebutuhan, Produk, Kabupaten, Luasan.</li>
+            <li><strong>Copy-Paste</strong> langsung dari Excel/Sheets. Sistem auto-koreksi format WA & kapitalisasi.</li>
+            <li><strong>Lokasi</strong> wajib nama Kabupaten/Kota valid. Sistem akan memberi saran jika typo.</li>
           </ul>
         </div>
       </div>

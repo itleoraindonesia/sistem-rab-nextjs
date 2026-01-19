@@ -122,7 +122,7 @@ interface ClientsTableProps {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="🔍 Cari Nama, WA, atau Lokasi..."
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-transparent"
             />
           </div>
 
@@ -131,7 +131,7 @@ interface ClientsTableProps {
             <select
               value={filterKebutuhan}
               onChange={(e) => setFilterKebutuhan(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-transparent cursor-pointer"
             >
               <option value="">Semua Kebutuhan</option>
               {VALID_KEBUTUHAN.map(k => (
@@ -205,7 +205,7 @@ interface ClientsTableProps {
                       </td>
                       <td className="px-4 py-3 text-gray-600">{client.kabupaten}</td>
                       <td className="px-4 py-3">
-                        <span className="inline-block px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">
+                        <span className="inline-block px-2 py-1 bg-primary/10 text-primary rounded text-xs">
                           {client.kebutuhan}
                         </span>
                       </td>
@@ -219,7 +219,7 @@ interface ClientsTableProps {
                          <span className={`inline-block px-2 py-1 rounded text-xs font-medium border ${
                           client.status === 'Finish' || client.status === 'Invoice_Deal' ? 'bg-green-100 text-green-800 border-green-200' :
                           client.status === 'Cancelled' ? 'bg-red-100 text-red-800 border-red-200' :
-                          client.status === 'IG_Lead' ? 'bg-blue-50 text-blue-600 border-blue-200' :
+                          client.status === 'IG_Lead' ? 'bg-primary/10 text-primary border-primary/20' :
                           'bg-yellow-50 text-yellow-700 border-yellow-200'
                         }`}>
                           {client.status?.replace(/_/g, ' ') || 'New Lead'}
@@ -258,7 +258,7 @@ interface ClientsTableProps {
                 <span className={`shrink-0 inline-block px-2 py-0.5 rounded text-[10px] font-medium border ${
                   client.status === 'Finish' || client.status === 'Invoice_Deal' ? 'bg-green-100 text-green-800 border-green-200' :
                   client.status === 'Cancelled' ? 'bg-red-100 text-red-800 border-red-200' :
-                  client.status === 'IG_Lead' ? 'bg-blue-50 text-blue-600 border-blue-200' :
+                  client.status === 'IG_Lead' ? 'bg-primary/10 text-primary border-primary/20' :
                   'bg-yellow-50 text-yellow-700 border-yellow-200'
                 }`}>
                   {client.status?.replace(/_/g, ' ') || 'New'}
@@ -268,7 +268,7 @@ interface ClientsTableProps {
               {/* Body: Product Info */}
               <div className="flex justify-between items-end">
                 <div className="text-xs text-gray-600">
-                  <div className="font-medium text-blue-600 mb-0.5">{client.kebutuhan}</div>
+                  <div className="font-medium text-primary mb-0.5">{client.kebutuhan}</div>
                   <div className="truncate max-w-[180px]">{client.produk || '-'}</div>
                   <div className="text-gray-400 mt-0.5">{formatLuasan(client.luasan, client.kebutuhan)}</div>
                 </div>
