@@ -213,7 +213,11 @@ export default function CRMDashboard() {
               <BarChart data={stats.byKabupaten}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" angle={-45} textAnchor="end" height={80} fontSize={11} />
-                <YAxis />
+                <YAxis
+                  interval={0}
+                  domain={['dataMin', 'dataMax']}
+                  allowDecimals={false}
+                />
                 <Tooltip />
                 <Bar dataKey="value" fill="hsl(var(--primary))" />
               </BarChart>
