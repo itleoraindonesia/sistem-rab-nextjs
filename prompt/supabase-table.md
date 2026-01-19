@@ -12,7 +12,13 @@ CREATE TABLE public.clients (
   updated_at timestamp without time zone DEFAULT now(),
   provinsi text,
   produk text CHECK (produk = ANY (ARRAY['Panel Beton'::text, 'Pagar Beton'::text, 'Sandwich Panel'::text, 'Panel Surya'::text, 'Plastik Board'::text, 'Ponton Terapung'::text, 'Jasa Konstruksi'::text, 'Jasa Renovasi'::text, 'Jasa RAB / Gambar'::text])),
-  CONSTRAINT clients_pkey PRIMARY KEY (id)
+  tracking_source text CHECK (tracking_source = ANY (ARRAY['instagram_only'::text, 'whatsapp_only'::text])),
+  instagram_username text,
+  created_by uuid,
+  updated_by uuid,
+  CONSTRAINT clients_pkey PRIMARY KEY (id),
+  CONSTRAINT clients_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id),
+  CONSTRAINT clients_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES auth.users(id)
 );
 CREATE TABLE public.instansi (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),

@@ -2,24 +2,26 @@
 
 import { useState, useEffect } from 'react';
 import { Client, supabase } from '@/lib/supabaseClient';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Cell } from 'recharts';
 
 interface DashboardStats {
   total: number;
-  thisMonth: number;
-  thisWeek: number;
+  prospek: number;
+  closing: number;
   byKabupaten: { name: string; value: number }[];
-  byKebutuhan: { name: string; value: number }[];
+  byStatus: { name: string; value: number }[];
   byMonth: { name: string; value: number }[];
 }
+
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658', '#d0ed57'];
 
 export default function CRMDashboard() {
   const [stats, setStats] = useState<DashboardStats>({
     total: 0,
-    thisMonth: 0,
-    thisWeek: 0,
+    prospek: 0,
+    closing: 0,
     byKabupaten: [],
-    byKebutuhan: [],
+    byStatus: [],
     byMonth: [],
   });
   const [loading, setLoading] = useState(true);
@@ -39,15 +41,11 @@ export default function CRMDashboard() {
       return;
     }
 
-    console.log('CRMDashboard: Supabase client available, fetching data...');
-
     try {
       const { data: clients, error } = await supabase
         .from('clients')
-        .select('*')
+        .select('id, created_at, status, kabupaten, kebutuhan')
         .order('created_at', { ascending: false });
-
-      console.log('CRMDashboard: Query result:', { clients: clients?.length, error });
 
       // Type assertion to fix TypeScript errors
       const typedClients = clients as Client[] | null;
@@ -55,50 +53,52 @@ export default function CRMDashboard() {
       if (error) throw error;
 
       if (!typedClients || typedClients.length === 0) {
-        console.log('CRMDashboard: No clients data available');
         setLoading(false);
         return;
       }
 
-      console.log('CRMDashboard: Processing', typedClients.length, 'clients');
+      // 1. Calculate Summary Stats
+      const prospekStatus = ['IG_Lead', 'WA_Negotiation', 'Quotation_Sent', 'Follow_Up'];
+      const closingStatus = ['Invoice_Deal', 'WIP', 'Finish'];
 
-      // Calculate stats
-      const now = new Date();
-      const startOfWeek = new Date(now);
-      startOfWeek.setDate(now.getDate() - 7);
-      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      const prospekCount = typedClients.filter(c => c.status && prospekStatus.includes(c.status)).length;
+      const closingCount = typedClients.filter(c => c.status && closingStatus.includes(c.status)).length;
 
-      const thisWeek = typedClients.filter(c => new Date(c.created_at) >= startOfWeek).length;
-      const thisMonth = typedClients.filter(c => new Date(c.created_at) >= startOfMonth).length;
-
-      // By Kabupaten
+      // 2. By Kabupaten
       const kabupatenMap = new Map<string, number>();
       typedClients.forEach(c => {
-        if (c.lokasi) {
-          kabupatenMap.set(c.lokasi, (kabupatenMap.get(c.lokasi) || 0) + 1);
+        if (c.kabupaten) {
+          kabupatenMap.set(c.kabupaten, (kabupatenMap.get(c.kabupaten) || 0) + 1);
         }
       });
-      console.log('CRMDashboard: kabupatenMap size:', kabupatenMap.size, 'entries:', Array.from(kabupatenMap.entries()));
       const byKabupaten = Array.from(kabupatenMap.entries())
         .map(([name, value]) => ({ name, value }))
         .sort((a, b) => b.value - a.value)
         .slice(0, 10);
-      console.log('CRMDashboard: byKabupaten:', byKabupaten);
 
-      // By Kebutuhan
-      const kebutuhanMap = new Map<string, number>();
+      // 3. By Status (Pipeline)
+      const statusMap = new Map<string, number>();
       typedClients.forEach(c => {
-        if (c.kebutuhan) {
-          kebutuhanMap.set(c.kebutuhan, (kebutuhanMap.get(c.kebutuhan) || 0) + 1);
-        }
+        const s = c.status || 'Unknown';
+        statusMap.set(s, (statusMap.get(s) || 0) + 1);
       });
-      console.log('CRMDashboard: kebutuhanMap size:', kebutuhanMap.size, 'entries:', Array.from(kebutuhanMap.entries()));
-      const byKebutuhan = Array.from(kebutuhanMap.entries())
-        .map(([name, value]) => ({ name, value }))
-        .sort((a, b) => b.value - a.value);
-      console.log('CRMDashboard: byKebutuhan:', byKebutuhan);
+      
+      // Define specific order for pipeline
+      const statusOrder = ['IG_Lead', 'WA_Negotiation', 'Quotation_Sent', 'Follow_Up', 'Invoice_Deal', 'WIP', 'Finish', 'Cancelled'];
+      const byStatus = statusOrder.map(s => ({
+        name: s.replace(/_/g, ' '),
+        value: statusMap.get(s) || 0
+      })).filter(item => item.value > 0);
+      
+      // Add any other statuses not in the ordered list at the end
+      Array.from(statusMap.entries()).forEach(([key, value]) => {
+         if (!statusOrder.includes(key)) {
+             byStatus.push({ name: key, value });
+         }
+      });
 
-      // By Month (last 6 months)
+
+      // 4. By Month (last 6 months)
       const monthMap = new Map<string, number>();
       typedClients.forEach(c => {
         const date = new Date(c.created_at);
@@ -118,21 +118,12 @@ export default function CRMDashboard() {
         });
       }
 
-      console.log('CRMDashboard: Stats calculated:', {
-        total: typedClients.length,
-        thisMonth,
-        thisWeek,
-        byKabupaten: byKabupaten.length,
-        byKebutuhan: byKebutuhan.length,
-        byMonth: last6Months.length
-      });
-
       setStats({
         total: typedClients.length,
-        thisMonth,
-        thisWeek,
+        prospek: prospekCount,
+        closing: closingCount,
         byKabupaten,
-        byKebutuhan,
+        byStatus,
         byMonth: last6Months,
       });
     } catch (error) {
@@ -143,102 +134,76 @@ export default function CRMDashboard() {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-gray-500">Loading dashboard...</div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-center">
-          <div className="text-red-500 mb-2">❌ Error loading dashboard</div>
-          <div className="text-gray-600 text-sm">{error}</div>
-        </div>
-      </div>
-    );
-  }
-
-  if (stats.total === -1) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-center">
-          <div className="text-orange-500 mb-2">⚠️ Database connection unavailable</div>
-          <div className="text-gray-600 text-sm">
-            Please check your Supabase configuration and try again.
-          </div>
-        </div>
-      </div>
-    );
-  }
+  if (loading) return <div className="flex justify-center py-12 text-gray-500">Loading dashboard...</div>;
+  if (error) return <div className="flex justify-center py-12 text-red-500">Error: {error}</div>;
+  if (stats.total === -1) return <div className="flex justify-center py-12 text-orange-500">Database connection unavailable</div>;
 
   return (
     <div className="space-y-6">
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white p-6 rounded-lg border border-gray-200">
-          <div className="text-sm text-gray-600 mb-1">Total Clients</div>
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        <div className="col-span-2 md:col-span-1 bg-white p-4 md:p-6 rounded-lg border border-gray-200 shadow-sm">
+          <div className="text-sm text-gray-600 mb-1">Total Data</div>
           <div className="text-3xl font-bold text-gray-900">{stats.total}</div>
         </div>
-        <div className="bg-white p-6 rounded-lg border border-gray-200">
-          <div className="text-sm text-gray-600 mb-1">This Month</div>
-          <div className="text-3xl font-bold text-blue-600">{stats.thisMonth}</div>
+        <div className="bg-white p-4 md:p-6 rounded-lg border border-gray-200 shadow-sm border-l-4 border-l-orange-400">
+          <div className="text-sm text-gray-600 mb-1">Prospek (Pipeline)</div>
+          <div className="text-2xl md:text-3xl font-bold text-orange-600">{stats.prospek}</div>
+          <p className="text-xs text-gray-400 mt-1">Lead, Nego, Quotation, Follow Up</p>
         </div>
-        <div className="bg-white p-6 rounded-lg border border-gray-200">
-          <div className="text-sm text-gray-600 mb-1">This Week</div>
-          <div className="text-3xl font-bold text-green-600">{stats.thisWeek}</div>
+        <div className="bg-white p-4 md:p-6 rounded-lg border border-gray-200 shadow-sm border-l-4 border-l-green-500">
+          <div className="text-sm text-gray-600 mb-1">Closing (Deal)</div>
+          <div className="text-2xl md:text-3xl font-bold text-green-600">{stats.closing}</div>
+          <p className="text-xs text-gray-400 mt-1">Invoice, WIP, Finish</p>
         </div>
       </div>
 
-      {/* Charts Row 1 */}
+      {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* By Lokasi */}
-        <div className="bg-white p-6 rounded-lg border border-gray-200">
-          <h3 className="text-lg font-semibold mb-4">📍 Clients by Kabupaten</h3>
+        {/* By Status Pipeline */}
+        <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
+          <h3 className="text-lg font-semibold mb-4">📊 Pipeline Status</h3>
+          {stats.byStatus.length > 0 ? (
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={stats.byStatus} layout="vertical">
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis type="number" />
+                <YAxis dataKey="name" type="category" width={110} fontSize={11} />
+                <Tooltip />
+                <Bar dataKey="value" fill="#8884d8">
+                  {stats.byStatus.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="h-[300px] flex items-center justify-center text-gray-400">No data available</div>
+          )}
+        </div>
+
+        {/* By Kabupaten */}
+        <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
+          <h3 className="text-lg font-semibold mb-4">📍 Sebaran Wilayah (Top 10)</h3>
           {stats.byKabupaten.length > 0 ? (
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={stats.byKabupaten}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} fontSize={12} />
+                <XAxis dataKey="name" angle={-45} textAnchor="end" height={80} fontSize={11} />
                 <YAxis />
                 <Tooltip />
                 <Bar dataKey="value" fill="#3b82f6" />
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <div className="h-[300px] flex items-center justify-center text-gray-400">
-              No data available
-            </div>
-          )}
-        </div>
-
-        {/* By Kebutuhan */}
-        <div className="bg-white p-6 rounded-lg border border-gray-200">
-          <h3 className="text-lg font-semibold mb-4">📦 Clients by Kebutuhan</h3>
-          {stats.byKebutuhan.length > 0 ? (
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={stats.byKebutuhan} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis type="number" />
-                <YAxis dataKey="name" type="category" width={120} fontSize={12} />
-                <Tooltip />
-                <Bar dataKey="value" fill="#10b981" />
-              </BarChart>
-            </ResponsiveContainer>
-          ) : (
-            <div className="h-[300px] flex items-center justify-center text-gray-400">
-              No data available
-            </div>
+            <div className="h-[300px] flex items-center justify-center text-gray-400">No data available</div>
           )}
         </div>
       </div>
 
       {/* Leads Trend */}
-      <div className="bg-white p-6 rounded-lg border border-gray-200">
-        <h3 className="text-lg font-semibold mb-4">📈 Leads Trend (Last 6 Months)</h3>
+      <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
+        <h3 className="text-lg font-semibold mb-4">📈 Tren Data Masuk (6 Bulan Terakhir)</h3>
         {stats.byMonth.length > 0 ? (
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={stats.byMonth}>
@@ -246,13 +211,11 @@ export default function CRMDashboard() {
               <XAxis dataKey="name" />
               <YAxis />
               <Tooltip />
-              <Line type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={2} dot={{ r: 4 }} />
+              <Line type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 8 }} />
             </LineChart>
           </ResponsiveContainer>
         ) : (
-          <div className="h-[300px] flex items-center justify-center text-gray-400">
-            No data available
-          </div>
+          <div className="h-[300px] flex items-center justify-center text-gray-400">No data available</div>
         )}
       </div>
     </div>

@@ -1,33 +1,56 @@
+'use client';
+
+import { useState } from 'react';
 import ClientsTable from '@/components/crm/ClientsTable';
+import EditClientModal from '@/components/crm/EditClientModal';
 import Link from 'next/link';
+import { Client } from '@/lib/supabaseClient';
 
 export default function ClientsPage() {
+  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const handleClientSelect = (client: Client) => {
+    setSelectedClient(client);
+    setIsModalOpen(true);
+  };
+
+  const handleEditSuccess = () => {
+    setRefreshKey(prev => prev + 1); // Trigger table refresh
+  };
+
   return (
     <div className="min-h-screen bg-white">
-      <div className="max-w-7xl mx-auto p-6">
+      <div className="max-w-7xl mx-auto md:p-6">
         {/* Header */}
-        <div className="mb-6 flex items-center justify-between">
+        <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <nav className="flex gap-2 text-sm text-gray-600 mb-2">
-              <Link href="/crm" className="hover:text-blue-600">
-                CRM
-              </Link>
-              <span>/</span>
-              <span className="text-gray-900 font-medium">Daftar Client</span>
-            </nav>
+
             <h1 className="text-3xl font-bold">Daftar Client</h1>
           </div>
 
           <Link
             href="/crm/input"
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+            className="w-full sm:w-auto text-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium shadow-sm hover:shadow transition-all"
           >
             + Input Data Baru
           </Link>
         </div>
 
         {/* Table */}
-        <ClientsTable />
+        <ClientsTable 
+          key={refreshKey} 
+          onClientSelect={handleClientSelect} 
+        />
+
+        {/* Edit Modal */}
+        <EditClientModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          client={selectedClient}
+          onSuccess={handleEditSuccess}
+        />
       </div>
     </div>
   );

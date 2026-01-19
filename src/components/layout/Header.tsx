@@ -45,7 +45,7 @@ export default function Header() {
   // Generate breadcrumbs based on current path
   const generateBreadcrumbs = () => {
     const segments = pathname.split('/').filter(Boolean);
-    const breadcrumbs = [{ name: 'Dashboard', path: '/' }]; // Always start with Dashboard
+    const breadcrumbs: { name: string; path: string }[] = [];
 
     let currentPath = '';
     segments.forEach((segment, index) => {
@@ -69,7 +69,7 @@ export default function Header() {
 
   return (
     <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4 sticky top-0 bg-background z-10 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12 shadow-sm">
-      <div className="flex items-center gap-2 px-4">
+      <div className="flex items-center gap-2">
         <SidebarTrigger className="-ml-1" />
         <div className="h-6 w-px bg-slate-200 dark:bg-slate-800" />
         <Breadcrumb>

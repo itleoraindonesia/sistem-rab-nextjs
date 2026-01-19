@@ -1,17 +1,25 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { parseCSV, ParsedRow, formatForDatabase } from '@/lib/crm/parsers';
 import { supabase } from '@/lib/supabaseClient';
+import { getAllValidKabupaten, validateKabupatenWithSuggestions } from '@/lib/crm/validators';
+import { useToast } from '@/components/ui/use-toast';
 
-const EXAMPLE_CSV = `Nama, WA, Kebutuhan, Lokasi, Luasan
-Budi Santoso, 08123456789, Rumah, Depok, 200
-Ani Wijaya, 628124567890, Pagar, Bandung, 50
-Dodi Hermawan, 08125678901, Kos/Kontrakan, Solo, 150`;
+const EXAMPLE_CSV_WHATSAPP = `Budi Santoso, 08123456789, Rumah, Pagar Beton, Kota Depok, 200
+Ani Wijaya, 628124567890, Pagar, Panel Lantai, Kota Bandung, 50
+Dodi Hermawan, 08125678901, Kos/Kontrakan, U-Ditch, Kota Surakarta, 150`;
+
+const EXAMPLE_CSV_INSTAGRAM = `@budisantoso, Budi Santoso, 08123456789, Rumah, Pagar Beton, Kota Depok, 200
+@aniwijaya, Ani Wijaya, 628124567890, Pagar, Panel Lantai, Kota Bandung, 50
+@dodihermawan, Dodi Hermawan, 08125678901, Kos/Kontrakan, U-Ditch, Kota Surakarta, 150`;
 
 export default function BulkInputForm() {
+  const { toast } = useToast();
+  const [trackingSource, setTrackingSource] = useState<'instagram_only' | 'whatsapp_only' | null>(null);
   const [inputText, setInputText] = useState('');
   const [parsedData, setParsedData] = useState<ParsedRow[]>([]);
+  const [validKabupaten, setValidKabupaten] = useState<Array<{kabupaten: string, provinsi: string}>>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [saveResult, setSaveResult] = useState<{
     success: boolean;
@@ -19,17 +27,93 @@ export default function BulkInputForm() {
     skipped: number;
     message: string;
   } | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Fetch user for audit trail
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) setUserId(user.id);
+    };
+    getUser();
+
+    // Fetch master data kabupaten
+    const fetchKabupaten = async () => {
+      const data = await getAllValidKabupaten(supabase);
+      setValidKabupaten(data);
+    };
+    fetchKabupaten();
+  }, []);
+
+  // Helper function to validate and set parsed data
+  const validateAndSetData = (text: string, kabupatenList: Array<{kabupaten: string, provinsi: string}>, source: 'instagram_only' | 'whatsapp_only' | null) => {
+    if (!text.trim()) {
+      setParsedData([]);
+      return;
+    }
+
+    const parsed = parseCSV(text, source || undefined);
+    
+    // Only validate kabupaten if the list has been loaded
+    if (kabupatenList.length > 0) {
+      // Validate kabupaten for each row
+      const parsedWithKabupatenValidation = parsed.map(row => {
+        if (!row.kabupaten) return row;
+        
+        const validation = validateKabupatenWithSuggestions(row.kabupaten, kabupatenList);
+        
+        if (!validation.isValid) {
+          // Add kabupaten error if not already present
+          const hasKabupatenError = row.errors.some(e => e.field === 'kabupaten');
+          if (!hasKabupatenError) {
+            row.errors.push({
+              field: 'kabupaten',
+              message: validation.suggestions.length > 0 
+                ? 'Kabupaten tidak ditemukan. Lihat saran di bawah.'
+                : 'Kabupaten tidak ditemukan dalam database',
+            });
+            row.isValid = false;
+          }
+          row.suggestions = validation.suggestions;
+        } else {
+          // Set provinsi if valid
+          row.provinsi = validation.provinsi;
+          // Auto-correct kabupaten name (e.g. "depok" -> "Kota Depok")
+          if (validation.normalizedKabupaten) {
+            row.kabupaten = validation.normalizedKabupaten;
+          }
+        }
+        
+        return row;
+      });
+      
+      setParsedData(parsedWithKabupatenValidation);
+    } else {
+      // If kabupaten list not loaded yet, just show parsed data without kabupaten validation
+      setParsedData(parsed);
+    }
+  };
+
+  // Re-validate when kabupaten list is loaded or tracking source changes
+  useEffect(() => {
+    if (validKabupaten.length > 0 && inputText.trim()) {
+      validateAndSetData(inputText, validKabupaten, trackingSource);
+    }
+  }, [validKabupaten.length, trackingSource]); // Trigger when length changes or source changes
 
   const handleInputChange = (text: string) => {
     setInputText(text);
     setSaveResult(null);
-    
-    if (text.trim()) {
-      const parsed = parseCSV(text);
-      setParsedData(parsed);
-    } else {
-      setParsedData([]);
-    }
+    validateAndSetData(text, validKabupaten, trackingSource);
+  };
+
+  const toggleOverride = (index: number) => {
+    setParsedData(prev => prev.map((row, idx) => {
+      if (idx === index) {
+        return { ...row, isOverride: !row.isOverride };
+      }
+      return row;
+    }));
   };
 
   const handleSave = async () => {
@@ -38,49 +122,152 @@ export default function BulkInputForm() {
       return;
     }
 
-    const validRows = parsedData.filter(row => row.isValid);
-    
-    if (validRows.length === 0) {
-      alert('Tidak ada data valid untuk disimpan');
-      return;
-    }
-
     setIsSaving(true);
-    
-    try {
-      const dataToInsert = formatForDatabase(validRows);
-      
-      const { data, error } = await supabase
-        .from('clients')
-        .insert(dataToInsert)
-        .select();
+    const validRows = parsedData.filter(r => r.isValid);
+    let inserted = 0;
+    let updated = 0; 
+    let skipped = 0;
+    const errors: string[] = [];
 
-      if (error) throw error;
+    // Process sequentially
+    for (const row of validRows) {
+      try {
+        if (row.existingClient && row.isOverride) {
+          // UPDATE existing record logic
+          const updates: any = {
+                nama: row.nama,
+                whatsapp: row.whatsapp,
+                kebutuhan: row.kebutuhan,
+                produk: row.produk,
+                kabupaten: row.kabupaten,
+                provinsi: row.provinsi,
+                luasan: row.luasan,
+                updated_at: new Date().toISOString(),
+                updated_by: userId,
+          };
 
-      const inserted = data?.length || 0;
-      const skipped = parsedData.length - validRows.length;
+          // Update status logic
+          if (row.tracking_source === 'whatsapp_only') {
+             updates.status = 'WA_Negotiation'; 
+          } else if (row.tracking_source === 'instagram_only' && !row.existingClient.status) {
+             updates.status = 'IG_Lead';
+          }
 
-      setSaveResult({
-        success: true,
-        inserted,
-        skipped,
-        message: `✅ Berhasil menyimpan ${inserted} data${skipped > 0 ? `, ${skipped} data di-skip (ada error)` : ''}`,
-      });
+          const { error: updateError } = await supabase
+              .from('clients')
+              .update(updates)
+              .eq('id', row.existingClient.id);
+            
+          if (updateError) throw updateError;
+          updated++;
 
-      // Clear form after success
-      setInputText('');
-      setParsedData([]);
-      
-    } catch (error: any) {
-      setSaveResult({
-        success: false,
-        inserted: 0,
-        skipped: 0,
-        message: `❌ Error: ${error.message}`,
-      });
-    } finally {
-      setIsSaving(false);
+        } else if (row.existingClient && !row.isOverride) {
+           skipped++;
+        } else {
+           // INSERT logic
+           const { error: insertError } = await supabase
+            .from('clients')
+            .insert({
+              nama: row.nama,
+              whatsapp: row.whatsapp,
+              kebutuhan: row.kebutuhan,
+              produk: row.produk,
+              kabupaten: row.kabupaten,
+              provinsi: row.provinsi,
+              luasan: row.luasan,
+              instagram_username: row.instagram_username,
+              tracking_source: row.tracking_source,
+              created_by: userId,
+              updated_by: userId,
+              status: row.tracking_source === 'instagram_only' ? 'IG_Lead' : 'WA_Negotiation',
+            });
+          
+          if (insertError) throw insertError;
+          inserted++;
+        }
+      } catch (err: any) {
+        // Handle Duplicate Key Error (Postgres Code 23505) gracefully
+        if (err.code === '23505' || err.message?.includes('duplicate key')) {
+           // Fallback: It's a duplicate that wasn't detected by frontend. Force Update.
+           try {
+             const fallbackUpdates: any = {
+                nama: row.nama,
+                kebutuhan: row.kebutuhan,
+                produk: row.produk,
+                kabupaten: row.kabupaten,
+                provinsi: row.provinsi,
+                luasan: row.luasan,
+                updated_at: new Date().toISOString(),
+                updated_by: userId,
+             };
+             
+             // Update status logic
+             if (row.tracking_source === 'whatsapp_only') {
+                 fallbackUpdates.status = 'WA_Negotiation';
+             } else if (row.tracking_source === 'instagram_only') {
+                 // For fallback update, we only set IG_Lead if we can confirm it's safe, 
+                 // but simple update is safer to avoid resetting advanced status.
+                 // Let's assume just update data.
+             }
+
+             const { error: retryError } = await supabase
+              .from('clients')
+              .update(fallbackUpdates)
+              .eq('whatsapp', row.whatsapp); // Update by WA since ID is missing
+             
+             if (retryError) throw retryError;
+             updated++; // Count as updated
+           
+           } catch (retryErr: any) {
+             console.error('Retry update failed:', row, retryErr);
+             errors.push(`${row.nama}: Gagal update duplikat (${retryErr.message})`);
+           }
+        } else {
+          console.error('Error saving row:', row, err);
+          errors.push(`${row.nama}: ${err.message}`);
+        }
+      }
     }
+
+    const totalProcessed = inserted + updated;
+    const isSuccess = errors.length === 0 && totalProcessed > 0;
+    
+    let message = '';
+    if (isSuccess) {
+      message = `✅ Selesai: ${inserted} baru, ${updated} update.`;
+      if (skipped > 0) message += ` ${skipped} skip.`;
+      
+      toast({
+        title: "Bulk Input Berhasil",
+        description: `Berhasil memproses ${inserted} data baru dan ${updated} update.`,
+        variant: "success" as any,
+      });
+
+      // Clear form on success
+       setInputText('');
+       setParsedData([]);
+    } else {
+      if (errors.length > 0) {
+          message = `❌ Error: ${errors.length} data gagal disimpan.`;
+          
+          toast({
+            title: "Terdapat Error",
+            description: `Gagal menyimpan ${errors.length} data. Silakan cek detail di bawah.`,
+            variant: "destructive"
+          });
+      } else {
+          message = `⚠️ Tidak ada data yang disimpan.`;
+      }
+    }
+
+    setSaveResult({
+      success: isSuccess,
+      inserted: inserted,
+      skipped: skipped,
+      message: message,
+    });
+    
+    setIsSaving(false);
   };
 
   const validCount = parsedData.filter(row => row.isValid).length;
@@ -96,32 +283,105 @@ export default function BulkInputForm() {
         </p>
       </div>
 
-      {/* Input Textarea */}
+      {/* Tracking Source Selector */}
       <div>
-        <label className="block text-sm font-medium mb-2">
-          Data Client (CSV Format)
+        <label className="block text-sm font-medium mb-3">
+          Pilih Sumber Data <span className="text-red-500">*</span>
         </label>
-        <textarea
-          value={inputText}
-          onChange={(e) => handleInputChange(e.target.value)}
-          placeholder={EXAMPLE_CSV}
-          className="w-full min-h-[300px] p-4 border border-gray-300 rounded-lg font-mono text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-y"
-          style={{ 
-            lineHeight: '1.5',
-            tabSize: 4,
-          }}
-        />
-        <p className="text-xs text-gray-500 mt-2">
-          Format: Nama, WA, Kebutuhan, Lokasi, Luasan (pisahkan dengan koma atau tab)
-        </p>
+        <div className="flex flex-col sm:flex-row gap-3">
+          <button
+            type="button"
+            onClick={() => {
+              setTrackingSource('whatsapp_only');
+              setSaveResult(null);
+            }}
+            className={`flex-1 px-6 py-4 rounded-lg border-2 transition-all ${
+              trackingSource === 'whatsapp_only'
+                ? 'border-green-500 bg-green-50 text-green-900'
+                : 'border-gray-300 bg-white text-gray-700 hover:border-green-300'
+            }`}
+          >
+            <div className="flex items-center justify-center gap-2">
+              <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
+                trackingSource === 'whatsapp_only' 
+                  ? 'border-green-500 bg-green-500' 
+                  : 'border-gray-400'
+              }`}>
+                {trackingSource === 'whatsapp_only' && (
+                  <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                  </svg>
+                )}
+              </div>
+              <span className="font-semibold">WhatsApp Only</span>
+            </div>
+            <p className="text-xs mt-2 opacity-75">6 kolom: Nama, WA, Kebutuhan, Produk, Kabupaten, Luasan</p>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setTrackingSource('instagram_only');
+              setSaveResult(null);
+            }}
+            className={`flex-1 px-6 py-4 rounded-lg border-2 transition-all ${
+              trackingSource === 'instagram_only'
+                ? 'border-purple-500 bg-purple-50 text-purple-900'
+                : 'border-gray-300 bg-white text-gray-700 hover:border-purple-300'
+            }`}
+          >
+            <div className="flex items-center justify-center gap-2">
+              <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
+                trackingSource === 'instagram_only' 
+                  ? 'border-purple-500 bg-purple-500' 
+                  : 'border-gray-400'
+              }`}>
+                {trackingSource === 'instagram_only' && (
+                  <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                  </svg>
+                )}
+              </div>
+              <span className="font-semibold">Instagram Only</span>
+            </div>
+            <p className="text-xs mt-2 opacity-75">7 kolom: Username, Nama, WA, Kebutuhan, Produk, Kabupaten, Luasan</p>
+          </button>
+        </div>
       </div>
 
-      {/* Preview Table */}
+      {/* Input Textarea */}
+      {trackingSource && (
+        <div>
+          <label className="block text-sm font-medium mb-2">
+            Data Client (CSV Format)
+          </label>
+          <p className="text-xs text-gray-500 my-2">
+            <span className="font-semibold">Format (pisahkan dengan koma):</span>{' '}
+            {trackingSource === 'instagram_only' 
+              ? 'Username Instagram, Nama, WhatsApp, Kebutuhan, Produk, Kabupaten, Luasan (opsional)'
+              : 'Nama, WhatsApp, Kebutuhan, Produk, Kabupaten, Luasan (opsional)'
+            }
+          </p>
+          <textarea
+            value={inputText}
+            onChange={(e) => handleInputChange(e.target.value)}
+            placeholder={trackingSource === 'instagram_only' ? EXAMPLE_CSV_INSTAGRAM : EXAMPLE_CSV_WHATSAPP}
+            className="w-full min-h-[300px] p-4 border border-gray-300 rounded-lg font-mono text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-y"
+            style={{ 
+              lineHeight: '1.5',
+              tabSize: 4,
+            }}
+          />
+       
+        </div>
+      )}
+
+      {/* Preview Table / Cards */}
       {parsedData.length > 0 && (
         <div className="border border-gray-200 rounded-lg overflow-hidden">
           <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
             <h3 className="font-semibold">
-              PREVIEW DATA ({parsedData.length} rows parsed)
+              Preview Data ({parsedData.length} baris dianalisa)
             </h3>
             <div className="flex gap-4 mt-1 text-sm">
               {validCount > 0 && (
@@ -133,15 +393,21 @@ export default function BulkInputForm() {
             </div>
           </div>
 
-          <div className="overflow-x-auto">
+          {/* Desktop Table View */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-gray-100 border-b border-gray-200">
                 <tr>
                   <th className="px-3 py-2 text-left">#</th>
+                  {trackingSource === 'instagram_only' && (
+                    <th className="px-3 py-2 text-left">Username IG</th>
+                  )}
                   <th className="px-3 py-2 text-left">Nama</th>
                   <th className="px-3 py-2 text-left">WhatsApp</th>
                   <th className="px-3 py-2 text-left">Kebutuhan</th>
-                  <th className="px-3 py-2 text-left">Lokasi</th>
+                  <th className="px-3 py-2 text-left">Produk</th>
+                  <th className="px-3 py-2 text-left">Kabupaten</th>
+                  <th className="px-3 py-2 text-left">Provinsi</th>
                   <th className="px-3 py-2 text-left">Luasan</th>
                 </tr>
               </thead>
@@ -156,6 +422,16 @@ export default function BulkInputForm() {
                     <td className="px-3 py-2">
                       {row.isValid ? '✅' : '❌'} {row.row}
                     </td>
+                    {trackingSource === 'instagram_only' && (
+                      <td className="px-3 py-2 font-mono text-xs">
+                        {row.instagram_username || <span className="text-gray-400">-</span>}
+                        {row.errors.find(e => e.field === 'instagram_username') && (
+                          <div className="text-xs text-red-600 mt-1">
+                            {row.errors.find(e => e.field === 'instagram_username')?.message}
+                          </div>
+                        )}
+                      </td>
+                    )}
                     <td className="px-3 py-2">
                       {row.nama || <span className="text-gray-400">-</span>}
                       {row.errors.find(e => e.field === 'nama') && (
@@ -181,11 +457,52 @@ export default function BulkInputForm() {
                       )}
                     </td>
                     <td className="px-3 py-2">
-                      {row.lokasi || <span className="text-gray-400">-</span>}
-                      {row.errors.find(e => e.field === 'lokasi') && (
+                      {row.produk || <span className="text-gray-400">-</span>}
+                      {row.errors.find(e => e.field === 'produk') && (
                         <div className="text-xs text-red-600 mt-1">
-                          {row.errors.find(e => e.field === 'lokasi')?.message}
+                          {row.errors.find(e => e.field === 'produk')?.message}
                         </div>
+                      )}
+                      {/* Show suggestions if produk is invalid */}
+                      {row.produkSuggestions && row.produkSuggestions.length > 0 && (
+                        <div className="mt-2 p-2 bg-purple-50 border border-purple-200 rounded text-xs">
+                          <div className="font-semibold text-purple-800 mb-1">Mungkin maksud Anda:</div>
+                          <ul className="space-y-1">
+                            {row.produkSuggestions.map((sug, idx) => (
+                              <li key={idx} className="text-purple-700">
+                                • {sug}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-3 py-2">
+                      {row.kabupaten || <span className="text-gray-400">-</span>}
+                      {row.errors.find(e => e.field === 'kabupaten') && (
+                        <div className="text-xs text-red-600 mt-1">
+                          {row.errors.find(e => e.field === 'kabupaten')?.message}
+                        </div>
+                      )}
+                      {/* Show suggestions if kabupaten is invalid */}
+                      {row.suggestions && row.suggestions.length > 0 && (
+                        <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs">
+                          <div className="font-semibold text-yellow-800 mb-1">Mungkin maksud Anda:</div>
+                          <ul className="space-y-1">
+                            {row.suggestions.map((sug, idx) => (
+                              <li key={idx} className="text-yellow-700">
+                                • {sug.kabupaten} ({sug.provinsi})
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-3 py-2 text-sm">
+                      {row.provinsi ? (
+                        <span className="text-gray-700">{row.provinsi}</span>
+                      ) : (
+                        <span className="text-gray-400">-</span>
                       )}
                     </td>
                     <td className="px-3 py-2">
@@ -201,6 +518,73 @@ export default function BulkInputForm() {
               </tbody>
             </table>
           </div>
+
+          {/* Mobile Card View */}
+          <div className="md:hidden bg-gray-50 p-4 space-y-4">
+            {parsedData.map((row) => (
+              <div 
+                key={row.row}
+                className={`bg-white rounded-lg border shadow-sm p-4 ${
+                  row.isValid ? 'border-gray-200' : 'border-red-300 ring-1 ring-red-100'
+                }`}
+              >
+                <div className="flex justify-between items-start mb-3">
+                   <div className="flex items-center gap-2">
+                     <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${
+                       row.isValid ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                     }`}>
+                       {row.row}
+                     </span>
+                     <h4 className="font-semibold text-gray-900">{row.nama || 'Tanpa Nama'}</h4>
+                   </div>
+                   <div className={`text-xs px-2 py-1 rounded-full font-medium ${
+                     row.isValid ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                   }`}>
+                     {row.isValid ? 'Valid' : 'Invalid'}
+                   </div>
+                </div>
+
+                <div className="space-y-2 text-sm">
+                   {/* Row Details Grid */}
+                   <div className="grid grid-cols-2 gap-2 text-xs text-gray-600 mb-2">
+                      {trackingSource === 'instagram_only' && (
+                        <div><span className="font-medium text-gray-500">IG:</span> {row.instagram_username || '-'}</div>
+                      )}
+                      <div><span className="font-medium text-gray-500">WA:</span> {row.whatsapp || '-'}</div>
+                      <div><span className="font-medium text-gray-500">Produk:</span> {row.produk || '-'}</div>
+                      <div><span className="font-medium text-gray-500">Area:</span> {row.kabupaten || '-'}</div>
+                   </div>
+
+                   {/* Errors Section */}
+                   {row.errors.length > 0 && (
+                     <div className="mt-3 bg-red-50 p-2 rounded border border-red-100">
+                       <p className="text-xs font-semibold text-red-800 mb-1">Perlu Perbaikan:</p>
+                       <ul className="list-disc list-inside text-xs text-red-700 space-y-0.5">
+                         {row.errors.map((e, idx) => (
+                           <li key={idx}>{e.message}</li>
+                         ))}
+                       </ul>
+                     </div>
+                   )}
+
+                   {/* Suggestions Section */}
+                   {((row.suggestions?.length ?? 0) > 0 || (row.produkSuggestions?.length ?? 0) > 0) && (
+                     <div className="mt-2 bg-yellow-50 p-2 rounded border border-yellow-100">
+                       <p className="text-xs font-semibold text-yellow-800 mb-1">Saran Sistem:</p>
+                       <ul className="text-xs text-yellow-700 space-y-1">
+                         {row.suggestions?.map((s, i) => (
+                           <li key={`loc-${i}`}>📍 Lokasi: {s.kabupaten}</li>
+                         ))}
+                         {row.produkSuggestions?.map((s, i) => (
+                           <li key={`prod-${i}`}>📦 Produk: {s}</li>
+                         ))}
+                       </ul>
+                     </div>
+                   )}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
@@ -208,12 +592,20 @@ export default function BulkInputForm() {
       {saveResult && (
         <div
           className={`p-4 rounded-lg ${
-            saveResult.success
+            saveResult.message.startsWith('✅')
               ? 'bg-green-50 border border-green-200'
+              : saveResult.message.startsWith('⚠️')
+              ? 'bg-yellow-50 border border-yellow-200'
               : 'bg-red-50 border border-red-200'
           }`}
         >
-          <p className={saveResult.success ? 'text-green-800' : 'text-red-800'}>
+          <p className={
+            saveResult.message.startsWith('✅')
+              ? 'text-green-800'
+              : saveResult.message.startsWith('⚠️')
+              ? 'text-yellow-800'
+              : 'text-red-800'
+          }>
             {saveResult.message}
           </p>
         </div>
@@ -221,11 +613,11 @@ export default function BulkInputForm() {
 
       {/* Actions */}
       {parsedData.length > 0 && (
-        <div className="flex gap-3">
+        <div className="flex flex-col sm:flex-row gap-3">
           <button
             onClick={handleSave}
             disabled={isSaving || validCount === 0}
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed font-medium"
+            className="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed font-medium shadow-sm active:scale-[0.98] transition-transform"
           >
             {isSaving ? 'Menyimpan...' : `Simpan ${validCount} Data Valid`}
           </button>
@@ -236,7 +628,7 @@ export default function BulkInputForm() {
               setParsedData([]);
               setSaveResult(null);
             }}
-            className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium"
+            className="w-full sm:w-auto px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium active:scale-[0.98] transition-transform"
           >
             Reset
           </button>

@@ -80,12 +80,12 @@ const navItems = [
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname()
   const router = useRouter()
-  const { state: sidebarState } = useSidebar()
+  const { state: sidebarState, isMobile, setOpenMobile } = useSidebar()
   const [expandedCategory, setExpandedCategory] = React.useState<string | null>(null)
   const [user, setUser] = React.useState<SupabaseUser | null>(null)
   const [isLoggingOut, setIsLoggingOut] = React.useState(false)
   
-  const isCollapsed = sidebarState === "collapsed"
+  const isCollapsed = isMobile ? false : sidebarState === "collapsed"
 
   // Fetch user data
   React.useEffect(() => {
@@ -152,7 +152,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       setExpandedCategory(expandedCategory === itemName ? null : itemName)
     } else {
       // Navigate directly for categories without children
-      window.location.href = itemPath
+      router.push(itemPath)
+      if (isMobile) {
+        setOpenMobile(false)
+      }
     }
   }
 
@@ -166,7 +169,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     if (activeItem && activeItem.children?.length) {
       setExpandedCategory(activeItem.name)
     }
-  }, [pathname])
+
+    // Close mobile sidebar on navigation
+    if (isMobile) {
+      setOpenMobile(false)
+    }
+  }, [pathname, isMobile, setOpenMobile])
 
   return (
     <Sidebar collapsible="icon" {...props}>

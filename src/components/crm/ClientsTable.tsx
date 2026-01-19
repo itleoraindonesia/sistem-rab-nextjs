@@ -4,24 +4,48 @@ import { useState, useEffect } from 'react';
 import { Client, supabase } from '@/lib/supabaseClient';
 import { formatWhatsAppDisplay, formatDate, formatLuasan } from '@/lib/crm/formatters';
 import { VALID_KEBUTUHAN } from '@/lib/crm/validators';
+import { MessageCircle, MapPin, ChevronRight } from 'lucide-react';
 
 interface ClientsTableProps {
   onClientSelect?: (client: Client) => void;
 }
 
-export default function ClientsTable({ onClientSelect }: ClientsTableProps) {
+  const ITEMS_PER_PAGE = 20;
+
+  export default function ClientsTable({ onClientSelect }: ClientsTableProps) {
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [filterKebutuhan, setFilterKebutuhan] = useState<string>('');
   const [sortBy, setSortBy] = useState<'created_at' | 'nama'>('created_at');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  
+  // Pagination State
+  const [page, setPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+      setPage(1); // Reset to page 1 on new search
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  // Reset page when filter changes
+  useEffect(() => {
+    setPage(1);
+  }, [filterKebutuhan]);
 
   useEffect(() => {
     fetchClients();
-  }, [sortBy, sortOrder]);
+  }, [page, debouncedSearch, filterKebutuhan, sortBy, sortOrder]);
 
   const fetchClients = async () => {
+    setLoading(true);
     if (!supabase) {
       console.error('Supabase not configured');
       setLoading(false);
@@ -29,16 +53,36 @@ export default function ClientsTable({ onClientSelect }: ClientsTableProps) {
     }
 
     try {
+      // Calculate range
+      const from = (page - 1) * ITEMS_PER_PAGE;
+      const to = from + ITEMS_PER_PAGE - 1;
+
       let query = supabase
         .from('clients')
-        .select('*')
-        .order(sortBy, { ascending: sortOrder === 'asc' });
+        .select('*', { count: 'exact' });
 
-      const { data, error } = await query;
+      // Apply Filter
+      if (filterKebutuhan) {
+        query = query.eq('kebutuhan', filterKebutuhan);
+      }
+
+      // Apply Search
+      if (debouncedSearch) {
+        // Search across multiple columns using 'or'
+        query = query.or(`nama.ilike.%${debouncedSearch}%,whatsapp.ilike.%${debouncedSearch}%,kabupaten.ilike.%${debouncedSearch}%`);
+      }
+
+      // Apply Sorting & Pagination
+      query = query
+        .order(sortBy, { ascending: sortOrder === 'asc' })
+        .range(from, to);
+
+      const { data, error, count } = await query;
 
       if (error) throw error;
 
       setClients(data || []);
+      setTotalCount(count || 0);
     } catch (error) {
       console.error('Error fetching clients:', error);
     } finally {
@@ -53,30 +97,12 @@ export default function ClientsTable({ onClientSelect }: ClientsTableProps) {
       setSortBy(column);
       setSortOrder('asc');
     }
+    setPage(1); // Reset to page 1 on sort change
   };
 
-  // Filter clients
-  const filteredClients = clients.filter(client => {
-    // Search filter
-    if (searchTerm) {
-      const search = searchTerm.toLowerCase();
-      const matchesSearch = 
-        client.nama.toLowerCase().includes(search) ||
-        client.whatsapp.includes(search) ||
-        client.lokasi.toLowerCase().includes(search);
-      
-      if (!matchesSearch) return false;
-    }
+  const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE);
 
-    // Kebutuhan filter
-    if (filterKebutuhan && client.kebutuhan !== filterKebutuhan) {
-      return false;
-    }
-
-    return true;
-  });
-
-  if (loading) {
+  if (loading && page === 1 && clients.length === 0) {
     return (
       <div className="flex items-center justify-center py-12">
         <div className="text-gray-500">Loading...</div>
@@ -87,27 +113,25 @@ export default function ClientsTable({ onClientSelect }: ClientsTableProps) {
   return (
     <div className="space-y-4">
       {/* Filters */}
-      <div className="bg-white p-4 rounded-lg border border-gray-200 space-y-3">
+      <div className="space-y-3 mb-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {/* Search */}
           <div>
-            <label className="block text-sm font-medium mb-1">🔍 Search</label>
             <input
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Nama, WA, atau Lokasi..."
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="🔍 Cari Nama, WA, atau Lokasi..."
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
 
           {/* Filter Kebutuhan */}
           <div>
-            <label className="block text-sm font-medium mb-1">Kebutuhan</label>
             <select
               value={filterKebutuhan}
               onChange={(e) => setFilterKebutuhan(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer"
             >
               <option value="">Semua Kebutuhan</option>
               {VALID_KEBUTUHAN.map(k => (
@@ -119,86 +143,181 @@ export default function ClientsTable({ onClientSelect }: ClientsTableProps) {
 
         {/* Reset Filter */}
         {(searchTerm || filterKebutuhan) && (
-          <button
-            onClick={() => {
-              setSearchTerm('');
-              setFilterKebutuhan('');
-            }}
-            className="text-sm text-blue-600 hover:text-blue-700"
-          >
-            Reset Filter
-          </button>
+          <div className="flex justify-end">
+            <button
+              onClick={() => {
+                setSearchTerm('');
+                setFilterKebutuhan('');
+              }}
+              className="text-sm text-gray-500 hover:text-red-600 flex items-center gap-1"
+            >
+              ✕ Reset Filter
+            </button>
+          </div>
         )}
       </div>
 
-      {/* Results Count */}
-      <div className="text-sm text-gray-600">
-        Menampilkan {filteredClients.length} dari {clients.length} client
+      {/* Results Count & Pagination Info */}
+      <div className="flex justify-between items-center text-sm text-gray-600">
+        <div>
+          Menampilkan {clients.length} dari {totalCount} client
+        </div>
       </div>
 
-      {/* Table */}
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+      {/* Desktop Table */}
+      <div className="hidden md:block bg-white rounded-lg border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="px-4 py-3 text-left">#</th>
-                <th 
-                  className="px-4 py-3 text-left cursor-pointer hover:bg-gray-100"
-                  onClick={() => handleSort('nama')}
-                >
-                  Nama {sortBy === 'nama' && (sortOrder === 'asc' ? '↑' : '↓')}
-                </th>
-                <th className="px-4 py-3 text-left">WhatsApp</th>
-                <th className="px-4 py-3 text-left">Kebutuhan</th>
-                <th className="px-4 py-3 text-left">Lokasi</th>
-                <th className="px-4 py-3 text-left">Luasan</th>
-                <th 
-                  className="px-4 py-3 text-left cursor-pointer hover:bg-gray-100"
-                  onClick={() => handleSort('created_at')}
-                >
-                  Tanggal {sortBy === 'created_at' && (sortOrder === 'asc' ? '↑' : '↓')}
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredClients.length === 0 ? (
+              <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
-                    Tidak ada data client
-                  </td>
-                </tr>
-              ) : (
-                filteredClients.map((client, index) => (
-                  <tr
-                    key={client.id}
-                    className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer"
-                    onClick={() => onClientSelect?.(client)}
+                  <th className="px-4 py-3 text-left w-12">No</th>
+                  <th 
+                    className="px-4 py-3 text-left cursor-pointer hover:bg-gray-100"
+                    onClick={() => handleSort('nama')}
                   >
-                    <td className="px-4 py-3 text-gray-500">{index + 1}</td>
-                    <td className="px-4 py-3 font-medium">{client.nama}</td>
-                    <td className="px-4 py-3 font-mono text-xs">
-                      {formatWhatsAppDisplay(client.whatsapp)}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="inline-block px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">
-                        {client.kebutuhan}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-gray-600">{client.lokasi}</td>
-                    <td className="px-4 py-3 text-gray-600">
-                      {formatLuasan(client.luasan, client.kebutuhan)}
-                    </td>
-                    <td className="px-4 py-3 text-gray-500 text-xs">
-                      {formatDate(client.created_at)}
+                    Nama {sortBy === 'nama' && (sortOrder === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th className="px-4 py-3 text-left">Kabupaten</th>
+                  <th className="px-4 py-3 text-left">Kebutuhan</th>
+                  <th className="px-4 py-3 text-left">Produk</th>
+                  <th className="px-4 py-3 text-left">Luasan/Keliling</th>
+                  <th className="px-4 py-3 text-left">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {clients.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
+                      Tidak ada data client
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
+                ) : (
+                  clients.map((client, index) => (
+                    <tr
+                      key={client.id}
+                      className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer"
+                      onClick={() => onClientSelect?.(client)}
+                    >
+                      <td className="px-4 py-3 text-gray-500">{((page - 1) * ITEMS_PER_PAGE) + index + 1}</td>
+                      <td className="px-4 py-3 font-medium">
+                        <div>{client.nama}</div>
+                        <div className="text-xs text-gray-400 font-mono mt-0.5">{formatWhatsAppDisplay(client.whatsapp)}</div>
+                      </td>
+                      <td className="px-4 py-3 text-gray-600">{client.kabupaten}</td>
+                      <td className="px-4 py-3">
+                        <span className="inline-block px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">
+                          {client.kebutuhan}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-gray-700">
+                        {client.produk || '-'}
+                      </td>
+                      <td className="px-4 py-3 text-gray-600">
+                        {formatLuasan(client.luasan, client.kebutuhan)}
+                      </td>
+                      <td className="px-4 py-3">
+                         <span className={`inline-block px-2 py-1 rounded text-xs font-medium border ${
+                          client.status === 'Finish' || client.status === 'Invoice_Deal' ? 'bg-green-100 text-green-800 border-green-200' :
+                          client.status === 'Cancelled' ? 'bg-red-100 text-red-800 border-red-200' :
+                          client.status === 'IG_Lead' ? 'bg-blue-50 text-blue-600 border-blue-200' :
+                          'bg-yellow-50 text-yellow-700 border-yellow-200'
+                        }`}>
+                          {client.status?.replace(/_/g, ' ') || 'New Lead'}
+                        </span>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
           </table>
         </div>
       </div>
+
+      {/* Mobile Card Layout */}
+      <div className="md:hidden space-y-3">
+        {clients.length === 0 ? (
+          <div className="bg-white p-8 rounded-lg border border-gray-200 text-center text-gray-500">
+            Tidak ada data client ditemukan
+          </div>
+        ) : (
+          clients.map((client) => (
+            <div 
+              key={client.id}
+              className="bg-white p-3 rounded-lg border border-gray-200 shadow-sm active:scale-[0.99] transition-transform relative"
+              onClick={() => onClientSelect?.(client)}
+            >
+              {/* Header: Name and Status */}
+              <div className="flex justify-between items-start mb-2">
+                <div className="flex-1 pr-2 min-w-0">
+                  <div className="font-semibold text-gray-900 truncate">{client.nama}</div>
+                  <div className="text-xs text-gray-500 flex items-center gap-1 mt-0.5 truncate">
+                    <MapPin className="w-3 h-3" />
+                    {client.kabupaten || 'Lokasi tidak ada'}
+                  </div>
+                </div>
+                <span className={`shrink-0 inline-block px-2 py-0.5 rounded text-[10px] font-medium border ${
+                  client.status === 'Finish' || client.status === 'Invoice_Deal' ? 'bg-green-100 text-green-800 border-green-200' :
+                  client.status === 'Cancelled' ? 'bg-red-100 text-red-800 border-red-200' :
+                  client.status === 'IG_Lead' ? 'bg-blue-50 text-blue-600 border-blue-200' :
+                  'bg-yellow-50 text-yellow-700 border-yellow-200'
+                }`}>
+                  {client.status?.replace(/_/g, ' ') || 'New'}
+                </span>
+              </div>
+
+              {/* Body: Product Info */}
+              <div className="flex justify-between items-end">
+                <div className="text-xs text-gray-600">
+                  <div className="font-medium text-blue-600 mb-0.5">{client.kebutuhan}</div>
+                  <div className="truncate max-w-[180px]">{client.produk || '-'}</div>
+                  <div className="text-gray-400 mt-0.5">{formatLuasan(client.luasan, client.kebutuhan)}</div>
+                </div>
+
+                 {/* Actions */}
+                <div className="flex gap-2">
+                  <a 
+                    href={`https://wa.me/${client.whatsapp?.replace(/^0/, '62').replace(/[^0-9]/g, '')}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className="flex items-center justify-center w-8 h-8 rounded-full bg-green-50 text-green-600 border border-green-200 hover:bg-green-100"
+                  >
+                    <MessageCircle className="w-4 h-4" />
+                  </a>
+                  <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-50 text-gray-400 border border-gray-200">
+                    <ChevronRight className="w-4 h-4" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+       {/* Pagination Controls */}
+       {totalCount > 0 && (
+        <div className="flex justify-center items-center gap-4 mt-6">
+          <button
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={page === 1 || loading}
+            className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Sebelumnya
+          </button>
+          
+          <span className="text-sm text-gray-600">
+            Halaman {page} dari {totalPages}
+          </span>
+
+          <button
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            disabled={page === totalPages || loading}
+            className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Selanjutnya
+          </button>
+        </div>
+      )}
     </div>
   );
 }

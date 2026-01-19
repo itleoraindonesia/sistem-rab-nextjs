@@ -4,6 +4,7 @@ import "./globals.css";
 import { Providers } from "../components/Providers";
 import PWAInstallBanner from "../components/ui/PWAInstallBanner";
 import PWALoadingScreen from "../components/ui/PWALoadingScreen";
+import { Toaster } from "@/components/ui/toaster";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -52,6 +53,7 @@ export default function RootLayout({
         <PWALoadingScreen />
         <PWAInstallBanner />
         <Providers>{children}</Providers>
+        <Toaster />
       </body>
     </html>
   );
