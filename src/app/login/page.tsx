@@ -76,15 +76,14 @@ function LoginForm() {
                   </p>
                 </div>
                 <div className="pt-4">
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setSuccess(false)
-                      setEmail("")
-                    }}
-                    className="w-full"
-                  >
-                    Kirim Ulang ke Email Lain
+                  <Button variant="outline" asChild className="w-full">
+                    <a
+                      href={`https://team.leora.co.id/webmail/?_user=${encodeURIComponent(email)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Cek Email Masuk
+                    </a>
                   </Button>
                 </div>
               </div>

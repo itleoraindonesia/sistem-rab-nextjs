@@ -3,9 +3,12 @@
 import * as React from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { LayoutDashboard, FileText, Package, Home, LogOut, User, ClipboardCheck, CheckSquare, Users, Truck, ChevronDown, ChevronRight, Calendar } from "lucide-react"
+import { LayoutDashboard, FileText, Package, Home, LogOut, User, ClipboardCheck, CheckSquare, Users, Truck, ChevronDown, ChevronRight, Calendar, Lock } from "lucide-react"
 import { supabase } from "../../lib/supabase/client"
 import type { User as SupabaseUser } from "../../types/database"
+import { usePermissions } from "../../hooks/usePermissions"
+import { canAccessMenu } from "../../lib/permissions"
+import { CompactRoleBadge } from "../../components/ui/RoleBadge"
 import {
   Sidebar,
   SidebarContent,
@@ -85,7 +88,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const [expandedCategory, setExpandedCategory] = React.useState<string | null>(null)
   const [user, setUser] = React.useState<SupabaseUser | null>(null)
   const [isLoggingOut, setIsLoggingOut] = React.useState(false)
-  
+  const { canAccessMenu } = usePermissions()
+
   const isCollapsed = isMobile ? false : sidebarState === "collapsed"
 
   // Fetch user data
@@ -202,7 +206,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <SidebarGroup>
           <SidebarGroupLabel>Navigasi</SidebarGroupLabel>
           <SidebarMenu>
-            {navItems.map((item) => {
+            {navItems
+              .filter((item) => canAccessMenu(item.path)) // Filter berdasarkan permissions
+              .map((item) => {
               const Icon = item.icon
               const { isActive, isChildActive } = getNavItemState(item)
               const hasChildren = item.children && item.children.length > 0
@@ -327,7 +333,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 {!isCollapsed && (
                   <div className="flex flex-col items-start">
                     <span className="text-sm font-medium">{user.nama}</span>
-                    <span className="text-xs text-gray-500 capitalize">{user.role}</span>
+                    <CompactRoleBadge
+                      role={user.role}
+                      departemen={user.departemen}
+                    />
                   </div>
                 )}
               </SidebarMenuButton>

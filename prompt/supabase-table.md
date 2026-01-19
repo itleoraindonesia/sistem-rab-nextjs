@@ -4,7 +4,7 @@
 CREATE TABLE public.clients (
   id integer NOT NULL DEFAULT nextval('clients_id_seq'::regclass),
   nama character varying NOT NULL,
-  whatsapp character varying NOT NULL,
+  whatsapp character varying NOT NULL UNIQUE,
   kebutuhan character varying NOT NULL CHECK (kebutuhan::text = ANY (ARRAY['Pagar'::character varying, 'Gudang'::character varying, 'Kos/Kontrakan'::character varying, 'Toko/Ruko'::character varying, 'Rumah'::character varying, 'Villa'::character varying, 'Hotel'::character varying, 'Rumah Sakit'::character varying, 'Panel Saja'::character varying]::text[])),
   kabupaten character varying NOT NULL,
   luasan numeric,
@@ -16,6 +16,7 @@ CREATE TABLE public.clients (
   instagram_username text,
   created_by uuid,
   updated_by uuid,
+  status USER-DEFINED,
   CONSTRAINT clients_pkey PRIMARY KEY (id),
   CONSTRAINT clients_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id),
   CONSTRAINT clients_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES auth.users(id)
