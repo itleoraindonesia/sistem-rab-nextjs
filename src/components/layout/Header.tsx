@@ -47,6 +47,11 @@ export default function Header() {
     const segments = pathname.split('/').filter(Boolean);
     const breadcrumbs: { name: string; path: string }[] = [];
 
+    // Custom handle for root path
+    if (segments.length === 0) {
+      return [{ name: "Dashboard", path: "/" }];
+    }
+
     let currentPath = '';
     segments.forEach((segment, index) => {
       currentPath += `/${segment}`;
