@@ -22,6 +22,7 @@ import {
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
+  SidebarSeparator,
   useSidebar,
 } from "@/components/ui/sidebar"
 import Image from "next/image"
@@ -320,13 +321,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           </SidebarMenu>
         </SidebarGroup>
       </SidebarContent>
+      <SidebarSeparator />
       <SidebarFooter>
         <SidebarMenu>
           {user && (
             <SidebarMenuItem>
               <SidebarMenuButton
                 size="sm"
-                className="data-[state=open]:bg-sidebar-accent"
+                className="data-[state=open]:bg-sidebar-accent py-2 h-auto"
                 title={isCollapsed ? user.nama : undefined}
               >
                 <User className="size-4 shrink-0" />

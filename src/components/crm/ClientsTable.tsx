@@ -60,7 +60,6 @@ interface ClientsTableProps {
         const FIVE_MINUTES = 5 * 60 * 1000;
         
         if (hiddenDuration > FIVE_MINUTES && !loading) {
-          console.log('ClientsTable: Page was hidden for', Math.round(hiddenDuration / 1000), 'seconds, refreshing data...');
           setRetryCount(prev => prev + 1);
         }
         lastHiddenTime = null;
@@ -72,12 +71,10 @@ interface ClientsTableProps {
   }, [loading]);
 
   const fetchClients = async () => {
-    console.log('ClientsTable: Starting fetchClients...');
     setLoading(true);
     setError(null);
     
     if (!supabase) {
-      console.error('ClientsTable: Supabase not configured');
       setError('Database connection unavailable');
       setLoading(false);
       return;
@@ -88,7 +85,6 @@ interface ClientsTableProps {
       const from = (page - 1) * ITEMS_PER_PAGE;
       const to = from + ITEMS_PER_PAGE - 1;
 
-      console.log('ClientsTable: Building query...');
       let query = supabase
         .from('clients')
         .select('*', { count: 'exact' });
@@ -114,7 +110,6 @@ interface ClientsTableProps {
         setTimeout(() => reject(new Error('Query timeout after 30 seconds - check Supabase connection')), 30000);
       });
 
-      console.log('ClientsTable: Executing query...');
       const result = await Promise.race([
         query,
         timeoutPromise
@@ -122,27 +117,13 @@ interface ClientsTableProps {
 
       const { data, error, count } = result;
 
-      console.log('ClientsTable: Query result:', { 
-        dataCount: data?.length || 0, 
-        totalCount: count,
-        error: error ? {
-          message: error.message,
-          details: error.details,
-          hint: error.hint,
-          code: error.code
-        } : null 
-      });
-
       if (error) {
-        console.error('ClientsTable: Query error:', error);
         throw error;
       }
 
       setClients(data || []);
       setTotalCount(count || 0);
-      console.log('ClientsTable: Data updated successfully');
     } catch (error) {
-      console.error('ClientsTable: Error fetching clients:', error);
       setError(error instanceof Error ? error.message : 'Failed to load clients');
     } finally {
       setLoading(false);

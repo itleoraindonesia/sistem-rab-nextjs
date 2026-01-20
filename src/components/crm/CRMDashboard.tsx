@@ -52,7 +52,6 @@ export default function CRMDashboard() {
         const FIVE_MINUTES = 5 * 60 * 1000;
         
         if (hiddenDuration > FIVE_MINUTES && !loading) {
-          console.log('CRMDashboard: Page was hidden for', Math.round(hiddenDuration / 1000), 'seconds, refreshing data...');
           setRetryCount(prev => prev + 1);
         }
         lastHiddenTime = null;
@@ -64,18 +63,10 @@ export default function CRMDashboard() {
   }, [loading]);
 
   const fetchStats = async () => {
-    console.log('CRMDashboard: Starting fetchStats...');
     setLoading(true);
     setError(null);
 
-    console.log('CRMDashboard: Checking Supabase client...', {
-      supabaseExists: !!supabase,
-      supabaseType: typeof supabase,
-      supabaseKeys: supabase ? Object.keys(supabase).slice(0, 5) : 'N/A'
-    });
-
     if (!supabase) {
-      console.error('CRMDashboard: Supabase client not available');
       setError('Database connection not configured. Please check environment variables.');
       setStats(prevStats => ({ ...prevStats, total: -1 })); // Special flag for no supabase
       setLoading(false);
@@ -83,8 +74,6 @@ export default function CRMDashboard() {
     }
 
     try {
-      console.log('CRMDashboard: Fetching clients from Supabase...');
-      
       // Create a timeout promise (increased to 30 seconds for debugging)
       const timeoutPromise = new Promise((_, reject) => {
         setTimeout(() => reject(new Error('Query timeout after 30 seconds - check Supabase connection')), 30000);
@@ -103,26 +92,14 @@ export default function CRMDashboard() {
 
       const { data: clients, error } = result;
 
-      console.log('CRMDashboard: Query result:', { 
-        clientsCount: clients?.length || 0, 
-        error: error ? {
-          message: error.message,
-          details: error.details,
-          hint: error.hint,
-          code: error.code
-        } : null 
-      });
-
       // Type assertion to fix TypeScript errors
       const typedClients = clients as Client[] | null;
 
       if (error) {
-        console.error('CRMDashboard: Supabase query error:', error);
         throw error;
       }
 
       if (!typedClients || typedClients.length === 0) {
-        console.log('CRMDashboard: No clients found, setting empty state');
         setLoading(false);
         return;
       }
@@ -229,9 +206,7 @@ export default function CRMDashboard() {
         byStatus,
         byWeek,
       });
-      console.log('CRMDashboard: Stats updated successfully');
     } catch (error) {
-      console.error('CRMDashboard: Error fetching stats:', error);
       setError(error instanceof Error ? error.message : 'Failed to load dashboard data');
     } finally {
       setLoading(false);

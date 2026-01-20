@@ -212,7 +212,7 @@ const Sidebar = React.forwardRef<
           <div
             ref={ref}
             className={cn(
-              "fixed inset-y-0 z-50 h-svh w-[--sidebar-width] bg-sidebar text-sidebar-foreground transition-transform duration-200 ease-in-out",
+              "fixed inset-y-0 z-50 flex h-svh w-[--sidebar-width] flex-col bg-sidebar text-sidebar-foreground transition-transform duration-200 ease-in-out",
               side === "left" ? "left-0" : "right-0",
               openMobile ? "translate-x-0" : side === "left" ? "-translate-x-full" : "translate-x-full",
               className
