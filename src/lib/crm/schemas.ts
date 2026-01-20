@@ -10,8 +10,19 @@ export const clientSchema = z.object({
   
   whatsapp: z.string()
     .min(1, 'WhatsApp wajib diisi')
-    .regex(whatsappRegex, 'Format WhatsApp tidak valid (contoh: 081234...)')
-    .transform(val => val.replace(/\D/g, '')), // Auto-strip non-digits
+    .refine((val) => {
+      // Allow "-" as valid input for cases where phone number is not available
+      if (val.trim() === '-') return true;
+      // Otherwise check if it matches the WhatsApp regex
+      return whatsappRegex.test(val);
+    }, {
+      message: 'Format WhatsApp tidak valid (contoh: 081234... atau "-" jika tidak ada)'
+    })
+    .transform(val => {
+      // Keep "-" as is, otherwise strip non-digits
+      if (val.trim() === '-') return '-';
+      return val.replace(/\D/g, '');
+    }),
 
   instagram_username: z.string().optional().or(z.literal('')),
   

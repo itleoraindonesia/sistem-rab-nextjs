@@ -58,6 +58,9 @@ const KEBUTUHAN_ALIASES: Record<string, string> = {
 export function isValidWhatsApp(wa: string): boolean {
   if (!wa) return false;
   
+  // Allow "-" as valid input for cases where phone number is not available
+  if (wa.trim() === '-') return true;
+  
   // Remove all non-digit characters
   const cleaned = wa.replace(/\D/g, '');
   
@@ -80,6 +83,9 @@ export function isValidWhatsApp(wa: string): boolean {
 // Normalize WhatsApp to 628... format
 export function normalizeWhatsApp(wa: string): string {
   if (!wa) return '';
+  
+  // Keep "-" as is for cases where phone number is not available
+  if (wa.trim() === '-') return '-';
   
   const cleaned = wa.replace(/\D/g, '');
   
@@ -204,7 +210,7 @@ export function validateClient(data: ClientData): ValidationError[] {
   if (!isValidWhatsApp(data.whatsapp)) {
     errors.push({
       field: 'whatsapp',
-      message: 'Format WA tidak valid. Contoh: 08123456789',
+      message: 'Format WA tidak valid. Contoh: 08123456789 atau "-" jika tidak ada',
     });
   }
   

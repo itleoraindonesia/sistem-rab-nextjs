@@ -34,35 +34,47 @@ export default function ClientsTable({ onClientSelect }: ClientsTableProps) {
   const fetchClients = async () => {
     if (!supabase) throw new Error('Database connection unavailable');
 
-    const from = (page - 1) * ITEMS_PER_PAGE;
-    const to = from + ITEMS_PER_PAGE - 1;
+    try {
+      const from = (page - 1) * ITEMS_PER_PAGE;
+      const to = from + ITEMS_PER_PAGE - 1;
 
-    let query = supabase
-      .from('clients')
-      .select('*', { count: 'exact' });
+      let query = supabase
+        .from('clients')
+        .select('*', { count: 'exact' });
 
-    if (filterKebutuhan) query = query.eq('kebutuhan', filterKebutuhan);
-    if (debouncedSearch) query = query.or(`nama.ilike.%${debouncedSearch}%,whatsapp.ilike.%${debouncedSearch}%,kabupaten.ilike.%${debouncedSearch}%`);
+      if (filterKebutuhan) query = query.eq('kebutuhan', filterKebutuhan);
+      if (debouncedSearch) query = query.or(`nama.ilike.%${debouncedSearch}%,whatsapp.ilike.%${debouncedSearch}%,kabupaten.ilike.%${debouncedSearch}%`);
 
-    query = query
-      .order(sortBy, { ascending: sortOrder === 'asc' })
-      .range(from, to);
+      query = query
+        .order(sortBy, { ascending: sortOrder === 'asc' })
+        .range(from, to);
 
-    const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('Query timeout after 30 seconds')), 30000);
-    });
+      const { data, error, count } = await query;
 
-    const result = await Promise.race([query, timeoutPromise]) as any;
-    const { data, error, count } = result;
+      if (error) {
+        console.error('Supabase error:', error);
+        throw new Error(`Database error: ${error.message}`);
+      }
 
-    if (error) throw error;
-    return { data: (data as Client[]) || [], totalCount: count || 0 };
+      return { data: (data as Client[]) || [], totalCount: count || 0 };
+    } catch (error: any) {
+      // Better error messages for common issues
+      if (error.name === 'AbortError') {
+        throw new Error('Request timeout - server took too long to respond');
+      }
+      if (error.message?.includes('Failed to fetch')) {
+        throw new Error('Network error - please check your internet connection');
+      }
+      throw error;
+    }
   };
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['clients', page, debouncedSearch, filterKebutuhan, sortBy, sortOrder],
     queryFn: fetchClients,
     staleTime: 60 * 1000, // 1 minute
+    retry: 2, // Retry 2 times on failure
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
   });
 
   const clients = data?.data || [];
@@ -268,15 +280,24 @@ export default function ClientsTable({ onClientSelect }: ClientsTableProps) {
 
                  {/* Actions */}
                 <div className="flex gap-2">
-                  <a 
-                    href={`https://wa.me/${client.whatsapp?.replace(/^0/, '62').replace(/[^0-9]/g, '')}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={(e) => e.stopPropagation()}
-                    className="flex items-center justify-center w-8 h-8 rounded-full bg-green-50 text-green-600 border border-green-200 hover:bg-green-100"
-                  >
-                    <MessageCircle className="w-4 h-4" />
-                  </a>
+                  {client.whatsapp && client.whatsapp !== '-' ? (
+                    <a 
+                      href={`https://wa.me/${client.whatsapp?.replace(/^0/, '62').replace(/[^0-9]/g, '')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="flex items-center justify-center w-8 h-8 rounded-full bg-green-50 text-green-600 border border-green-200 hover:bg-green-100"
+                    >
+                      <MessageCircle className="w-4 h-4" />
+                    </a>
+                  ) : (
+                    <div 
+                      className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 text-gray-300 border border-gray-200 cursor-not-allowed"
+                      title="Nomor WhatsApp tidak tersedia"
+                    >
+                      <MessageCircle className="w-4 h-4" />
+                    </div>
+                  )}
                   <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-50 text-gray-400 border border-gray-200">
                     <ChevronRight className="w-4 h-4" />
                   </div>

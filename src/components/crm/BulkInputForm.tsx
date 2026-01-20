@@ -7,11 +7,11 @@ import { getAllValidKabupaten, validateKabupatenWithSuggestions } from '@/lib/cr
 import { useToast } from '@/components/ui/use-toast';
 
 const EXAMPLE_CSV_WHATSAPP = `Budi Santoso, 08123456789, Rumah, Pagar Beton, Kota Depok, 200
-Ani Wijaya, 628124567890, Pagar, Panel Lantai, Kota Bandung, 50
+Ani Wijaya, -, Pagar, Panel Lantai, Kota Bandung, 50
 Dodi Hermawan, 08125678901, Kos/Kontrakan, U-Ditch, Kota Surakarta, 150`;
 
 const EXAMPLE_CSV_INSTAGRAM = `@budisantoso, Budi Santoso, 08123456789, Rumah, Pagar Beton, Kota Depok, 200
-@aniwijaya, Ani Wijaya, 628124567890, Pagar, Panel Lantai, Kota Bandung, 50
+@aniwijaya, Ani Wijaya, -, Pagar, Panel Lantai, Kota Bandung, 50
 @dodihermawan, Dodi Hermawan, 08125678901, Kos/Kontrakan, U-Ditch, Kota Surakarta, 150`;
 
 import { useQueryClient } from '@tanstack/react-query';
@@ -43,6 +43,7 @@ export default function BulkInputForm() {
     // Fetch master data kabupaten
     const fetchKabupaten = async () => {
       const data = await getAllValidKabupaten(supabase);
+      console.log('✅ Kabupaten data loaded:', data.length, 'items');
       setValidKabupaten(data);
     };
     fetchKabupaten();
@@ -59,6 +60,7 @@ export default function BulkInputForm() {
     
     // Only validate kabupaten if the list has been loaded
     if (kabupatenList.length > 0) {
+      console.log('🔍 Validating kabupaten with', kabupatenList.length, 'valid options');
       // Validate kabupaten for each row
       const parsedWithKabupatenValidation = parsed.map(row => {
         if (!row.kabupaten) return row;
@@ -92,6 +94,7 @@ export default function BulkInputForm() {
       
       setParsedData(parsedWithKabupatenValidation);
     } else {
+      console.log('⚠️ Kabupaten list not loaded yet, skipping validation');
       // If kabupaten list not loaded yet, just show parsed data without kabupaten validation
       setParsedData(parsed);
     }

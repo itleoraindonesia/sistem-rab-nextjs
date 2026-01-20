@@ -1,6 +1,6 @@
 // Format WhatsApp for display
-export function formatWhatsAppDisplay(wa: string): string {
-  if (!wa) return '';
+export function formatWhatsAppDisplay(wa: string | null | undefined): string {
+  if (!wa || wa === '-') return '-';
   
   // Format: 0812-3456-789
   if (wa.startsWith('628')) {

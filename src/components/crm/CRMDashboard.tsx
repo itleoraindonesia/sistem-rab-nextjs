@@ -27,129 +27,131 @@ export default function CRMDashboard() {
       throw new Error('Database connection not configured. Please check environment variables.');
     }
 
-    // Create a timeout promise
-    const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('Query timeout after 30 seconds - check Supabase connection')), 30000);
-    });
+    try {
+      const { data: clients, error } = await supabase
+        .from('clients')
+        .select('id, created_at, status, kabupaten, kebutuhan')
+        .order('created_at', { ascending: false });
 
-    // Race between the query and timeout
-    const queryPromise = supabase
-      .from('clients')
-      .select('id, created_at, status, kabupaten, kebutuhan')
-      .order('created_at', { ascending: false });
-
-    const result = await Promise.race([
-      queryPromise,
-      timeoutPromise
-    ]) as any;
-
-    const { data: clients, error } = result;
-    const typedClients = clients as Client[] | null;
-
-    if (error) {
-      throw error;
-    }
-
-    if (!typedClients || typedClients.length === 0) {
-      return {
-        total: 0,
-        prospek: 0,
-        closing: 0,
-        byKabupaten: [],
-        byStatus: [],
-        byWeek: [],
-      };
-    }
-
-    // 1. Calculate Summary Stats
-    const prospekStatus = ['IG_Lead', 'WA_Negotiation', 'Quotation_Sent', 'Follow_Up'];
-    const closingStatus = ['Invoice_Deal', 'WIP', 'Finish'];
-
-    const prospekCount = typedClients.filter(c => c.status && prospekStatus.includes(c.status)).length;
-    const closingCount = typedClients.filter(c => c.status && closingStatus.includes(c.status)).length;
-
-    // 2. By Kabupaten
-    const kabupatenMap = new Map<string, number>();
-    typedClients.forEach(c => {
-      if (c.kabupaten) {
-        kabupatenMap.set(c.kabupaten, (kabupatenMap.get(c.kabupaten) || 0) + 1);
+      if (error) {
+        console.error('Supabase error:', error);
+        throw new Error(`Database error: ${error.message}`);
       }
-    });
-    const byKabupaten = Array.from(kabupatenMap.entries())
-      .map(([name, value]) => ({ name, value }))
-      .sort((a, b) => b.value - a.value)
-      .slice(0, 10);
 
-    // 3. By Status (Pipeline)
-    const statusMap = new Map<string, number>();
-    typedClients.forEach(c => {
-      const s = c.status || 'Unknown';
-      statusMap.set(s, (statusMap.get(s) || 0) + 1);
-    });
-    
-    // Define specific order for pipeline
-    const statusOrder = ['IG_Lead', 'WA_Negotiation', 'Quotation_Sent', 'Follow_Up', 'Invoice_Deal', 'WIP', 'Finish', 'Cancelled'];
-    const byStatus = statusOrder.map(s => ({
-      name: s.replace(/_/g, ' '),
-      value: statusMap.get(s) || 0
-    })).filter(item => item.value > 0);
-    
-    // Add any other statuses not in the ordered list at the end
-    Array.from(statusMap.entries()).forEach(([key, value]) => {
-       if (!statusOrder.includes(key)) {
-           byStatus.push({ name: key, value });
-       }
-    });
+      const typedClients = clients as Client[] | null;
 
-    // 4. By Week (last 7 days including today)
-    const weekMap = new Map<string, number>();
-    const today = new Date();
-    
-    const getLocalDateKey = (d: Date) => {
-      const year = d.getFullYear();
-      const month = String(d.getMonth() + 1).padStart(2, '0');
-      const day = String(d.getDate()).padStart(2, '0');
-      return `${year}-${month}-${day}`;
-    };
-
-    for (let i = 6; i >= 0; i--) {
-      const date = new Date(today);
-      date.setDate(today.getDate() - i);
-      const dateKey = getLocalDateKey(date);
-      weekMap.set(dateKey, 0);
-    }
-
-    typedClients.forEach(c => {
-      const clientDate = new Date(c.created_at);
-      const dateKey = getLocalDateKey(clientDate);
-      if (weekMap.has(dateKey)) {
-        weekMap.set(dateKey, (weekMap.get(dateKey) || 0) + 1);
+      if (!typedClients || typedClients.length === 0) {
+        return {
+          total: 0,
+          prospek: 0,
+          closing: 0,
+          byKabupaten: [],
+          byStatus: [],
+          byWeek: [],
+        };
       }
-    });
 
-    const byWeek = Array.from(weekMap.entries())
-      .map(([dateKey, count]) => {
-        const [y, m, d] = dateKey.split('-').map(Number);
-        const date = new Date(y, m - 1, d);
-        const dayNames = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
-        const dayName = dayNames[date.getDay()];
-        return { day: dayName, date: dateKey, count: count };
+      // 1. Calculate Summary Stats
+      const prospekStatus = ['IG_Lead', 'WA_Negotiation', 'Quotation_Sent', 'Follow_Up'];
+      const closingStatus = ['Invoice_Deal', 'WIP', 'Finish'];
+
+      const prospekCount = typedClients.filter(c => c.status && prospekStatus.includes(c.status)).length;
+      const closingCount = typedClients.filter(c => c.status && closingStatus.includes(c.status)).length;
+
+      // 2. By Kabupaten
+      const kabupatenMap = new Map<string, number>();
+      typedClients.forEach(c => {
+        if (c.kabupaten) {
+          kabupatenMap.set(c.kabupaten, (kabupatenMap.get(c.kabupaten) || 0) + 1);
+        }
+      });
+      const byKabupaten = Array.from(kabupatenMap.entries())
+        .map(([name, value]) => ({ name, value }))
+        .sort((a, b) => b.value - a.value)
+        .slice(0, 10);
+
+      // 3. By Status (Pipeline)
+      const statusMap = new Map<string, number>();
+      typedClients.forEach(c => {
+        const s = c.status || 'Unknown';
+        statusMap.set(s, (statusMap.get(s) || 0) + 1);
+      });
+      
+      // Define specific order for pipeline
+      const statusOrder = ['IG_Lead', 'WA_Negotiation', 'Quotation_Sent', 'Follow_Up', 'Invoice_Deal', 'WIP', 'Finish', 'Cancelled'];
+      const byStatus = statusOrder.map(s => ({
+        name: s.replace(/_/g, ' '),
+        value: statusMap.get(s) || 0
+      })).filter(item => item.value > 0);
+      
+      // Add any other statuses not in the ordered list at the end
+      Array.from(statusMap.entries()).forEach(([key, value]) => {
+         if (!statusOrder.includes(key)) {
+             byStatus.push({ name: key, value });
+         }
       });
 
-    return {
-      total: typedClients.length,
-      prospek: prospekCount,
-      closing: closingCount,
-      byKabupaten,
-      byStatus,
-      byWeek,
-    };
+      // 4. By Week (last 7 days including today)
+      const weekMap = new Map<string, number>();
+      const today = new Date();
+      
+      const getLocalDateKey = (d: Date) => {
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      };
+
+      for (let i = 6; i >= 0; i--) {
+        const date = new Date(today);
+        date.setDate(today.getDate() - i);
+        const dateKey = getLocalDateKey(date);
+        weekMap.set(dateKey, 0);
+      }
+
+      typedClients.forEach(c => {
+        const clientDate = new Date(c.created_at);
+        const dateKey = getLocalDateKey(clientDate);
+        if (weekMap.has(dateKey)) {
+          weekMap.set(dateKey, (weekMap.get(dateKey) || 0) + 1);
+        }
+      });
+
+      const byWeek = Array.from(weekMap.entries())
+        .map(([dateKey, count]) => {
+          const [y, m, d] = dateKey.split('-').map(Number);
+          const date = new Date(y, m - 1, d);
+          const dayNames = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
+          const dayName = dayNames[date.getDay()];
+          return { day: dayName, date: dateKey, count: count };
+        });
+
+      return {
+        total: typedClients.length,
+        prospek: prospekCount,
+        closing: closingCount,
+        byKabupaten,
+        byStatus,
+        byWeek,
+      };
+    } catch (error: any) {
+      // Better error messages for common issues
+      if (error.name === 'AbortError') {
+        throw new Error('Request timeout - server took too long to respond');
+      }
+      if (error.message?.includes('Failed to fetch')) {
+        throw new Error('Network error - please check your internet connection');
+      }
+      throw error;
+    }
   };
 
   const { data: stats, isLoading, error, refetch } = useQuery({
     queryKey: ['crm-stats'],
     queryFn: fetchStats,
     staleTime: 5 * 60 * 1000, // 5 minutes
+    retry: 2, // Retry 2 times on failure
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
   });
 
   if (isLoading) return <div className="flex justify-center py-12 text-gray-500">Loading dashboard...</div>;
