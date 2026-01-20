@@ -5,11 +5,12 @@ import ClientsTable from '@/components/crm/ClientsTable';
 import EditClientModal from '@/components/crm/EditClientModal';
 import Link from 'next/link';
 import { Client } from '@/lib/supabaseClient';
+import { useQueryClient } from '@tanstack/react-query';
 
 export default function ClientsPage() {
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [refreshKey, setRefreshKey] = useState(0);
+  const queryClient = useQueryClient();
 
   const handleClientSelect = (client: Client) => {
     setSelectedClient(client);
@@ -17,7 +18,8 @@ export default function ClientsPage() {
   };
 
   const handleEditSuccess = () => {
-    setRefreshKey(prev => prev + 1); // Trigger table refresh
+    queryClient.invalidateQueries({ queryKey: ['clients'] });
+    queryClient.invalidateQueries({ queryKey: ['crm-stats'] });
   };
 
   return (
@@ -40,7 +42,6 @@ export default function ClientsPage() {
 
         {/* Table */}
         <ClientsTable 
-          key={refreshKey} 
           onClientSelect={handleClientSelect} 
         />
 

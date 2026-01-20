@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Client, supabase } from '@/lib/supabaseClient';
 import { formatWhatsAppDisplay, formatDate, formatLuasan } from '@/lib/crm/formatters';
 import { VALID_KEBUTUHAN } from '@/lib/crm/validators';
@@ -10,22 +11,15 @@ interface ClientsTableProps {
   onClientSelect?: (client: Client) => void;
 }
 
-  const ITEMS_PER_PAGE = 20;
+const ITEMS_PER_PAGE = 20;
 
-  export default function ClientsTable({ onClientSelect }: ClientsTableProps) {
-  const [clients, setClients] = useState<Client[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+export default function ClientsTable({ onClientSelect }: ClientsTableProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [filterKebutuhan, setFilterKebutuhan] = useState<string>('');
   const [sortBy, setSortBy] = useState<'created_at' | 'nama'>('created_at');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
-  const [retryCount, setRetryCount] = useState(0);
-  
-  // Pagination State
   const [page, setPage] = useState(1);
-  const [totalCount, setTotalCount] = useState(0);
 
   // Debounce search input
   useEffect(() => {
@@ -37,98 +31,43 @@ interface ClientsTableProps {
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
-  // Reset page when filter changes
-  useEffect(() => {
-    setPage(1);
-  }, [filterKebutuhan]);
-
-  useEffect(() => {
-    fetchClients();
-  }, [page, debouncedSearch, filterKebutuhan, sortBy, sortOrder, retryCount]);
-
-  // Auto-refresh when page becomes visible after being hidden for a while
-  useEffect(() => {
-    let lastHiddenTime: number | null = null;
-    
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'hidden') {
-        // Track when page was hidden
-        lastHiddenTime = Date.now();
-      } else if (document.visibilityState === 'visible') {
-        // Only refresh if page was hidden for more than 5 minutes
-        const hiddenDuration = lastHiddenTime ? Date.now() - lastHiddenTime : 0;
-        const FIVE_MINUTES = 5 * 60 * 1000;
-        
-        if (hiddenDuration > FIVE_MINUTES && !loading) {
-          setRetryCount(prev => prev + 1);
-        }
-        lastHiddenTime = null;
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [loading]);
-
   const fetchClients = async () => {
-    setLoading(true);
-    setError(null);
-    
-    if (!supabase) {
-      setError('Database connection unavailable');
-      setLoading(false);
-      return;
-    }
+    if (!supabase) throw new Error('Database connection unavailable');
 
-    try {
-      // Calculate range
-      const from = (page - 1) * ITEMS_PER_PAGE;
-      const to = from + ITEMS_PER_PAGE - 1;
+    const from = (page - 1) * ITEMS_PER_PAGE;
+    const to = from + ITEMS_PER_PAGE - 1;
 
-      let query = supabase
-        .from('clients')
-        .select('*', { count: 'exact' });
+    let query = supabase
+      .from('clients')
+      .select('*', { count: 'exact' });
 
-      // Apply Filter
-      if (filterKebutuhan) {
-        query = query.eq('kebutuhan', filterKebutuhan);
-      }
+    if (filterKebutuhan) query = query.eq('kebutuhan', filterKebutuhan);
+    if (debouncedSearch) query = query.or(`nama.ilike.%${debouncedSearch}%,whatsapp.ilike.%${debouncedSearch}%,kabupaten.ilike.%${debouncedSearch}%`);
 
-      // Apply Search
-      if (debouncedSearch) {
-        // Search across multiple columns using 'or'
-        query = query.or(`nama.ilike.%${debouncedSearch}%,whatsapp.ilike.%${debouncedSearch}%,kabupaten.ilike.%${debouncedSearch}%`);
-      }
+    query = query
+      .order(sortBy, { ascending: sortOrder === 'asc' })
+      .range(from, to);
 
-      // Apply Sorting & Pagination
-      query = query
-        .order(sortBy, { ascending: sortOrder === 'asc' })
-        .range(from, to);
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Query timeout after 30 seconds')), 30000);
+    });
 
-      // Create timeout promise (increased to 30 seconds for debugging)
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Query timeout after 30 seconds - check Supabase connection')), 30000);
-      });
+    const result = await Promise.race([query, timeoutPromise]) as any;
+    const { data, error, count } = result;
 
-      const result = await Promise.race([
-        query,
-        timeoutPromise
-      ]) as any;
-
-      const { data, error, count } = result;
-
-      if (error) {
-        throw error;
-      }
-
-      setClients(data || []);
-      setTotalCount(count || 0);
-    } catch (error) {
-      setError(error instanceof Error ? error.message : 'Failed to load clients');
-    } finally {
-      setLoading(false);
-    }
+    if (error) throw error;
+    return { data: (data as Client[]) || [], totalCount: count || 0 };
   };
+
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: ['clients', page, debouncedSearch, filterKebutuhan, sortBy, sortOrder],
+    queryFn: fetchClients,
+    staleTime: 60 * 1000, // 1 minute
+  });
+
+  const clients = data?.data || [];
+  const totalCount = data?.totalCount || 0;
+  const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE);
 
   const handleSort = (column: 'created_at' | 'nama') => {
     if (sortBy === column) {
@@ -137,17 +76,15 @@ interface ClientsTableProps {
       setSortBy(column);
       setSortOrder('asc');
     }
-    setPage(1); // Reset to page 1 on sort change
+    setPage(1);
   };
-
-  const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE);
 
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center py-12 gap-4 bg-white rounded-lg border border-gray-200">
-        <div className="text-red-500">Error: {error}</div>
+        <div className="text-red-500">Error: {(error as Error).message}</div>
         <button 
-          onClick={() => setRetryCount(prev => prev + 1)}
+          onClick={() => refetch()}
           className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
         >
           🔄 Retry
@@ -156,13 +93,15 @@ interface ClientsTableProps {
     );
   }
 
-  if (loading && page === 1 && clients.length === 0) {
+  if (isLoading && page === 1 && clients.length === 0) {
     return (
       <div className="flex items-center justify-center py-12">
         <div className="text-gray-500">Loading...</div>
       </div>
     );
   }
+
+  const isLoadingMore = isLoading && clients.length > 0;
 
   return (
     <div className="space-y-4">
@@ -353,7 +292,7 @@ interface ClientsTableProps {
         <div className="flex justify-center items-center gap-4 mt-6">
           <button
             onClick={() => setPage((p) => Math.max(1, p - 1))}
-            disabled={page === 1 || loading}
+            disabled={page === 1 || isLoading}
             className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Sebelumnya
@@ -365,7 +304,7 @@ interface ClientsTableProps {
 
           <button
             onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-            disabled={page === totalPages || loading}
+            disabled={page === totalPages || isLoading}
             className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Selanjutnya

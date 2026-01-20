@@ -14,8 +14,11 @@ const EXAMPLE_CSV_INSTAGRAM = `@budisantoso, Budi Santoso, 08123456789, Rumah, P
 @aniwijaya, Ani Wijaya, 628124567890, Pagar, Panel Lantai, Kota Bandung, 50
 @dodihermawan, Dodi Hermawan, 08125678901, Kos/Kontrakan, U-Ditch, Kota Surakarta, 150`;
 
+import { useQueryClient } from '@tanstack/react-query';
+
 export default function BulkInputForm() {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [trackingSource, setTrackingSource] = useState<'instagram_only' | 'whatsapp_only' | null>(null);
   const [inputText, setInputText] = useState('');
   const [parsedData, setParsedData] = useState<ParsedRow[]>([]);
@@ -246,6 +249,10 @@ export default function BulkInputForm() {
       // Clear form on success
        setInputText('');
        setParsedData([]);
+       
+       // Invalidate queries to refresh dashboard and table
+       queryClient.invalidateQueries({ queryKey: ['clients'] });
+       queryClient.invalidateQueries({ queryKey: ['crm-stats'] });
     } else {
       if (errors.length > 0) {
           message = `❌ Error: ${errors.length} data gagal disimpan.`;
