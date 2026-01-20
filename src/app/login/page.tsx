@@ -25,6 +25,9 @@ function LoginForm() {
     setIsLoading(true)
 
     try {
+      if (!supabase) {
+        throw new Error("Supabase client is not initialized. Check your environment variables.")
+      }
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
