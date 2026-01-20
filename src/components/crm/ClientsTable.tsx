@@ -15,11 +15,13 @@ interface ClientsTableProps {
   export default function ClientsTable({ onClientSelect }: ClientsTableProps) {
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [filterKebutuhan, setFilterKebutuhan] = useState<string>('');
   const [sortBy, setSortBy] = useState<'created_at' | 'nama'>('created_at');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [retryCount, setRetryCount] = useState(0);
   
   // Pagination State
   const [page, setPage] = useState(1);
@@ -42,12 +44,41 @@ interface ClientsTableProps {
 
   useEffect(() => {
     fetchClients();
-  }, [page, debouncedSearch, filterKebutuhan, sortBy, sortOrder]);
+  }, [page, debouncedSearch, filterKebutuhan, sortBy, sortOrder, retryCount]);
+
+  // Auto-refresh when page becomes visible after being hidden for a while
+  useEffect(() => {
+    let lastHiddenTime: number | null = null;
+    
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        // Track when page was hidden
+        lastHiddenTime = Date.now();
+      } else if (document.visibilityState === 'visible') {
+        // Only refresh if page was hidden for more than 5 minutes
+        const hiddenDuration = lastHiddenTime ? Date.now() - lastHiddenTime : 0;
+        const FIVE_MINUTES = 5 * 60 * 1000;
+        
+        if (hiddenDuration > FIVE_MINUTES && !loading) {
+          console.log('ClientsTable: Page was hidden for', Math.round(hiddenDuration / 1000), 'seconds, refreshing data...');
+          setRetryCount(prev => prev + 1);
+        }
+        lastHiddenTime = null;
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [loading]);
 
   const fetchClients = async () => {
+    console.log('ClientsTable: Starting fetchClients...');
     setLoading(true);
+    setError(null);
+    
     if (!supabase) {
-      console.error('Supabase not configured');
+      console.error('ClientsTable: Supabase not configured');
+      setError('Database connection unavailable');
       setLoading(false);
       return;
     }
@@ -57,6 +88,7 @@ interface ClientsTableProps {
       const from = (page - 1) * ITEMS_PER_PAGE;
       const to = from + ITEMS_PER_PAGE - 1;
 
+      console.log('ClientsTable: Building query...');
       let query = supabase
         .from('clients')
         .select('*', { count: 'exact' });
@@ -77,14 +109,41 @@ interface ClientsTableProps {
         .order(sortBy, { ascending: sortOrder === 'asc' })
         .range(from, to);
 
-      const { data, error, count } = await query;
+      // Create timeout promise (increased to 30 seconds for debugging)
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Query timeout after 30 seconds - check Supabase connection')), 30000);
+      });
 
-      if (error) throw error;
+      console.log('ClientsTable: Executing query...');
+      const result = await Promise.race([
+        query,
+        timeoutPromise
+      ]) as any;
+
+      const { data, error, count } = result;
+
+      console.log('ClientsTable: Query result:', { 
+        dataCount: data?.length || 0, 
+        totalCount: count,
+        error: error ? {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        } : null 
+      });
+
+      if (error) {
+        console.error('ClientsTable: Query error:', error);
+        throw error;
+      }
 
       setClients(data || []);
       setTotalCount(count || 0);
+      console.log('ClientsTable: Data updated successfully');
     } catch (error) {
-      console.error('Error fetching clients:', error);
+      console.error('ClientsTable: Error fetching clients:', error);
+      setError(error instanceof Error ? error.message : 'Failed to load clients');
     } finally {
       setLoading(false);
     }
@@ -101,6 +160,20 @@ interface ClientsTableProps {
   };
 
   const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE);
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 gap-4 bg-white rounded-lg border border-gray-200">
+        <div className="text-red-500">Error: {error}</div>
+        <button 
+          onClick={() => setRetryCount(prev => prev + 1)}
+          className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+        >
+          🔄 Retry
+        </button>
+      </div>
+    );
+  }
 
   if (loading && page === 1 && clients.length === 0) {
     return (

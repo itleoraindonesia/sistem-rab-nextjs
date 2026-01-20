@@ -32,32 +32,97 @@ export default function CRMDashboard() {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
     fetchStats();
-  }, []);
+  }, [retryCount]);
+
+  // Auto-refresh when page becomes visible after being hidden for a while
+  useEffect(() => {
+    let lastHiddenTime: number | null = null;
+    
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        // Track when page was hidden
+        lastHiddenTime = Date.now();
+      } else if (document.visibilityState === 'visible') {
+        // Only refresh if page was hidden for more than 5 minutes
+        const hiddenDuration = lastHiddenTime ? Date.now() - lastHiddenTime : 0;
+        const FIVE_MINUTES = 5 * 60 * 1000;
+        
+        if (hiddenDuration > FIVE_MINUTES && !loading) {
+          console.log('CRMDashboard: Page was hidden for', Math.round(hiddenDuration / 1000), 'seconds, refreshing data...');
+          setRetryCount(prev => prev + 1);
+        }
+        lastHiddenTime = null;
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [loading]);
 
   const fetchStats = async () => {
+    console.log('CRMDashboard: Starting fetchStats...');
+    setLoading(true);
+    setError(null);
+
+    console.log('CRMDashboard: Checking Supabase client...', {
+      supabaseExists: !!supabase,
+      supabaseType: typeof supabase,
+      supabaseKeys: supabase ? Object.keys(supabase).slice(0, 5) : 'N/A'
+    });
 
     if (!supabase) {
       console.error('CRMDashboard: Supabase client not available');
+      setError('Database connection not configured. Please check environment variables.');
       setStats(prevStats => ({ ...prevStats, total: -1 })); // Special flag for no supabase
       setLoading(false);
       return;
     }
 
     try {
-      const { data: clients, error } = await supabase
+      console.log('CRMDashboard: Fetching clients from Supabase...');
+      
+      // Create a timeout promise (increased to 30 seconds for debugging)
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Query timeout after 30 seconds - check Supabase connection')), 30000);
+      });
+
+      // Race between the query and timeout
+      const queryPromise = supabase
         .from('clients')
         .select('id, created_at, status, kabupaten, kebutuhan')
         .order('created_at', { ascending: false });
 
+      const result = await Promise.race([
+        queryPromise,
+        timeoutPromise
+      ]) as any;
+
+      const { data: clients, error } = result;
+
+      console.log('CRMDashboard: Query result:', { 
+        clientsCount: clients?.length || 0, 
+        error: error ? {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        } : null 
+      });
+
       // Type assertion to fix TypeScript errors
       const typedClients = clients as Client[] | null;
 
-      if (error) throw error;
+      if (error) {
+        console.error('CRMDashboard: Supabase query error:', error);
+        throw error;
+      }
 
       if (!typedClients || typedClients.length === 0) {
+        console.log('CRMDashboard: No clients found, setting empty state');
         setLoading(false);
         return;
       }
@@ -164,8 +229,9 @@ export default function CRMDashboard() {
         byStatus,
         byWeek,
       });
+      console.log('CRMDashboard: Stats updated successfully');
     } catch (error) {
-      console.error('Error fetching stats:', error);
+      console.error('CRMDashboard: Error fetching stats:', error);
       setError(error instanceof Error ? error.message : 'Failed to load dashboard data');
     } finally {
       setLoading(false);
@@ -173,8 +239,19 @@ export default function CRMDashboard() {
   };
 
   if (loading) return <div className="flex justify-center py-12 text-gray-500">Loading dashboard...</div>;
-  if (error) return <div className="flex justify-center py-12 text-red-500">Error: {error}</div>;
+  if (error) return (
+    <div className="flex flex-col items-center justify-center py-12 gap-4">
+      <div className="text-red-500">Error: {error}</div>
+      <button 
+        onClick={() => setRetryCount(prev => prev + 1)}
+        className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+      >
+        🔄 Retry
+      </button>
+    </div>
+  );
   if (stats.total === -1) return <div className="flex justify-center py-12 text-orange-500">Database connection unavailable</div>;
+
 
   return (
     <div className="space-y-6">
