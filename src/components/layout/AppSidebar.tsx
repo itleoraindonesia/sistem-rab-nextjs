@@ -5,7 +5,7 @@ import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { LayoutDashboard, FileText, Package, Home, LogOut, User, ClipboardCheck, CheckSquare, Users, Truck, ChevronDown, ChevronRight, Calendar, Lock } from "lucide-react"
 import { supabase } from "../../lib/supabase/client"
-import type { User as SupabaseUser } from "../../types/database"
+import type { Tables } from "../../types/database"
 import { usePermissions } from "../../hooks/usePermissions"
 import { canAccessMenu } from "../../lib/permissions"
 import { CompactRoleBadge } from "../../components/ui/RoleBadge"
@@ -87,7 +87,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const router = useRouter()
   const { state: sidebarState, isMobile, setOpenMobile } = useSidebar()
   const [expandedCategory, setExpandedCategory] = React.useState<string | null>(null)
-  const [user, setUser] = React.useState<SupabaseUser | null>(null)
+  const [user, setUser] = React.useState<Tables<'users'> | null>(null)
   const [isLoggingOut, setIsLoggingOut] = React.useState(false)
   const { canAccessMenu } = usePermissions()
 
@@ -338,8 +338,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   <div className="flex flex-col items-start">
                     <span className="text-sm font-medium">{user.nama}</span>
                     <CompactRoleBadge
-                      role={user.role}
-                      departemen={user.departemen}
+                      role={user.role || 'user'}
+                      departemen={user.departemen || undefined}
                     />
                   </div>
                 )}

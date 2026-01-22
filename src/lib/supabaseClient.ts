@@ -1,7 +1,8 @@
 // Re-export from new location to avoid breaking existing imports
 export { supabase } from './supabase/client'
-export type { User as SupabaseUser } from '../types/database'
 export type { SupabaseClient } from '@supabase/supabase-js'
+import type { Tables } from '../types/database'
+export type SupabaseUser = Tables<'users'>
 
 // Legacy exports for backward compatibility
 export type Client = {
