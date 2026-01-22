@@ -19,7 +19,7 @@ export default function CRMInputPage() {
             <li><strong>Pilih sumber data</strong> (IG/WA) sebelum paste.</li>
             <li><strong>Format IG (7 kolom):</strong> Username, Nama, WA, Kebutuhan, Produk, Kabupaten, Luasan.</li>
             <li><strong>Format WA (6 kolom):</strong> Nama, WA, Kebutuhan, Produk, Kabupaten, Luasan.</li>
-            <li><strong>Nomor HP tidak ada?</strong> Gunakan tanda <code className="bg-gray-200 px-1 rounded">-</code> (minus) untuk kolom WA.</li>
+            <li><strong>Nomor HP / Kabupaten tidak ada?</strong> Gunakan tanda <code className="bg-gray-200 px-1 rounded">-</code> (minus) untuk kolom WA atau Kabupaten.</li>
             <li><strong>Copy-Paste</strong> langsung dari Excel/Sheets. Sistem auto-koreksi format WA & kapitalisasi.</li>
             <li><strong>Lokasi</strong> wajib nama Kabupaten/Kota valid. Sistem akan memberi saran jika typo.</li>
           </ul>

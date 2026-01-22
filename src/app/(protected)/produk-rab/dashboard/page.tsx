@@ -165,6 +165,22 @@ export default function ProdukRABDashboardPage() {
                 </a>
 
                 <a
+                  href="/produk-rab/kalkulator-harga"
+                  className="flex items-center justify-between p-4 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                      <Calculator className="w-5 h-5 text-blue-600" />
+                    </div>
+                    <div>
+                      <p className="font-medium">Kalkulator Harga</p>
+                      <p className="text-sm text-gray-600">Estimasi biaya proyek</p>
+                    </div>
+                  </div>
+                  <span className="text-blue-600">→</span>
+                </a>
+
+                <a
                   href="/produk-rab/panel-lantai-dinding"
                   className="flex items-center justify-between p-4 bg-green-50 hover:bg-green-100 rounded-lg transition-colors"
                 >

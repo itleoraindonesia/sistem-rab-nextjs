@@ -241,18 +241,21 @@ export function validateClient(data: ClientData): ValidationError[] {
   
   // Validate kabupaten - basic validation only
   // Actual kabupaten validation will be done separately with suggestions
-  if (!data.kabupaten || data.kabupaten.trim().length < 3) {
-    errors.push({
-      field: 'kabupaten',
-      message: 'Kabupaten harus minimal 3 karakter',
-    });
-  }
-  
-  if (data.kabupaten && data.kabupaten.length > 100) {
-    errors.push({
-      field: 'kabupaten',
-      message: 'Kabupaten maksimal 100 karakter',
-    });
+  // Skip validation if kabupaten is "-" (not available)
+  if (data.kabupaten && data.kabupaten.trim() !== '-') {
+    if (!data.kabupaten || data.kabupaten.trim().length < 3) {
+      errors.push({
+        field: 'kabupaten',
+        message: 'Kabupaten harus minimal 3 karakter',
+      });
+    }
+
+    if (data.kabupaten && data.kabupaten.length > 100) {
+      errors.push({
+        field: 'kabupaten',
+        message: 'Kabupaten maksimal 100 karakter',
+      });
+    }
   }
   
   // Validate luasan (optional, but must be valid if provided)
@@ -305,6 +308,11 @@ export function validateKabupatenWithSuggestions(
 ): { isValid: boolean; provinsi?: string; normalizedKabupaten?: string; suggestions: Array<{kabupaten: string, provinsi: string}> } {
   if (!kabupaten || !kabupaten.trim()) {
     return { isValid: false, suggestions: [] };
+  }
+
+  // Allow "-" as valid input for cases where kabupaten is not available
+  if (kabupaten.trim() === '-') {
+    return { isValid: true, suggestions: [] };
   }
   
   const kabupatenLower = kabupaten.trim().toLowerCase();
