@@ -5,6 +5,8 @@ import { parseCSV, ParsedRow, formatForDatabase } from '@/lib/crm/parsers';
 import { supabase } from '@/lib/supabaseClient';
 import { getAllValidKabupaten, validateKabupatenWithSuggestions } from '@/lib/crm/validators';
 import { useToast } from '@/components/ui/use-toast';
+import { getCurrentWIBISO } from '@/lib/utils/dateUtils';
+import { getFirstName } from '@/lib/utils/nameUtils';
 
 const EXAMPLE_CSV_WHATSAPP = `Budi Santoso, 08123456789, Rumah, Pagar Beton, Kota Depok, 200
 Ani Wijaya, -, Pagar, Panel Lantai, Kota Bandung, 50
@@ -148,7 +150,7 @@ export default function BulkInputForm() {
                 kabupaten: row.kabupaten,
                 provinsi: row.provinsi,
                 luasan: row.luasan,
-                updated_at: new Date().toISOString(),
+                updated_at: getCurrentWIBISO(),
                 updated_by: userId,
           };
 
@@ -203,7 +205,7 @@ export default function BulkInputForm() {
                 kabupaten: row.kabupaten,
                 provinsi: row.provinsi,
                 luasan: row.luasan,
-                updated_at: new Date().toISOString(),
+                updated_at: getCurrentWIBISO(),
                 updated_by: userId,
              };
              
@@ -443,7 +445,7 @@ export default function BulkInputForm() {
                       </td>
                     )}
                     <td className="px-3 py-2">
-                      {row.nama || <span className="text-gray-400">-</span>}
+                      {getFirstName(row.nama) || <span className="text-gray-400">-</span>}
                       {row.errors.find(e => e.field === 'nama') && (
                         <div className="text-xs text-red-600 mt-1">
                           {row.errors.find(e => e.field === 'nama')?.message}
@@ -545,7 +547,7 @@ export default function BulkInputForm() {
                      }`}>
                        {row.row}
                      </span>
-                     <h4 className="font-semibold text-gray-900">{row.nama || 'Tanpa Nama'}</h4>
+                     <h4 className="font-semibold text-gray-900">{getFirstName(row.nama) || 'Tanpa Nama'}</h4>
                    </div>
                    <div className={`text-xs px-2 py-1 rounded-full font-medium ${
                      row.isValid ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'

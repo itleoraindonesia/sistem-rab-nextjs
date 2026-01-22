@@ -146,27 +146,35 @@ export default function CRMDashboard() {
     }
   };
 
-  const { data: stats, isLoading, error, refetch } = useQuery({
+  const { data: stats, isLoading, error, refetch, isFetching } = useQuery({
     queryKey: ['crm-stats'],
     queryFn: fetchStats,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    retry: 2, // Retry 2 times on failure
+    staleTime: 2 * 60 * 1000, // 2 minutes (reduced from 5 minutes for better freshness)
+    refetchInterval: 3 * 60 * 1000, // Auto-refetch every 3 minutes when window is focused
+    refetchIntervalInBackground: false, // Don't refetch in background to save resources
+    refetchOnWindowFocus: true, // Refetch when window regains focus
+    retry: 3, // Retry 3 times on failure (increased from 2)
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
+    refetchOnMount: true, // Always refetch on mount for fresh data
   });
 
-  if (isLoading) return <div className="flex justify-center py-12 text-gray-500">Loading dashboard...</div>;
+  if (isLoading && !stats) return <div className="flex justify-center py-12 text-gray-500">Loading dashboard...</div>;
   
-  if (error) return (
-    <div className="flex flex-col items-center justify-center py-12 gap-4">
-      <div className="text-red-500">Error: {(error as Error).message}</div>
-      <button 
-        onClick={() => refetch()}
-        className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
-      >
-        🔄 Retry
-      </button>
-    </div>
-  );
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 gap-4">
+        <div className="text-red-500">Error: {(error as Error).message}</div>
+        <div className="text-sm text-gray-500">Pastikan koneksi internet Anda aktif dan coba lagi.</div>
+        <button 
+          onClick={() => refetch()}
+          disabled={isFetching}
+          className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50"
+        >
+          {isFetching ? '🔄 Loading...' : '🔄 Retry'}
+        </button>
+      </div>
+    );
+  }
 
   if (!stats) return null;
 

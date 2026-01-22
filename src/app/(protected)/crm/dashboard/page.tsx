@@ -1,9 +1,11 @@
 import CRMDashboard from '@/components/crm/CRMDashboard';
+import ConnectionStatus from '@/components/crm/ConnectionStatus';
 import Link from 'next/link';
 
 export default function CRMDashboardPage() {
   return (
     <div className="min-h-screen bg-white">
+      <ConnectionStatus />
       <div className="max-w-7xl mx-auto lg:p-6">
         {/* Header & Actions */}
         <div className="mb-4 flex flex-col md:flex-row md:items-center justify-between gap-2">

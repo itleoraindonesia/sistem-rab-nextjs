@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Client, supabase } from '@/lib/supabaseClient';
 import { formatWhatsAppDisplay, formatDate, formatLuasan } from '@/lib/crm/formatters';
 import { VALID_KEBUTUHAN } from '@/lib/crm/validators';
+import { getFirstName } from '@/lib/utils/nameUtils';
 import { MessageCircle, MapPin, ChevronRight } from 'lucide-react';
 
 interface ClientsTableProps {
@@ -69,11 +70,14 @@ export default function ClientsTable({ onClientSelect }: ClientsTableProps) {
     }
   };
 
-  const { data, isLoading, error, refetch } = useQuery({
+  const { data, isLoading, error, refetch, isFetching } = useQuery({
     queryKey: ['clients', page, debouncedSearch, filterKebutuhan, sortBy, sortOrder],
     queryFn: fetchClients,
-    staleTime: 60 * 1000, // 1 minute
-    retry: 2, // Retry 2 times on failure
+    staleTime: 45 * 1000, // 45 seconds (reduced from 1 minute for better freshness)
+    refetchOnWindowFocus: true, // Refetch when window regains focus
+    refetchOnReconnect: true, // Refetch when internet reconnects
+    refetchOnMount: true, // Always refetch on mount for fresh data
+    retry: 3, // Retry 3 times on failure (increased from 2)
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
   });
 
@@ -95,11 +99,13 @@ export default function ClientsTable({ onClientSelect }: ClientsTableProps) {
     return (
       <div className="flex flex-col items-center justify-center py-12 gap-4 bg-white rounded-lg border border-gray-200">
         <div className="text-red-500">Error: {(error as Error).message}</div>
+        <div className="text-sm text-gray-500">Pastikan koneksi internet Anda aktif dan coba lagi.</div>
         <button 
           onClick={() => refetch()}
-          className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+          disabled={isFetching}
+          className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50"
         >
-          🔄 Retry
+          {isFetching ? '🔄 Loading...' : '🔄 Retry'}
         </button>
       </div>
     );
@@ -166,6 +172,7 @@ export default function ClientsTable({ onClientSelect }: ClientsTableProps) {
       <div className="flex justify-between items-center text-sm text-gray-600">
         <div>
           Menampilkan {clients.length} dari {totalCount} client
+          {isFetching && !isLoading && <span className="ml-2 text-primary">🔄 Memperbarui...</span>}
         </div>
       </div>
 
@@ -205,7 +212,7 @@ export default function ClientsTable({ onClientSelect }: ClientsTableProps) {
                     >
                       <td className="px-4 py-3 text-gray-500">{((page - 1) * ITEMS_PER_PAGE) + index + 1}</td>
                       <td className="px-4 py-3 font-medium">
-                        <div>{client.nama}</div>
+                        <div>{getFirstName(client.nama)}</div>
                         <div className="text-xs text-gray-400 font-mono mt-0.5">{formatWhatsAppDisplay(client.whatsapp)}</div>
                       </td>
                       <td className="px-4 py-3 text-gray-600">{client.kabupaten}</td>
@@ -254,7 +261,7 @@ export default function ClientsTable({ onClientSelect }: ClientsTableProps) {
               {/* Header: Name and Status */}
               <div className="flex justify-between items-start mb-2">
                 <div className="flex-1 pr-2 min-w-0">
-                  <div className="font-semibold text-gray-900 truncate">{client.nama}</div>
+                  <div className="font-semibold text-gray-900 truncate">{getFirstName(client.nama)}</div>
                   <div className="text-xs text-gray-500 flex items-center gap-1 mt-0.5 truncate">
                     <MapPin className="w-3 h-3" />
                     {client.kabupaten || 'Lokasi tidak ada'}

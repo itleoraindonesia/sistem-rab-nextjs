@@ -8,12 +8,20 @@ import { Client } from '@/lib/supabaseClient';
 import { VALID_KEBUTUHAN, VALID_PRODUCTS } from '@/lib/crm/validators';
 import { clientSchema, clientFormValues } from '@/lib/crm/schemas';
 import { useToast } from '@/components/ui/use-toast';
+import { getCurrentWIBISO, formatDateToWIB } from '@/lib/utils/dateUtils';
+import { getFirstName } from '@/lib/utils/nameUtils';
 
 interface EditClientModalProps {
   isOpen: boolean;
   onClose: () => void;
   client: Client | null;
   onSuccess: () => void;
+}
+
+interface User {
+  id: string;
+  nama: string;
+  email: string;
 }
 
 const PIPELINE_STAGES = [
@@ -30,6 +38,8 @@ const PIPELINE_STAGES = [
 export default function EditClientModal({ isOpen, onClose, client, onSuccess }: EditClientModalProps) {
   const [loading, setLoading] = useState(false);
   const [submitError, setSubmitError] = useState('');
+  const [creator, setCreator] = useState<User | null>(null);
+  const [updater, setUpdater] = useState<User | null>(null);
   const { toast } = useToast();
 
   const {
@@ -56,6 +66,29 @@ export default function EditClientModal({ isOpen, onClose, client, onSuccess }: 
   const kebutuhanValue = watch('kebutuhan');
   
   const [kabupatenList, setKabupatenList] = useState<{kabupaten: string, provinsi: string}[]>([]);
+
+  // Fetch user data for audit trail
+  useEffect(() => {
+    if (client && isOpen) {
+      const fetchUsers = async () => {
+        if (client.created_by || client.updated_by) {
+          const userIds = [client.created_by, client.updated_by].filter(Boolean) as string[];
+          const { data } = await supabase
+            .from('users')
+            .select('id, nama, email')
+            .in('id', userIds);
+          
+          if (data && data.length > 0) {
+            const creator = data.find(u => u.id === client.created_by);
+            const updater = data.find(u => u.id === client.updated_by);
+            setCreator(creator || null);
+            setUpdater(updater || null);
+          }
+        }
+      };
+      fetchUsers();
+    }
+  }, [client, isOpen]);
 
   // Fetch kabupaten list when modal opens
   useEffect(() => {
@@ -110,7 +143,7 @@ export default function EditClientModal({ isOpen, onClose, client, onSuccess }: 
         ...data,
         // Auto-fill provinsi if found in master
         provinsi: matchedKab ? matchedKab.provinsi : undefined, 
-        updated_at: new Date().toISOString(),
+        updated_at: getCurrentWIBISO(),
         updated_by: user?.id,
       };
 
@@ -145,88 +178,105 @@ export default function EditClientModal({ isOpen, onClose, client, onSuccess }: 
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-6">
-          <div className="flex justify-between items-center border-b pb-4">
-            <h2 className="text-2xl font-bold text-gray-800">Edit Data Client</h2>
+          {/* Header */}
+          <div className="flex justify-between items-start border-b border-gray-200 pb-4">
+            <h2 className="text-2xl font-bold text-gray-900">Edit Data Client</h2>
             <button 
               type="button" 
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 transition-colors"
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-400 hover:text-gray-600"
             >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
           </div>
 
+          {/* Error Alert */}
           {submitError && (
-            <div className="p-3 bg-red-50 text-red-700 rounded-lg text-sm border border-red-200">
-              {submitError}
+            <div className="flex items-start gap-3 p-4 bg-red-50 text-red-700 rounded-lg border border-red-200">
+              <svg className="w-5 h-5 shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+              <span className="text-sm">{submitError}</span>
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Left Column */}
-            <div className="space-y-4">
+          {/* Form Fields */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Nama Client</label>
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1.5">
+                  Nama Client
+                  <span className="text-red-500">*</span>
+                </label>
                 <input
                   type="text"
                   {...register('nama')}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary outline-none capitalize ${errors.nama ? 'border-red-500' : 'border-gray-300'}`}
+                  className={`w-full px-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all capitalize text-sm ${errors.nama ? 'border-red-500 bg-red-50' : 'border-gray-300 hover:border-gray-400'}`}
+                  placeholder="Nama lengkap client"
                 />
-                {errors.nama && <p className="text-xs text-red-500 mt-1">{errors.nama.message}</p>}
+                {errors.nama && (
+                  <p className="text-xs text-red-600 mt-1.5 flex items-center gap-1">
+                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                    {errors.nama.message}
+                  </p>
+                )}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">WhatsApp</label>
-                <input
-                  type="text"
-                  {...register('whatsapp')}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary outline-none ${errors.whatsapp ? 'border-red-500' : 'border-gray-300'}`}
-                />
-                {errors.whatsapp && <p className="text-xs text-red-500 mt-1">{errors.whatsapp.message}</p>}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Instagram Username (Opsional)</label>
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1.5">
+                  WhatsApp
+                  <span className="text-red-500">*</span>
+                </label>
                 <div className="relative">
-                  <span className="absolute left-3 top-2 text-gray-400">@</span>
+                  <span className="absolute left-3 top-2.5 text-gray-400 text-sm font-medium">📱</span>
+                  <input
+                    type="text"
+                    {...register('whatsapp')}
+                    className={`w-full pl-9 px-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all text-sm ${errors.whatsapp ? 'border-red-500 bg-red-50' : 'border-gray-300 hover:border-gray-400'}`}
+                    placeholder="08xxxxxxxxxx"
+                  />
+                </div>
+                {errors.whatsapp && (
+                  <p className="text-xs text-red-600 mt-1.5 flex items-center gap-1">
+                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                    {errors.whatsapp.message}
+                  </p>
+                )}
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1.5">
+                  Instagram Username
+                  <span className="text-xs text-gray-400 font-normal">(Opsional)</span>
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-2.5 text-gray-400 text-sm font-medium">@</span>
                   <input
                     type="text"
                     {...register('instagram_username')}
-                    className="w-full pl-7 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary outline-none border-gray-300"
+                    className="w-full pl-9 px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all hover:border-gray-400 text-sm"
+                    placeholder="username"
                   />
                 </div>
               </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Kabupaten/Kota</label>
-                <input
-                  type="text"
-                  list="kabupaten-list"
-                  {...register('kabupaten')}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary outline-none capitalize ${errors.kabupaten ? 'border-red-500' : 'border-gray-300'}`}
-                  placeholder="Ketik untuk mencari..."
-                />
-                <datalist id="kabupaten-list">
-                  {kabupatenList.map((item, idx) => (
-                    <option key={`${item.kabupaten}-${idx}`} value={item.kabupaten} />
-                  ))}
-                </datalist>
-                {errors.kabupaten && <p className="text-xs text-red-500 mt-1">{errors.kabupaten.message}</p>}
-              </div>
             </div>
 
-            {/* Right Column */}
-            <div className="space-y-4">
-               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Status Pipeline</label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1.5">
+                  Status Pipeline
+                </label>
                 <select
                   {...register('status')}
-                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary outline-none font-medium bg-white border-gray-300"
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all hover:border-gray-400 bg-white text-sm font-medium"
                 >
                   {PIPELINE_STAGES.map(stage => (
                     <option key={stage} value={stage}>{stage.replace(/_/g, ' ')}</option>
@@ -235,64 +285,155 @@ export default function EditClientModal({ isOpen, onClose, client, onSuccess }: 
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Kebutuhan</label>
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1.5">
+                  Kabupaten/Kota
+                  <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-2.5 text-gray-400 text-sm">📍</span>
+                  <input
+                    type="text"
+                    list="kabupaten-list"
+                    {...register('kabupaten')}
+                    className={`w-full pl-9 px-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all capitalize text-sm ${errors.kabupaten ? 'border-red-500 bg-red-50' : 'border-gray-300 hover:border-gray-400'}`}
+                    placeholder="Cari kabupaten..."
+                  />
+                </div>
+                <datalist id="kabupaten-list">
+                  {kabupatenList.map((item, idx) => (
+                    <option key={`${item.kabupaten}-${idx}`} value={item.kabupaten} />
+                  ))}
+                </datalist>
+                {errors.kabupaten && (
+                  <p className="text-xs text-red-600 mt-1.5 flex items-center gap-1">
+                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                    {errors.kabupaten.message}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1.5">
+                  Kebutuhan
+                  <span className="text-red-500">*</span>
+                </label>
                 <select
                   {...register('kebutuhan')}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary outline-none bg-white ${errors.kebutuhan ? 'border-red-500' : 'border-gray-300'}`}
+                  className={`w-full px-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all bg-white text-sm ${errors.kebutuhan ? 'border-red-500 bg-red-50' : 'border-gray-300 hover:border-gray-400'}`}
                 >
-                  <option value="">Pilih Kebutuhan</option>
+                  <option value="">Pilih kebutuhan</option>
                   {VALID_KEBUTUHAN.map(k => (
                     <option key={k} value={k}>{k}</option>
                   ))}
                 </select>
-                {errors.kebutuhan && <p className="text-xs text-red-500 mt-1">{errors.kebutuhan.message}</p>}
+                {errors.kebutuhan && (
+                  <p className="text-xs text-red-600 mt-1.5 flex items-center gap-1">
+                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                    {errors.kebutuhan.message}
+                  </p>
+                )}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Produk</label>
-                 <select
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1.5">
+                  Produk
+                  <span className="text-xs text-gray-400 font-normal">(Opsional)</span>
+                </label>
+                <select
                   {...register('produk')}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary outline-none bg-white ${errors.produk ? 'border-red-500' : 'border-gray-300'}`}
+                  className={`w-full px-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all bg-white text-sm ${errors.produk ? 'border-red-500 bg-red-50' : 'border-gray-300 hover:border-gray-400'}`}
                 >
                   <option value="">- Belum ada produk -</option>
                   {Array.from(VALID_PRODUCTS).map(p => (
                     <option key={p} value={p}>{p}</option>
                   ))}
                 </select>
-                {errors.produk && <p className="text-xs text-red-500 mt-1">{errors.produk.message}</p>}
+                {errors.produk && (
+                  <p className="text-xs text-red-600 mt-1.5 flex items-center gap-1">
+                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                    {errors.produk.message}
+                  </p>
+                )}
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Luasan / Keliling</label>
+              <div className="md:col-span-2">
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1.5">
+                  Luasan / Keliling
+                  <span className="text-xs text-gray-400 font-normal">(Opsional)</span>
+                </label>
                 <div className="flex items-center gap-2">
+                  <div className="relative flex-1">
                     <input
                       type="number"
                       step="any"
                       {...register('luasan')}
-                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary outline-none ${errors.luasan ? 'border-red-500' : 'border-gray-300'}`}
+                      className={`w-full px-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all text-sm ${errors.luasan ? 'border-red-500 bg-red-50' : 'border-gray-300 hover:border-gray-400'}`}
+                      placeholder="0"
                     />
-                    <span className="text-sm text-gray-500 shrink-0">
+                    <span className="absolute right-3 top-2.5 text-xs text-gray-400 font-medium">
                       {(kebutuhanValue === 'Pagar' || kebutuhanValue === 'Pagar Beton') ? 'm (lari)' : 'm²'}
                     </span>
+                  </div>
                 </div>
-                 {errors.luasan && <p className="text-xs text-red-500 mt-1">{errors.luasan.message}</p>}
+                {errors.luasan && (
+                  <p className="text-xs text-red-600 mt-1.5 flex items-center gap-1">
+                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                    {errors.luasan.message}
+                  </p>
+                )}
               </div>
             </div>
-          </div>
 
-          <div className="pt-4 flex justify-end gap-3 border-t mt-4">
+          {/* Audit Info - Compact */}
+          {(client.created_at || client.updated_at) && (
+            <div className="px-3 py-2 bg-gray-50 rounded-lg border border-gray-200">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs text-gray-600">
+                {client.created_at && (
+                  <span className="flex items-center gap-1">
+                    <span>Created:</span>
+                    <span className="font-medium text-gray-800">
+                      {formatDateToWIB(client.created_at)}
+                    </span>
+                    {creator && <span className="text-gray-500">by {getFirstName(creator.nama)}</span>}
+                  </span>
+                )}
+                {client.updated_at && (
+                  <span className="flex items-center gap-1">
+                    <span>Updated:</span>
+                    <span className="font-medium text-gray-800">
+                      {formatDateToWIB(client.updated_at)}
+                    </span>
+                    {updater && <span className="text-gray-500">by {getFirstName(updater.nama)}</span>}
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Actions */}
+          <div className="pt-4 flex items-center justify-end gap-3 border-t border-gray-200 mt-4">
             <button
               type="button"
               onClick={onClose}
               disabled={loading}
-              className="px-5 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors font-medium"
+              className="px-5 py-2.5 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Batal
             </button>
             <button
               type="submit"
-              disabled={loading || !isDirty} // Optional: Disable if nothing changed (isDirty)
-              className="px-5 py-2 text-white bg-primary hover:bg-primary/90 rounded-lg shadow-lg hover:shadow-xl transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              disabled={loading || !isDirty}
+              className="px-5 py-2.5 text-white bg-primary hover:bg-primary/90 rounded-lg shadow-lg hover:shadow-xl transition-all font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-lg flex items-center gap-2"
             >
               {loading ? (
                 <>
@@ -303,7 +444,12 @@ export default function EditClientModal({ isOpen, onClose, client, onSuccess }: 
                   Menyimpan...
                 </>
               ) : (
-                'Simpan Perubahan'
+                <>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  Simpan Perubahan
+                </>
               )}
             </button>
           </div>

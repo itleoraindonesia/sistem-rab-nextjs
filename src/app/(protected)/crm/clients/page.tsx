@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import ClientsTable from '@/components/crm/ClientsTable';
 import EditClientModal from '@/components/crm/EditClientModal';
+import ConnectionStatus from '@/components/crm/ConnectionStatus';
 import Link from 'next/link';
 import { Client } from '@/lib/supabaseClient';
 import { useQueryClient } from '@tanstack/react-query';
@@ -24,6 +25,7 @@ export default function ClientsPage() {
 
   return (
     <div className="min-h-screen bg-white">
+      <ConnectionStatus />
       <div className="max-w-7xl mx-auto md:p-6">
         {/* Header */}
         <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">

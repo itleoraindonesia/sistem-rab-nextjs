@@ -10,6 +10,7 @@ import RABDocument from "../../../../components/RABDocument";
 import { Card, CardContent } from "../../../../components/ui";
 import Button from "../../../../components/ui/Button";
 import { Alert, AlertDescription, AlertTitle } from "../../../../components/ui/alert";
+import { getCurrentWIBISO } from "@/lib/utils/dateUtils";
 
 interface PageProps {
   params: Promise<{
@@ -286,7 +287,7 @@ export default function DetailRAB({ params }: PageProps) {
 
       const { error } = await (supabase as any)
         .from("rab_documents")
-        .update({ deleted_at: new Date().toISOString() })
+        .update({ deleted_at: getCurrentWIBISO() })
         .eq("id", id);
 
       if (error) throw error;
