@@ -212,7 +212,7 @@ export default function ClientsTable({ onClientSelect }: ClientsTableProps) {
                     >
                       <td className="px-4 py-3 text-gray-500">{((page - 1) * ITEMS_PER_PAGE) + index + 1}</td>
                       <td className="px-4 py-3 font-medium">
-                        <div>{getFirstName(client.nama)}</div>
+                        <div>{client.nama}</div>
                         <div className="text-xs text-gray-400 font-mono mt-0.5">{formatWhatsAppDisplay(client.whatsapp)}</div>
                       </td>
                       <td className="px-4 py-3 text-gray-600">{client.kabupaten}</td>
@@ -261,7 +261,7 @@ export default function ClientsTable({ onClientSelect }: ClientsTableProps) {
               {/* Header: Name and Status */}
               <div className="flex justify-between items-start mb-2">
                 <div className="flex-1 pr-2 min-w-0">
-                  <div className="font-semibold text-gray-900 truncate">{getFirstName(client.nama)}</div>
+                  <div className="font-semibold text-gray-900 truncate">{client.nama}</div>
                   <div className="text-xs text-gray-500 flex items-center gap-1 mt-0.5 truncate">
                     <MapPin className="w-3 h-3" />
                     {client.kabupaten || 'Lokasi tidak ada'}

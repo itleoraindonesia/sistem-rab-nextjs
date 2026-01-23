@@ -1,11 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { parseCSV, ParsedRow, formatForDatabase } from '@/lib/crm/parsers';
+import { parseCSV, ParsedRow } from '@/lib/crm/parsers';
 import { supabase } from '@/lib/supabaseClient';
 import { getAllValidKabupaten, validateKabupatenWithSuggestions } from '@/lib/crm/validators';
 import { useToast } from '@/components/ui/use-toast';
-import { getCurrentWIBISO } from '@/lib/utils/dateUtils';
 import { getFirstName } from '@/lib/utils/nameUtils';
 
 const EXAMPLE_CSV_WHATSAPP = `Budi Santoso, 08123456789, Rumah, Pagar Beton, Kota Depok, 200
@@ -33,6 +32,7 @@ export default function BulkInputForm() {
     message: string;
   } | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
+  const [existingClients, setExistingClients] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     // Fetch user for audit trail
@@ -49,33 +49,61 @@ export default function BulkInputForm() {
       setValidKabupaten(data);
     };
     fetchKabupaten();
+
+    // Fetch existing clients for duplicate detection
+    const fetchExistingClients = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('clients')
+          .select('whatsapp')
+          .not('whatsapp', 'eq', '-');
+
+        if (error) {
+          console.warn('⚠️ Gagal fetch existing clients:', error.message);
+          return;
+        }
+
+        const whatsappSet = new Set<string>();
+        (data || []).forEach((client: { whatsapp: string }) => {
+          if (client.whatsapp) {
+            whatsappSet.add(client.whatsapp);
+          }
+        });
+
+        setExistingClients(whatsappSet);
+        console.log('✅ Existing clients loaded:', whatsappSet.size, 'unique WhatsApp numbers');
+      } catch (err) {
+        console.warn('⚠️ Error fetching existing clients:', err);
+      }
+    };
+    fetchExistingClients();
   }, []);
 
   // Helper function to validate and set parsed data
-  const validateAndSetData = (text: string, kabupatenList: Array<{kabupaten: string, provinsi: string}>, source: 'instagram_only' | 'whatsapp_only' | null) => {
+  const validateAndSetData = (text: string, kabupatenList: Array<{kabupaten: string, provinsi: string}>, source: 'instagram_only' | 'whatsapp_only' | undefined, existingClientsSet: Set<string>) => {
     if (!text.trim()) {
       setParsedData([]);
       return;
     }
 
-    const parsed = parseCSV(text, source || undefined);
-    
+    const parsed = parseCSV(text, source);
+
     // Only validate kabupaten if the list has been loaded
     if (kabupatenList.length > 0) {
       console.log('🔍 Validating kabupaten with', kabupatenList.length, 'valid options');
       // Validate kabupaten for each row
       const parsedWithKabupatenValidation = parsed.map(row => {
         if (!row.kabupaten) return row;
-        
+
         const validation = validateKabupatenWithSuggestions(row.kabupaten, kabupatenList);
-        
+
         if (!validation.isValid) {
           // Add kabupaten error if not already present
           const hasKabupatenError = row.errors.some(e => e.field === 'kabupaten');
           if (!hasKabupatenError) {
             row.errors.push({
               field: 'kabupaten',
-              message: validation.suggestions.length > 0 
+              message: validation.suggestions.length > 0
                 ? 'Kabupaten tidak ditemukan. Lihat saran di bawah.'
                 : 'Kabupaten tidak ditemukan dalam database',
             });
@@ -90,10 +118,22 @@ export default function BulkInputForm() {
             row.kabupaten = validation.normalizedKabupaten;
           }
         }
-        
+
+        // Mark as duplicate if whatsapp already exists
+        if (row.whatsapp && row.whatsapp !== '-' && existingClientsSet.has(row.whatsapp)) {
+          row.isValid = false;
+          const hasDuplicateError = row.errors.some(e => e.field === 'duplicate');
+          if (!hasDuplicateError) {
+            row.errors.push({
+              field: 'duplicate',
+              message: 'Data dengan WA ini sudah ada di database',
+            });
+          }
+        }
+
         return row;
       });
-      
+
       setParsedData(parsedWithKabupatenValidation);
     } else {
       console.log('⚠️ Kabupaten list not loaded yet, skipping validation');
@@ -105,23 +145,21 @@ export default function BulkInputForm() {
   // Re-validate when kabupaten list is loaded or tracking source changes
   useEffect(() => {
     if (validKabupaten.length > 0 && inputText.trim()) {
-      validateAndSetData(inputText, validKabupaten, trackingSource);
+      validateAndSetData(inputText, validKabupaten, trackingSource ?? undefined, existingClients);
     }
-  }, [validKabupaten.length, trackingSource]); // Trigger when length changes or source changes
+  }, [validKabupaten.length, trackingSource, inputText, validKabupaten, existingClients]);
+
+  // Re-validate when existing clients cache is updated
+  useEffect(() => {
+    if (existingClients.size > 0 && inputText.trim()) {
+      validateAndSetData(inputText, validKabupaten, trackingSource ?? undefined, existingClients);
+    }
+  }, [existingClients.size, inputText, validKabupaten, existingClients, trackingSource]);
 
   const handleInputChange = (text: string) => {
     setInputText(text);
     setSaveResult(null);
-    validateAndSetData(text, validKabupaten, trackingSource);
-  };
-
-  const toggleOverride = (index: number) => {
-    setParsedData(prev => prev.map((row, idx) => {
-      if (idx === index) {
-        return { ...row, isOverride: !row.isOverride };
-      }
-      return row;
-    }));
+    validateAndSetData(text, validKabupaten, trackingSource ?? undefined, existingClients);
   };
 
   const handleSave = async () => {
@@ -133,142 +171,116 @@ export default function BulkInputForm() {
     setIsSaving(true);
     const validRows = parsedData.filter(r => r.isValid);
     let inserted = 0;
-    let updated = 0; 
     let skipped = 0;
     const errors: string[] = [];
 
-    // Process sequentially
-    for (const row of validRows) {
-      try {
-        if (row.existingClient && row.isOverride) {
-          // UPDATE existing record logic
-          const updates: any = {
-                nama: row.nama,
-                whatsapp: row.whatsapp,
-                kebutuhan: row.kebutuhan,
-                produk: row.produk,
-                kabupaten: row.kabupaten,
-                provinsi: row.provinsi,
-                luasan: row.luasan,
-                updated_at: getCurrentWIBISO(),
-                updated_by: userId,
-          };
+    // Separate duplicates from new data (duplicates are already marked as invalid)
+    const newRows = validRows.filter(r => {
+      const isDuplicate = r.whatsapp && r.whatsapp !== '-' && existingClients.has(r.whatsapp);
+      if (isDuplicate) skipped++;
+      return !isDuplicate;
+    });
 
-          // Update status logic
-          if (row.tracking_source === 'whatsapp_only') {
-             updates.status = 'WA_Negotiation'; 
-          } else if (row.tracking_source === 'instagram_only' && !row.existingClient.status) {
-             updates.status = 'IG_Lead';
-          }
-
-          const { error: updateError } = await supabase
-              .from('clients')
-              .update(updates)
-              .eq('id', row.existingClient.id);
-            
-          if (updateError) throw updateError;
-          updated++;
-
-        } else if (row.existingClient && !row.isOverride) {
-           skipped++;
-        } else {
-           // INSERT logic
-           const { error: insertError } = await supabase
-            .from('clients')
-            .insert({
-              nama: row.nama,
-              whatsapp: row.whatsapp,
-              kebutuhan: row.kebutuhan,
-              produk: row.produk,
-              kabupaten: row.kabupaten,
-              provinsi: row.provinsi,
-              luasan: row.luasan,
-              instagram_username: row.instagram_username,
-              tracking_source: row.tracking_source,
-              created_by: userId,
-              updated_by: userId,
-              status: row.tracking_source === 'instagram_only' ? 'IG_Lead' : 'WA_Negotiation',
-            });
-          
-          if (insertError) throw insertError;
-          inserted++;
-        }
-      } catch (err: any) {
-        // Handle Duplicate Key Error (Postgres Code 23505) gracefully
-        if (err.code === '23505' || err.message?.includes('duplicate key')) {
-           // Fallback: It's a duplicate that wasn't detected by frontend. Force Update.
-           try {
-             const fallbackUpdates: any = {
-                nama: row.nama,
-                kebutuhan: row.kebutuhan,
-                produk: row.produk,
-                kabupaten: row.kabupaten,
-                provinsi: row.provinsi,
-                luasan: row.luasan,
-                updated_at: getCurrentWIBISO(),
-                updated_by: userId,
-             };
-             
-             // Update status logic
-             if (row.tracking_source === 'whatsapp_only') {
-                 fallbackUpdates.status = 'WA_Negotiation';
-             } else if (row.tracking_source === 'instagram_only') {
-                 // For fallback update, we only set IG_Lead if we can confirm it's safe, 
-                 // but simple update is safer to avoid resetting advanced status.
-                 // Let's assume just update data.
-             }
-
-             const { error: retryError } = await supabase
-              .from('clients')
-              .update(fallbackUpdates)
-              .eq('whatsapp', row.whatsapp); // Update by WA since ID is missing
-             
-             if (retryError) throw retryError;
-             updated++; // Count as updated
-           
-           } catch (retryErr: any) {
-             console.error('Retry update failed:', row, retryErr);
-             errors.push(`${row.nama}: Gagal update duplikat (${retryErr.message})`);
-           }
-        } else {
-          console.error('Error saving row:', row, err);
-          errors.push(`${row.nama}: ${err.message}`);
-        }
-      }
+    if (newRows.length === 0) {
+      // All data are duplicates or invalid
+      setSaveResult({
+        success: skipped > 0,
+        inserted: 0,
+        skipped: skipped,
+        message: skipped > 0
+          ? '⚠️ Semua data sudah ada di database.'
+          : '⚠️ Tidak ada data valid untuk disimpan.',
+      });
+      setIsSaving(false);
+      return;
     }
 
-    const totalProcessed = inserted + updated;
-    const isSuccess = errors.length === 0 && totalProcessed > 0;
-    
+    // Bulk insert all new rows at once
+    try {
+      const recordsToInsert = newRows.map(row => ({
+        nama: row.nama,
+        whatsapp: row.whatsapp,
+        kebutuhan: row.kebutuhan,
+        produk: row.produk,
+        kabupaten: row.kabupaten,
+        provinsi: row.provinsi,
+        luasan: row.luasan,
+        instagram_username: row.instagram_username,
+        tracking_source: row.tracking_source,
+        created_by: userId,
+        updated_by: userId,
+        status: row.tracking_source === 'instagram_only' ? 'IG_Lead' : 'WA_Negotiation',
+      }));
+
+      const { error: bulkInsertError } = await supabase
+        .from('clients')
+        .insert(recordsToInsert);
+
+      if (bulkInsertError) {
+        // Check if it's a partial success (some rows inserted, some failed)
+        if (bulkInsertError.message?.includes('row') && bulkInsertError.message?.includes('limit')) {
+          // Partial insert due to size limits - count what we can
+          inserted = Math.floor(newRows.length / 2);
+          errors.push(`Hanya ${inserted} data yang berhasil disimpan (limit ukuran query).`);
+        } else {
+          throw bulkInsertError;
+        }
+      } else {
+        inserted = newRows.length;
+      }
+    } catch (err) {
+      console.error('Error in bulk insert:', err);
+      errors.push(`Gagal menyimpan data: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    }
+
+    const isSuccess = errors.length === 0 && inserted > 0;
+
     let message = '';
     if (isSuccess) {
-      message = `✅ Selesai: ${inserted} baru, ${updated} update.`;
-      if (skipped > 0) message += ` ${skipped} skip.`;
-      
+      message = `✅ Selesai: ${inserted} data baru disimpan.`;
+      if (skipped > 0) message += ` ${skipped} duplikat di-skip.`;
+
       toast({
         title: "Bulk Input Berhasil",
-        description: `Berhasil memproses ${inserted} data baru dan ${updated} update.`,
+        description: `Berhasil menyimpan ${inserted} data baru.`,
         variant: "success" as any,
       });
 
       // Clear form on success
-       setInputText('');
-       setParsedData([]);
-       
-       // Invalidate queries to refresh dashboard and table
-       queryClient.invalidateQueries({ queryKey: ['clients'] });
-       queryClient.invalidateQueries({ queryKey: ['crm-stats'] });
+      setInputText('');
+      setParsedData([]);
+
+      // Refresh existing clients cache
+      const { data: newClients } = await supabase
+        .from('clients')
+        .select('whatsapp')
+        .not('whatsapp', 'eq', '-');
+
+      if (newClients) {
+        const newSet = new Set<string>();
+        newClients.forEach((client: { whatsapp: string }) => {
+          if (client.whatsapp) newSet.add(client.whatsapp);
+        });
+        setExistingClients(newSet);
+      }
+
+      // Invalidate queries to refresh dashboard and table
+      queryClient.invalidateQueries({ queryKey: ['clients'] });
+      queryClient.invalidateQueries({ queryKey: ['crm-stats'] });
     } else {
       if (errors.length > 0) {
-          message = `❌ Error: ${errors.length} data gagal disimpan.`;
-          
-          toast({
-            title: "Terdapat Error",
-            description: `Gagal menyimpan ${errors.length} data. Silakan cek detail di bawah.`,
-            variant: "destructive"
-          });
+        message = `❌ Error: ${errors[0]}`;
+        if (inserted > 0) {
+          message += ` (${inserted} data berhasil disimpan)`;
+        }
+
+        toast({
+          title: "Terdapat Error",
+          description: errors[0],
+          variant: "destructive"
+        });
       } else {
-          message = `⚠️ Tidak ada data yang disimpan.`;
+        message = `⚠️ Tidak ada data yang disimpan.`;
       }
     }
 
@@ -278,7 +290,7 @@ export default function BulkInputForm() {
       skipped: skipped,
       message: message,
     });
-    
+
     setIsSaving(false);
   };
 
@@ -402,6 +414,9 @@ export default function BulkInputForm() {
               {errorCount > 0 && (
                 <span className="text-red-600">❌ {errorCount} error</span>
               )}
+              {parsedData.filter(r => r.errors.some(e => e.field === 'duplicate')).length > 0 && (
+                <span className="text-orange-600">⏭️ {parsedData.filter(r => r.errors.some(e => e.field === 'duplicate')).length} duplikat</span>
+              )}
             </div>
           </div>
 
@@ -457,6 +472,11 @@ export default function BulkInputForm() {
                       {row.errors.find(e => e.field === 'whatsapp') && (
                         <div className="text-xs text-red-600 mt-1">
                           {row.errors.find(e => e.field === 'whatsapp')?.message}
+                        </div>
+                      )}
+                      {row.errors.find(e => e.field === 'duplicate') && (
+                        <div className="text-xs text-orange-600 mt-1 font-medium">
+                          ⏭️ Duplikat
                         </div>
                       )}
                     </td>
@@ -631,7 +651,7 @@ export default function BulkInputForm() {
             disabled={isSaving || validCount === 0}
             className="w-full sm:w-auto px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:bg-gray-300 disabled:cursor-not-allowed font-medium shadow-sm active:scale-[0.98] transition-transform"
           >
-            {isSaving ? 'Menyimpan...' : `Simpan ${validCount} Data Valid`}
+                        {isSaving ? 'Menyimpan...' : `Simpan ${validCount} Data`}
           </button>
           
           <button
