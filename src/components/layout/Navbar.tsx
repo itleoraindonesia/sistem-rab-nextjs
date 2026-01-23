@@ -57,8 +57,27 @@ export default function Navbar({
   }, []);
 
   const logout = async () => {
-    await supabase.auth.signOut();
-    router.push('/login');
+    try {
+      // Create a timeout promise (2 seconds - faster!)
+      const timeoutPromise = new Promise<never>((_, reject) => 
+        setTimeout(() => reject(new Error('Logout timeout')), 2000)
+      )
+
+      // Race between logout and timeout
+      await Promise.race([
+        supabase.auth.signOut(),
+        timeoutPromise
+      ])
+    } catch (error) {
+      // Only log if it's NOT a timeout error
+      if (!(error instanceof Error && error.message === 'Logout timeout')) {
+        console.error('Logout error:', error)
+      }
+      // Continue to login page even if logout fails or times out
+    } finally {
+      // Always redirect to login
+      router.push('/login')
+    }
   };
 
   // Helper function to check if current path is child of parent
