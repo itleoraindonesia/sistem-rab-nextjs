@@ -2,18 +2,21 @@
 
 import { useState, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
+import Image from "next/image"
 import { Button } from "../../components/ui"
-import { Card, CardHeader, CardTitle, CardContent } from "../../components/ui"
+
 import { Input } from "../../components/ui/input"
 import { Label } from "../../components/ui/label"
 import { supabase } from "../../lib/supabase/client"
-import { Mail, CheckCircle } from "lucide-react"
+import { Mail, Eye, EyeOff, Lock, AlertCircle } from "lucide-react"
 
 function LoginForm() {
   const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState("")
-  const [success, setSuccess] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [isForgotPassword, setIsForgotPassword] = useState(false)
 
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -28,157 +31,246 @@ function LoginForm() {
       if (!supabase) {
         throw new Error("Supabase client is not initialized. Check your environment variables.")
       }
-      const { error } = await supabase.auth.signInWithOtp({
+
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
-        options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(redirect)}`,
-        },
+        password,
       })
 
       if (error) {
-        setError(error.message)
-      } else {
-        setSuccess(true)
+        let errorMessage = error.message
+        if (error.message.includes('Invalid login credentials')) {
+          errorMessage = 'Email atau password salah. Silakan coba lagi.'
+        } else if (error.message.includes('Email not confirmed')) {
+          errorMessage = 'Email belum dikonfirmasi. Silakan cek email Anda.'
+        }
+        setError(errorMessage)
+      } else if (data.user) {
+        // Redirect to the intended page or dashboard
+        router.push(redirect)
       }
     } catch (err) {
-      setError("Terjadi kesalahan saat mengirim magic link")
+      setError("Terjadi kesalahan saat login")
       console.error(err)
     } finally {
       setIsLoading(false)
     }
   }
 
-  if (success) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-md w-full space-y-8">
-          <div className="text-center">
-            <h1 className="text-3xl font-bold text-brand-primary mb-2">
-              Sistem RAB Leora
-            </h1>
-          </div>
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError("")
+    setIsLoading(true)
 
-          <Card>
-            <CardContent className="p-8">
-              <div className="text-center space-y-4">
-                <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
-                  <CheckCircle className="w-10 h-10 text-green-600" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                    Cek Email Anda!
-                  </h3>
-                  <p className="text-gray-600 mb-4">
-                    Kami telah mengirim magic link ke:
-                  </p>
-                  <p className="font-semibold text-brand-primary mb-4">
-                    {email}
-                  </p>
-                  <p className="text-sm text-gray-500">
-                    Klik link di email untuk login. Link akan expire dalam 1 jam.
-                  </p>
-                </div>
-                <div className="pt-4">
-                  <Button variant="outline" asChild className="w-full">
-                    <a
-                      href={`https://team.leora.co.id/webmail/?_user=${encodeURIComponent(email)}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      Cek Email Masuk
-                    </a>
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+    try {
+      if (!supabase) {
+        throw new Error("Supabase client is not initialized. Check your environment variables.")
+      }
 
-          <div className="text-center text-sm text-gray-600">
-            <p>Tidak menerima email?</p>
-            <p className="mt-1">Cek folder spam atau tunggu beberapa menit.</p>
-          </div>
-        </div>
-      </div>
-    )
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth/reset-password`,
+      })
+
+      if (error) {
+        setError(error.message)
+      } else {
+        setError("") // Clear any previous errors
+        alert("Link reset password telah dikirim ke email Anda. Silakan cek email dan ikuti instruksi untuk mengatur ulang password.")
+        setIsForgotPassword(false)
+      }
+    } catch (err) {
+      setError("Terjadi kesalahan saat mengirim email reset password")
+      console.error(err)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div className="text-center">
-          <h1 className="text-3xl font-bold text-brand-primary mb-2">
-            Sistem RAB Leora
-          </h1>
-          <p className="text-gray-600">Masuk dengan Magic Link</p>
-        </div>
+    <div className="flex min-h-screen w-full bg-white">
+      {/* Kiri: Gambar Konstruksi (2/3) */}
+      <div className="hidden lg:flex w-2/3 relative bg-slate-900 overflow-hidden">
+        <Image
+          src="/login-bg.png"
+          alt="Construction Site"
+          fill
+          className="object-cover opacity-90"
+          priority
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-slate-900/80 to-transparent" />
+        
+        <div className="absolute bottom-16 left-16 max-w-xl text-white z-10">
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-center bg-gradient-to-r from-brand-primary to-brand-accent bg-clip-text text-transparent">
-              Login Tanpa Password
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
+          <h1 className="text-5xl font-bold mb-6 leading-tight">
+            Membangun Masa Depan dengan Presisi
+          </h1>
+          <p className="text-lg text-gray-300 leading-relaxed text-balance">
+            Solusi Enterprise Resource Planning terintegrasi untuk efisiensi operasional, manajemen konstruksi, dan kontrol bisnis yang menyeluruh.
+          </p>
+        </div>
+      </div>
+
+      {/* Kanan: Login Form (1/3) */}
+      <div className="w-full lg:w-1/3 flex flex-col justify-center px-8 sm:px-12 lg:px-16 py-12 overflow-y-auto bg-white">
+        <div className="w-full max-w-sm mx-auto space-y-8">
+          <div className="text-center lg:text-left">
+            <div className="mb-6 md:mb-12 flex flex-col items-center lg:items-start">
+              <Image 
+                 src="/Logo-Leora-PNG.png" 
+                 alt="Logo Leora" 
+                 width={500} 
+                 height={500} 
+                 className="w-48 md:w-64 h-auto object-contain"
+               />
+            </div>
+            <h2 className="text-3xl font-bold text-slate-900 tracking-tight">
+              Selamat Datang Kembali
+            </h2>
+            <p className="mt-2 text-slate-600">
+              Silakan masuk untuk mengakses dashboard proyek Anda.
+            </p>
+          </div>
+
+          {isForgotPassword ? (
+            <form onSubmit={handleForgotPassword} className="space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="email">Email Perusahaan</Label>
+                <Label htmlFor="reset-email" className="text-slate-700 font-medium">Email Perusahaan</Label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
                   <Input
-                    id="email"
-                    name="email"
+                    id="reset-email"
+                    name="reset-email"
                     type="email"
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="nama@perusahaan.com"
                     autoComplete="email"
-                    className="pl-10"
+                    className="pl-10 h-11 bg-slate-50 border-slate-200 focus:bg-white transition-colors"
                   />
                 </div>
-                <p className="text-xs text-gray-500">
-                  Kami akan mengirim magic link ke email Anda
+                <p className="text-xs text-slate-500">
+                  Masukkan email untuk menerima link reset password.
                 </p>
               </div>
 
               {error && (
-                <div className="p-3 text-sm text-red-800 bg-red-50 border border-red-200 rounded-md">
-                  {error}
+                <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg flex items-start gap-2">
+                  <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                  <span>{error}</span>
                 </div>
               )}
 
-              <Button type="submit" className="w-full" disabled={isLoading}>
+              <div className="space-y-3 pt-2">
+                <Button type="submit" className="w-full h-11 text-base shadow-lg shadow-brand-primary/20 hover:shadow-xl hover:shadow-brand-primary/30 transition-all font-semibold" disabled={isLoading}>
+                  {isLoading ? (
+                    <>
+                      <span className="animate-spin mr-2">⏳</span>
+                      Mengirim...
+                    </>
+                  ) : (
+                    "Kirim Link Reset Password"
+                  )}
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="w-full h-11 text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+                  onClick={() => setIsForgotPassword(false)}
+                >
+                  Kembali ke Login
+                </Button>
+              </div>
+            </form>
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email" className="text-slate-700 font-medium">Email</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+                    <Input
+                      id="email"
+                      name="email"
+                      type="email"
+                      required
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="nama@perusahaan.com"
+                      autoComplete="email"
+                      className="pl-10 h-11 bg-slate-50 border-slate-200 focus:bg-white transition-colors"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="password" className="text-slate-700 font-medium">Password</Label>
+                    <Button
+                      type="button"
+                      variant="link"
+                      className="p-0 h-auto text-xs font-medium text-brand-primary hover:text-brand-accent"
+                      onClick={() => setIsForgotPassword(true)}
+                    >
+                      Lupa Password?
+                    </Button>
+                  </div>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+                    <Input
+                      id="password"
+                      name="password"
+                      type={showPassword ? "text" : "password"}
+                      required
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      autoComplete="current-password"
+                      className="pl-10 pr-10 h-11 bg-slate-50 border-slate-200 focus:bg-white transition-colors"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1 rounded-full hover:bg-slate-100 transition-colors"
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {error && (
+                <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg flex items-start gap-2 animate-in fade-in slide-in-from-top-1">
+                  <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                  <span>{error}</span>
+                </div>
+              )}
+
+              <Button 
+                type="submit" 
+                className="w-full h-11 text-base shadow-lg shadow-brand-primary/20 hover:shadow-xl hover:shadow-brand-primary/30 transition-all font-semibold" 
+                disabled={isLoading}
+              >
                 {isLoading ? (
                   <>
                     <span className="animate-spin mr-2">⏳</span>
-                    Mengirim Magic Link...
+                    Masuk...
                   </>
                 ) : (
-                  <>
-                    <Mail className="mr-2 h-4 w-4" />
-                    Kirim Magic Link
-                  </>
+                  "Masuk ke Akun"
                 )}
               </Button>
             </form>
+          )}
 
-            <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-md">
-              <p className="text-sm text-blue-900 font-medium mb-2">
-                🔐 Login Tanpa Password
-              </p>
-              <ul className="text-xs text-blue-800 space-y-1">
-                <li>✓ Lebih aman - tidak perlu ingat password</li>
-                <li>✓ Cepat - cukup klik link di email</li>
-                <li>✓ Magic link expire dalam 1 jam</li>
-                <li>✓ Session bertahan 30 hari</li>
-              </ul>
-            </div>
-          </CardContent>
-        </Card>
-
-        <div className="text-center text-xs text-gray-500">
-          <p>Pastikan Anda sudah terdaftar di sistem.</p>
-          <p className="mt-1">Hubungi admin jika belum memiliki akses.</p>
+          <div className="pt-6 border-t border-slate-100">
+             <div className="flex items-center justify-center gap-2 text-xs text-slate-400">
+                <Lock className="w-3 h-3" />
+                <span>Terenskripsi & Aman</span>
+                <span>•</span>
+                <span>ERP Leora v1.0</span>
+             </div>
+          </div>
         </div>
       </div>
     </div>
