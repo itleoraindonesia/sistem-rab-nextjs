@@ -81,15 +81,7 @@ export default function BuatSuratKeluarPage() {
           </div>
         </div>
 
-        {/* Info Alert */}
-        <Alert className="bg-blue-50 border-blue-200">
-          <AlertTitle className="text-blue-900">Format Surat Baru</AlertTitle>
-          <AlertDescription className="text-blue-800">
-            Form ini mengikuti struktur: <strong>Identitas → Konten → Pengirim → Penerima → Lampiran & TTD</strong>
-            <br />
-            Nomor surat akan di-generate otomatis setelah approved.
-          </AlertDescription>
-        </Alert>
+    
 
         {/* Form */}
         <Card>

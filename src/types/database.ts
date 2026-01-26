@@ -167,6 +167,7 @@ export type Database = {
           id: string
           location: string | null
           meeting_date: string
+          meeting_number: string | null
           meeting_type: Database["public"]["Enums"]["meeting_type_enum"]
           participants: Json
           published_at: string | null
@@ -182,6 +183,7 @@ export type Database = {
           id?: string
           location?: string | null
           meeting_date: string
+          meeting_number?: string | null
           meeting_type: Database["public"]["Enums"]["meeting_type_enum"]
           participants: Json
           published_at?: string | null
@@ -197,6 +199,7 @@ export type Database = {
           id?: string
           location?: string | null
           meeting_date?: string
+          meeting_number?: string | null
           meeting_type?: Database["public"]["Enums"]["meeting_type_enum"]
           participants?: Json
           published_at?: string | null
@@ -412,6 +415,9 @@ export type Database = {
     }
     Functions: {
       _email_local_part: { Args: { email: string }; Returns: string }
+      get_generated_meeting_number_preview: { Args: never; Returns: string }
+      get_next_meeting_number_preview: { Args: never; Returns: string }
+      get_roman_month: { Args: { month_int: number }; Returns: string }
     }
     Enums: {
       meeting_status_enum: "draft" | "published"

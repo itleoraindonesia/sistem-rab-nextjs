@@ -49,13 +49,9 @@ export function formatLuasan(luasan: number | null, kebutuhan: string): string {
   if (!luasan) return '-';
   
   // Determine unit based on kebutuhan
-  let unit = 'm²';
-  
-  if (kebutuhan === 'Pagar') {
-    unit = 'm'; // meter (keliling)
-  } else if (kebutuhan === 'Panel Saja') {
-    unit = 'unit';
-  }
+  // Rules: Pagar = m1, others = m2
+  const isPagar = kebutuhan?.toLowerCase().includes('pagar');
+  const unit = isPagar ? 'm¹' : 'm²';
   
   return `${luasan.toLocaleString('id-ID')} ${unit}`;
 }

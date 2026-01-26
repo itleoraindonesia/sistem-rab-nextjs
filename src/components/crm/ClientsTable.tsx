@@ -27,7 +27,7 @@ export default function ClientsTable({ onClientSelect }: ClientsTableProps) {
     const timer = setTimeout(() => {
       setDebouncedSearch(searchTerm);
       setPage(1); // Reset to page 1 on new search
-    }, 500);
+    }, 300);
 
     return () => clearTimeout(timer);
   }, [searchTerm]);
@@ -39,12 +39,18 @@ export default function ClientsTable({ onClientSelect }: ClientsTableProps) {
       const from = (page - 1) * ITEMS_PER_PAGE;
       const to = from + ITEMS_PER_PAGE - 1;
 
+      console.log('Fetching clients query:', { page, debouncedSearch, filterKebutuhan, sortBy, sortOrder });
+
       let query = supabase
         .from('clients')
         .select('*', { count: 'exact' });
 
       if (filterKebutuhan) query = query.eq('kebutuhan', filterKebutuhan);
-      if (debouncedSearch) query = query.or(`nama.ilike.%${debouncedSearch}%,whatsapp.ilike.%${debouncedSearch}%,kabupaten.ilike.%${debouncedSearch}%`);
+      
+      if (debouncedSearch && debouncedSearch.trim() !== '') {
+         const searchTerm = debouncedSearch.trim();
+         query = query.or(`nama.ilike.%${searchTerm}%,whatsapp.ilike.%${searchTerm}%,kabupaten.ilike.%${searchTerm}%`);
+      }
 
       query = query
         .order(sortBy, { ascending: sortOrder === 'asc' })
@@ -79,6 +85,7 @@ export default function ClientsTable({ onClientSelect }: ClientsTableProps) {
     refetchOnMount: true, // Always refetch on mount for fresh data
     retry: 3, // Retry 3 times on failure (increased from 2)
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
+    placeholderData: (previousData: any) => previousData, // Keep previous data while fetching new data to prevent flicker
   });
 
   const clients = data?.data || [];
@@ -177,65 +184,112 @@ export default function ClientsTable({ onClientSelect }: ClientsTableProps) {
       </div>
 
       {/* Desktop Table */}
-      <div className="hidden md:block bg-white rounded-lg border border-gray-200 overflow-hidden">
+      <div className="hidden md:block bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  <th className="px-4 py-3 text-left w-12">No</th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-500 w-12">No</th>
                   <th 
-                    className="px-4 py-3 text-left cursor-pointer hover:bg-gray-100"
+                    className="px-4 py-3 text-left font-medium text-gray-500 cursor-pointer hover:text-gray-700 group"
                     onClick={() => handleSort('nama')}
                   >
-                    Nama {sortBy === 'nama' && (sortOrder === 'asc' ? '↑' : '↓')}
+                    <div className="flex items-center gap-1">
+                      Nama Client
+                      {sortBy === 'nama' && (
+                        <span className="text-xs text-gray-400">{sortOrder === 'asc' ? '↑' : '↓'}</span>
+                      )}
+                    </div>
                   </th>
-                  <th className="px-4 py-3 text-left">Kabupaten</th>
-                  <th className="px-4 py-3 text-left">Kebutuhan</th>
-                  <th className="px-4 py-3 text-left">Produk</th>
-                  <th className="px-4 py-3 text-left">Luasan/Keliling</th>
-                  <th className="px-4 py-3 text-left">Status</th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-500">Lokasi</th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-500">Kebutuhan</th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-500">Produk</th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-500">Luas/Keliling</th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-500">Status</th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-500">Kontak</th>
                 </tr>
               </thead>
               <tbody>
                 {clients.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
-                      Tidak ada data client
+                    <td colSpan={8} className="px-4 py-12 text-center text-gray-500">
+                       <div className="flex flex-col items-center justify-center p-4">
+                          <p className="text-gray-400 mb-2">Belum ada data client yang sesuai filter.</p>
+                       </div>
                     </td>
                   </tr>
                 ) : (
                   clients.map((client, index) => (
                     <tr
                       key={client.id}
-                      className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer"
+                      className="border-b border-gray-100 hover:bg-gray-50 transition-colors group cursor-pointer"
                       onClick={() => onClientSelect?.(client)}
                     >
-                      <td className="px-4 py-3 text-gray-500">{((page - 1) * ITEMS_PER_PAGE) + index + 1}</td>
-                      <td className="px-4 py-3 font-medium">
-                        <div>{client.nama}</div>
-                        <div className="text-xs text-gray-400 font-mono mt-0.5">{formatWhatsAppDisplay(client.whatsapp)}</div>
+                      <td className="px-4 py-3 text-gray-400 font-mono text-xs">
+                        {((page - 1) * ITEMS_PER_PAGE) + index + 1}
                       </td>
-                      <td className="px-4 py-3 text-gray-600">{client.kabupaten}</td>
                       <td className="px-4 py-3">
-                        <span className="inline-block px-2 py-1 bg-primary/10 text-primary rounded text-xs">
+                        <div className="flex items-center gap-3">
+                           {/* Avatar Initials */}
+                           <div className="h-8 w-8 rounded-full bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 flex items-center justify-center text-blue-600 font-bold text-xs shrink-0">
+                              {getFirstName(client.nama)[0]?.toUpperCase() || 'C'}
+                           </div>
+                           <div>
+                              <div className="font-semibold text-gray-900">{client.nama}</div>
+                              <div className="text-xs text-gray-400 flex items-center gap-1 mt-0.5">
+                                 {formatDate(client.created_at)}
+                              </div>
+                           </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                         <div className="flex items-center gap-1.5 text-gray-600">
+                            <MapPin className="h-3.5 w-3.5 text-gray-400" />
+                            <span className="truncate max-w-[120px]" title={client.kabupaten || ''}>{client.kabupaten || '-'}</span>
+                         </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="inline-flex px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700 border border-gray-200">
                           {client.kebutuhan}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-gray-700">
+                      <td className="px-4 py-3 text-gray-600 max-w-[150px] truncate" title={client.produk || ''}>
                         {client.produk || '-'}
                       </td>
-                      <td className="px-4 py-3 text-gray-600">
+                      <td className="px-4 py-3 text-gray-600 font-mono text-xs">
                         {formatLuasan(client.luasan, client.kebutuhan)}
                       </td>
                       <td className="px-4 py-3">
-                         <span className={`inline-block px-2 py-1 rounded text-xs font-medium border ${
-                          client.status === 'Finish' || client.status === 'Invoice_Deal' ? 'bg-green-100 text-green-800 border-green-200' :
-                          client.status === 'Cancelled' ? 'bg-red-100 text-red-800 border-red-200' :
-                          client.status === 'IG_Lead' ? 'bg-primary/10 text-primary border-primary/20' :
+                         <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium border ${
+                          client.status === 'Finish' || client.status === 'Invoice_Deal' ? 'bg-green-50 text-green-700 border-green-200' :
+                          client.status === 'Cancelled' ? 'bg-red-50 text-red-700 border-red-200' :
+                          client.status === 'IG_Lead' ? 'bg-blue-50 text-blue-700 border-blue-200' :
                           'bg-yellow-50 text-yellow-700 border-yellow-200'
                         }`}>
-                          {client.status?.replace(/_/g, ' ') || 'New Lead'}
+                           <span className={`h-1.5 w-1.5 rounded-full ${
+                             client.status === 'Finish' || client.status === 'Invoice_Deal' ? 'bg-green-500' :
+                             client.status === 'Cancelled' ? 'bg-red-500' :
+                             client.status === 'IG_Lead' ? 'bg-blue-500' :
+                             'bg-yellow-500'
+                           }`}></span>
+                          {client.status?.replace(/_/g, ' ') || 'New'}
                         </span>
+                      </td>
+                      <td className="px-4 py-3">
+                         {client.whatsapp && client.whatsapp !== '-' ? (
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                window.open(`https://wa.me/${client.whatsapp?.replace(/^0/, '62').replace(/[^0-9]/g, '')}`, '_blank');
+                              }}
+                              className="h-8 w-8 flex items-center justify-center rounded-full text-green-600 hover:bg-green-50 transition-colors border border-transparent hover:border-green-200"
+                              title="Chat WhatsApp"
+                            >
+                              <MessageCircle className="h-4 w-4" />
+                            </button>
+                          ) : (
+                            <span className="text-gray-300">-</span>
+                          )}
                       </td>
                     </tr>
                   ))

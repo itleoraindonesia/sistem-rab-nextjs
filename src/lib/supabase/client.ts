@@ -6,7 +6,7 @@ const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY ||
 
 // Custom fetch with timeout and retry logic to prevent hanging requests
 const fetchWithTimeout = async (url: RequestInfo | URL, options: RequestInit = {}, maxRetries = 3) => {
-  const timeout = 30000; // 30 seconds timeout (increased from 10s)
+  const timeout = 15000; // 15 seconds timeout (Reduced from 30s to detect hangs faster)
   
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     const controller = new AbortController();
@@ -18,24 +18,32 @@ const fetchWithTimeout = async (url: RequestInfo | URL, options: RequestInit = {
         signal: controller.signal,
       });
       
-      if (timerId) clearTimeout(timerId);
+      clearTimeout(timerId);
       
-      // Only retry on network errors or 5xx errors
+      // Retry on 5xx server errors
       if (!response.ok && response.status >= 500 && attempt < maxRetries) {
-        console.log(`Fetch failed with status ${response.status}, retrying (${attempt}/${maxRetries})...`);
-        await new Promise(resolve => setTimeout(resolve, 1000 * attempt)); // Exponential backoff
+        console.warn(`[Supabase] Server error ${response.status}, retrying (${attempt}/${maxRetries})...`);
+        await new Promise(resolve => setTimeout(resolve, 1000 * attempt)); 
         continue;
       }
       
       return response;
     } catch (error: any) {
-      if (timerId) clearTimeout(timerId);
+      clearTimeout(timerId);
       
-      // Only retry on network errors or abort errors
-      if ((error.name === 'AbortError' || error.name === 'TypeError') && attempt < maxRetries) {
-        console.log(`Fetch failed with ${error.name}, retrying (${attempt}/${maxRetries})...`);
-        await new Promise(resolve => setTimeout(resolve, 1000 * attempt)); // Exponential backoff
+      const isTimeout = error.name === 'AbortError';
+      const isNetworkError = error.name === 'TypeError' && error.message === 'Failed to fetch';
+      
+      // Retry on Timeout or Network Error
+      if ((isTimeout || isNetworkError) && attempt < maxRetries) {
+        console.warn(`[Supabase] Request ${isTimeout ? 'timed out' : 'failed'}, retrying (${attempt}/${maxRetries})...`);
+        await new Promise(resolve => setTimeout(resolve, 1000 * attempt)); 
         continue;
+      }
+      
+      // If it's the last attempt and it timed out, throw a clear error
+      if (isTimeout) {
+        throw new Error('Request timeout: Connection to Supabase is unstable or hanging.');
       }
       
       throw error;

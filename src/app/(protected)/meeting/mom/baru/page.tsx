@@ -12,6 +12,14 @@ import { Alert, AlertDescription, AlertTitle } from "../../../../../components/u
 export default function BuatMoMPage() {
   const router = useRouter()
 
+  // Helper untuk generate nomor surat dinamis (Mock)
+  const getRomanMonth = (date: Date) => {
+    const months = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"];
+    return months[date.getMonth()];
+  }
+  const today = new Date();
+  const meetingNumber = `[AUTO]/MOM/${getRomanMonth(today)}/${today.getFullYear()}`;
+
   return (
     <div className="container mx-auto">
       <div className="space-y-6">
@@ -40,8 +48,16 @@ export default function BuatMoMPage() {
             <form className="space-y-6">
               {/* Basic Info Section */}
               <div className="space-y-4">
-                <h3 className="text-lg font-semibold border-b pb-2">Informasi Meeting</h3>
+                <h3 className="text-lg font-semibold  pb-2">Informasi Meeting</h3>
                 
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="meeting_number">Meeting Number (Auto-generated)</Label>
+                    <Input id="meeting_number" value={meetingNumber} disabled className="bg-gray-100 cursor-not-allowed" />
+                  </div>
+                  <div className="hidden md:block"></div> {/* Spacer for alignment if needed, or simply push Title to next row if we want strict grid */}
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="title">Judul Meeting *</Label>
