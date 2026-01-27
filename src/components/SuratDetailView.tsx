@@ -8,12 +8,14 @@ interface Signature {
   name: string
   position: string
   order: number
+  pihak?: string // New field
 }
 
 interface Pengirim {
   dept: string
   name: string
   email: string
+  // Added optional ID if needed for dropdown logic later, but keeping simple for now
 }
 
 interface Penerima {
@@ -21,7 +23,7 @@ interface Penerima {
   nama_penerima: string
   alamat: string
   whatsapp: string
-  email: string
+  email?: string
 }
 
 interface SuratData {
@@ -33,7 +35,12 @@ interface SuratData {
   
   // Section 2: Konten Surat
   perihal: string
-  isi_surat: string
+  // Changed from string to object
+  isi_surat: {
+    pembuka: string
+    isi: string
+    penutup: string
+  }
   
   // Section 3: Pengirim
   pengirim: Pengirim
@@ -120,11 +127,22 @@ export function SuratDetailView({ data, showSectionNumbers = false }: SuratDetai
 
             <div>
               <Label className="text-gray-600">Isi Surat</Label>
-              <div className="bg-gray-50 p-6 rounded-md border border-gray-200 mt-2">
+              <div className="bg-gray-50 p-6 rounded-md border border-gray-200 mt-2 space-y-4">
+                {/* Pembuka */}
+                <div>
+                  <p className="whitespace-pre-wrap">{data.isi_surat.pembuka}</p>
+                </div>
+
+                {/* Isi HTML */}
                 <div 
                   className="prose prose-sm max-w-none"
-                  dangerouslySetInnerHTML={{ __html: data.isi_surat }}
+                  dangerouslySetInnerHTML={{ __html: data.isi_surat.isi }}
                 />
+
+                {/* Penutup */}
+                <div>
+                  <p className="whitespace-pre-wrap">{data.isi_surat.penutup}</p>
+                </div>
               </div>
             </div>
           </div>
@@ -186,14 +204,6 @@ export function SuratDetailView({ data, showSectionNumbers = false }: SuratDetai
               <p className="font-medium mt-1">{data.penerima.nama_penerima}</p>
             </div>
 
-            <div className="md:col-span-2">
-              <Label className="text-gray-600 flex items-center gap-2">
-                <MapPin className="h-4 w-4" />
-                Alamat
-              </Label>
-              <p className="font-medium mt-1">{data.penerima.alamat}</p>
-            </div>
-
             <div>
               <Label className="text-gray-600 flex items-center gap-2">
                 <Phone className="h-4 w-4" />
@@ -207,7 +217,15 @@ export function SuratDetailView({ data, showSectionNumbers = false }: SuratDetai
                 <Mail className="h-4 w-4" />
                 Email
               </Label>
-              <p className="font-medium mt-1">{data.penerima.email}</p>
+              <p className="font-medium mt-1">{data.penerima.email || "-"}</p>
+            </div>
+
+            <div className="md:col-span-2">
+              <Label className="text-gray-600 flex items-center gap-2">
+                <MapPin className="h-4 w-4" />
+                Alamat
+              </Label>
+              <p className="font-medium mt-1">{data.penerima.alamat}</p>
             </div>
           </div>
         </CardContent>
@@ -269,7 +287,14 @@ export function SuratDetailView({ data, showSectionNumbers = false }: SuratDetai
                     key={index}
                     className="p-3 border rounded-md bg-white"
                   >
-                    <p className="text-xs text-gray-500 mb-1">TTD #{sig.order}</p>
+                    <div className="flex justify-between items-center mb-1">
+                      <p className="text-xs text-gray-500">TTD #{sig.order}</p>
+                      {sig.pihak && (
+                        <span className="text-[10px] uppercase font-bold tracking-wider text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">
+                          {sig.pihak}
+                        </span>
+                      )}
+                    </div>
                     <p className="font-semibold text-sm">{sig.name}</p>
                     <p className="text-xs text-gray-600">{sig.position}</p>
                   </div>

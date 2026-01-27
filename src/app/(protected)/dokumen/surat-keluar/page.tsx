@@ -8,13 +8,14 @@ import Button from "../../../../components/ui/Button"
 import { Alert, AlertDescription, AlertTitle } from "../../../../components/ui/alert"
 
 // Kategori Surat Options
+// Kategori Surat Options
 export const KATEGORI_SURAT = [
-  "Surat Penawaran",
-  "Surat Kontrak",
-  "Surat Pemberitahuan",
-  "Surat Permohonan",
-  "Surat Keterangan",
-  "Lainnya",
+  { label: "Surat Penawaran", description: "Digunakan untuk mengajukan penawaran harga atau jasa kepada klien." },
+  { label: "Surat Kontrak", description: "Dokumen perjanjian kerjasama resmi antara dua belah pihak." },
+  { label: "Surat Pemberitahuan", description: "Menyampaikan informasi penting atau pengumuman resmi." },
+  { label: "Surat Permohonan", description: "Mengajukan permintaan izin, dana, atau persetujuan tertentu." },
+  { label: "Surat Keterangan", description: "Menjelaskan status atau kondisi tertentu secara resmi." },
+  { label: "Lainnya", description: "Jenis surat selain yang tercantum di atas." },
 ] as const
 
 // Mock data based on new specification
@@ -29,7 +30,11 @@ const mockOutgoingLetters = [
     
     // Section 2: Konten Surat
     perihal: "Penawaran Proyek Perumahan Griya Asri",
-    isi_surat: "Dengan hormat, kami mengajukan penawaran untuk proyek pembangunan perumahan...",
+    isi_surat: {
+      pembuka: "Dengan hormat,",
+      isi: "Kami mengajukan penawaran untuk proyek pembangunan perumahan...",
+      penutup: "Demikian penawaran ini kami sampaikan. Terima kasih.",
+    },
     
     // Section 3: Pengirim (auto-filled from login)
     pengirim: {
@@ -51,8 +56,8 @@ const mockOutgoingLetters = [
     has_lampiran: true,
     lampiran_files: ["proposal.pdf", "rab.xlsx"],
     signatures: [
-      { name: "John Doe", position: "Sales Manager", order: 1 },
-      { name: "Jane Smith", position: "Director", order: 2 },
+      { name: "John Doe", position: "Sales Manager", order: 1, pihak: "Pihak Pertama" },
+      { name: "Jane Smith", position: "Director", order: 2, pihak: "Pihak Kedua" },
     ],
     
     // Workflow
@@ -68,7 +73,11 @@ const mockOutgoingLetters = [
     tanggal: "2026-01-09T14:30:00Z",
     
     perihal: "Kontrak Kerjasama Proyek Gedung Perkantoran",
-    isi_surat: "Berdasarkan kesepakatan bersama, kami menyetujui kontrak kerjasama...",
+    isi_surat: {
+      pembuka: "Dengan hormat,",
+      isi: "Berdasarkan kesepakatan bersama, kami menyetujui kontrak kerjasama...",
+      penutup: "Demikian kontrak ini dibuat untuk disepakati.",
+    },
     
     pengirim: {
       dept: "Legal & Contract",
@@ -87,7 +96,7 @@ const mockOutgoingLetters = [
     has_lampiran: false,
     lampiran_files: [],
     signatures: [
-      { name: "Jane Smith", position: "Legal Manager", order: 1 },
+      { name: "Jane Smith", position: "Legal Manager", order: 1, pihak: "Pihak Pertama" },
     ],
     
     status: "under_review",
@@ -103,7 +112,11 @@ const mockOutgoingLetters = [
     tanggal: "2026-01-08T09:15:00Z",
     
     perihal: "Pemberitahuan Perubahan Harga Material",
-    isi_surat: "Dengan ini kami memberitahukan adanya perubahan harga material konstruksi...",
+    isi_surat: {
+      pembuka: "Kepada Yth. Rekanan,",
+      isi: "Dengan ini kami memberitahukan adanya perubahan harga material konstruksi...",
+      penutup: "Mohon maklum. Terima kasih.",
+    },
     
     pengirim: {
       dept: "Procurement",
@@ -122,8 +135,8 @@ const mockOutgoingLetters = [
     has_lampiran: true,
     lampiran_files: ["price_list_2026.pdf"],
     signatures: [
-      { name: "Bob Wilson", position: "Procurement Manager", order: 1 },
-      { name: "Director", position: "Director", order: 2 },
+      { name: "Bob Wilson", position: "Procurement Manager", order: 1, pihak: "Management" },
+      { name: "Director", position: "Director", order: 2, pihak: "Mengetahui" },
     ],
     
     status: "approved",
