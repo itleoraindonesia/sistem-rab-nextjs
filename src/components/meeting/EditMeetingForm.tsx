@@ -97,7 +97,7 @@ export function EditMeetingForm({ meetingId }: EditMeetingFormProps) {
         title: "Success",
         description: "Meeting berhasil diupdate"
       })
-      router.push("/meeting/mom")
+      router.push(`/meeting/${meetingId}`)
     },
     onError: (error) => {
       toast({

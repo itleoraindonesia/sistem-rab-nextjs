@@ -86,6 +86,14 @@ export function useRABCalculation(
       );
       const ongkirData = ongkir.find((o) => o.kabupaten === location_kabupaten);
 
+      // Debug logging
+      console.log("=== ONGKIR CALCULATION DEBUG ===");
+      console.log("location_kabupaten:", location_kabupaten);
+      console.log("location_provinsi:", location_provinsi);
+      console.log("All ongkir data:", ongkir);
+      console.log("Found ongkirData:", ongkirData);
+      console.log("================================");
+
       // Hitung biaya dinding
       let subtotalDinding = 0;
       let lembarDinding = 0;

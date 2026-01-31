@@ -121,7 +121,20 @@ export default function DetailRAB({ params }: PageProps) {
 
     const panelDinding = panels.find((p) => p.id.toString() === panelDindingId);
     const panelLantai = panels.find((p) => p.id.toString() === panelLantaiId);
-    const ongkirData = ongkir.find((o) => o.provinsi === doc.location_kabupaten);
+    
+    // Cari ongkir berdasarkan kabupaten atau provinsi
+    // Prioritas: kabupaten > provinsi
+    const ongkirData = ongkir.find((o) => {
+      // Jika ada field kabupaten di data ongkir, cocokkan dengan location_kabupaten
+      if (o.kabupaten && doc.location_kabupaten) {
+        return o.kabupaten === doc.location_kabupaten;
+      }
+      // Fallback: cocokkan provinsi dengan location_provinsi (jika ada)
+      if (doc.form_data?.location_provinsi) {
+        return o.provinsi === doc.form_data.location_provinsi;
+      }
+      return false;
+    });
 
     // Hitung dinding
     if (panelDindingId && panelDinding) {

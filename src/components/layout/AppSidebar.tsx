@@ -71,8 +71,8 @@ const navItems = [
     path: "/meeting",
     icon: Calendar,
     children: [
-      "/meeting/baru",
-      "/meeting/mom"
+      "/meeting",
+      "/meeting/baru"
     ],
   },
   {
@@ -362,7 +362,20 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   {hasChildren && isExpanded && (
                     <SidebarMenuSub>
                       {item.children.map((childPath) => {
-                        const isChildActive = pathname === childPath || pathname.startsWith(`${childPath}/`)
+                        // Special handling for meeting routes
+                        let isChildActive = false
+                        if (childPath === "/meeting") {
+                          // /meeting is active for: exact /meeting, /meeting/[id], /meeting/[id]/edit
+                          // but NOT for /meeting/baru
+                          isChildActive = pathname === "/meeting" || 
+                                         (pathname.startsWith("/meeting/") && !pathname.startsWith("/meeting/baru"))
+                        } else if (childPath === "/meeting/baru") {
+                          // /meeting/baru is only active for exact match or its children
+                          isChildActive = pathname === childPath || pathname.startsWith(`${childPath}/`)
+                        } else {
+                          // Default behavior for other routes
+                          isChildActive = pathname === childPath || pathname.startsWith(`${childPath}/`)
+                        }
 
                         // Custom labels for different menu types
                         let childLabel = "Buat RAB Baru"
@@ -406,8 +419,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                           childLabel = "List Material"
                         } else if (childPath === "/dokumen/memo") {
                           childLabel = "Internal Memo"
-                        } else if (childPath === "/meeting/mom") {
-                          childLabel = "MoM Meeting"
+                        } else if (childPath === "/meeting") {
+                          childLabel = "List Meeting"
                         } else if (childPath === "/meeting/baru") {
                           childLabel = "Buat Meeting"
                         }

@@ -249,9 +249,27 @@ export function RABDataTable({ data, loading, onDelete }: RABDataTableProps) {
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
   const [rowSelection, setRowSelection] = React.useState({})
   const [globalFilter, setGlobalFilter] = React.useState("")
+  const [selectedKabupaten, setSelectedKabupaten] = React.useState<string>("")
+
+  // Get unique kabupaten from data
+  const kabupatenOptions = React.useMemo(() => {
+    const uniqueKabupaten = new Set<string>()
+    data.forEach((doc) => {
+      if (doc.location_kabupaten) {
+        uniqueKabupaten.add(doc.location_kabupaten)
+      }
+    })
+    return Array.from(uniqueKabupaten).sort()
+  }, [data])
+
+  // Filter data based on selected kabupaten
+  const filteredData = React.useMemo(() => {
+    if (!selectedKabupaten) return data
+    return data.filter((doc) => doc.location_kabupaten === selectedKabupaten)
+  }, [data, selectedKabupaten])
 
   const table = useReactTable({
-    data,
+    data: filteredData,
     columns,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
@@ -285,9 +303,9 @@ export function RABDataTable({ data, loading, onDelete }: RABDataTableProps) {
 
   return (
     <div className="w-full">
-      {/* Search Input */}
-      <div className="flex items-center py-4 pl-4">
-        <div className="relative max-w-sm">
+      {/* Search Input and Kabupaten Filter */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 py-4 pl-4">
+        <div className="relative w-full sm:max-w-sm">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
           <Input
             placeholder="Cari proyek, lokasi, no ref..."
@@ -295,6 +313,20 @@ export function RABDataTable({ data, loading, onDelete }: RABDataTableProps) {
             onChange={(event) => setGlobalFilter(event.target.value)}
             className="pl-10"
           />
+        </div>
+        <div className="w-full sm:w-auto sm:min-w-[200px]">
+          <select
+            value={selectedKabupaten}
+            onChange={(e) => setSelectedKabupaten(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-white"
+          >
+            <option value="">Semua Kabupaten</option>
+            {kabupatenOptions.map((kabupaten) => (
+              <option key={kabupaten} value={kabupaten}>
+                {kabupaten}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
       <div className="rounded-md border overflow-x-auto">

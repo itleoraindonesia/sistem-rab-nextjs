@@ -84,7 +84,7 @@ export function MeetingForm() {
         title: "Success",
         description: "Meeting berhasil dibuat"
       })
-      router.push("/meeting/mom")
+      router.push("/meeting")
     },
     onError: (error) => {
       toast({

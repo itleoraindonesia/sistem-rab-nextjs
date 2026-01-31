@@ -83,7 +83,7 @@ export default function CreateMeetingPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["mom-meetings"] })
       toast({ title: "Success", description: "Meeting berhasil dibuat" })
-      router.push("/meeting/mom")
+      router.push("/meeting")
     },
     onError: (error) => {
       console.error("Mutation error:", error)
