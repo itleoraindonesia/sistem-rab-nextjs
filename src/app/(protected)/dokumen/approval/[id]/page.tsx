@@ -22,9 +22,9 @@ const mockDocument = {
   
   // Section 2: Konten Surat
   perihal: "Penawaran Proyek Perumahan Griya Asri",
-  isi_surat: `<p>Kepada Yth,<br>Direktur PT Maju Jaya Konstruksi<br>Di tempat</p>
-<p>Dengan hormat,</p>
-<p>Bersama surat ini, kami dari PT Leora Indonesia bermaksud mengajukan penawaran kerjasama untuk Proyek Pembangunan Perumahan Griya Asri yang berlokasi di Tangerang Selatan.</p>
+  isi_surat: {
+    pembuka: "Kepada Yth,\nDirektur PT Maju Jaya Konstruksi\nDi tempat\n\nDengan hormat,",
+    isi: `<p>Bersama surat ini, kami dari PT Leora Indonesia bermaksud mengajukan penawaran kerjasama untuk Proyek Pembangunan Perumahan Griya Asri yang berlokasi di Tangerang Selatan.</p>
 <p>Kami telah melakukan survey lokasi dan menyiapkan proposal lengkap yang mencakup:</p>
 <ol>
 <li>Rencana Anggaran Biaya (RAB) detail</li>
@@ -32,9 +32,9 @@ const mockDocument = {
 <li>Spesifikasi material yang akan digunakan</li>
 <li>Portfolio proyek sejenis yang telah kami kerjakan</li>
 </ol>
-<p>Kami berharap dapat bekerjasama dengan PT Maju Jaya Konstruksi dalam proyek ini.</p>
-<p>Demikian surat penawaran ini kami sampaikan. Atas perhatian dan kerjasamanya, kami ucapkan terima kasih.</p>
-<p>Hormat kami,<br>PT Leora Indonesia</p>`,
+<p>Kami berharap dapat bekerjasama dengan PT Maju Jaya Konstruksi dalam proyek ini.</p>`,
+    penutup: "Demikian surat penawaran ini kami sampaikan. Atas perhatian dan kerjasamanya, kami ucapkan terima kasih.\n\nHormat kami,\nPT Leora Indonesia"
+  },
   
   // Section 3: Pengirim
   pengirim: {

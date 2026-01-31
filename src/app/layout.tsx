@@ -12,10 +12,10 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Sistem RAB Leora",
+  title: "Sistem ERP Leora",
   description:
-    "Sistem RAB Panel untuk kalkulasi dan manajemen proyek konstruksi",
-  keywords: ["RAB", "panel", "konstruksi", "kalkulasi", "proyek"],
+    "Sistem ERP untuk manajemen proyek konstruksi",
+  keywords: ["ERP", "panel", "konstruksi", "kalkulasi", "proyek"],
 };
 
 export default function RootLayout({
