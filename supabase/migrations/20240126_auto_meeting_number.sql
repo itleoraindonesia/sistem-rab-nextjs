@@ -62,13 +62,15 @@ DECLARE
     formatted_number TEXT;
     current_ts TIMESTAMP := NOW();
 BEGIN
-    -- Peek next value (note: this increments the sequence if called directly, 
-    -- but for preview we might just want to see current value + 1 without incrementing.
-    -- However, standard practice for simple preview is just assumption. 
-    -- Let's just return a static preview based on count to avoid gaps)
-    
-    -- Safe approach for preview: Count + 1 (Not 100% accurate in race conditions but good enough for UI)
-    SELECT COUNT(*) + 1 INTO seq_val FROM mom_meetings;
+    -- Use the sequence's current value + 1 for preview (much faster than COUNT)
+    -- This doesn't increment the sequence, just peeks at what the next value would be
+    BEGIN
+        seq_val := currval('mom_meeting_number_seq') + 1;
+    EXCEPTION
+        WHEN OBJECT_NOT_IN_PREREQUISITE_STATE THEN
+            -- Sequence hasn't been used yet, start at 1
+            seq_val := 1;
+    END;
     
     year_val := to_char(current_ts, 'YYYY');
     

@@ -25,18 +25,10 @@ export default function CreateMeetingPage() {
   const router = useRouter()
   const { toast } = useToast()
   const queryClient = useQueryClient()
+  
+  // Auth check dengan state loading
+  const [isLoading, setIsLoading] = React.useState(true)
   const [userId, setUserId] = React.useState<string>("")
-
-  // Auth check
-  React.useEffect(() => {
-    const getAuthUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (session?.user) {
-        setUserId(session.user.id)
-      }
-    }
-    getAuthUser()
-  }, [])
 
   const form = useForm<MeetingFormData>({
     resolver: zodResolver(meetingSchema),
@@ -51,6 +43,23 @@ export default function CreateMeetingPage() {
     }
   })
 
+  React.useEffect(() => {
+    const getAuthUser = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (session?.user) {
+          setUserId(session.user.id)
+        }
+      } catch (error) {
+        console.error("Error getting auth session:", error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    getAuthUser()
+  }, [])
+
+  
   const mutation = useMutation({
     mutationFn: async (data: MeetingFormData) => {
       if (!userId) throw new Error("User not authenticated")
@@ -58,14 +67,14 @@ export default function CreateMeetingPage() {
       const { data: result, error } = await supabase
         .from("mom_meetings")
         .insert([{
-            title: data.title,
-            meeting_type: data.meeting_type,
-            meeting_date: new Date(`${data.meeting_date}T${data.meeting_time}`).toISOString(),
-            location: data.location,
-            description: data.description,
-            participants: data.participants,
-            status: "draft",
-            created_by: userId
+          title: data.title,
+          meeting_type: data.meeting_type,
+          meeting_date: new Date(`${data.meeting_date}T${data.meeting_time}`).toISOString(),
+          location: data.location,
+          description: data.description,
+          participants: data.participants,
+          status: "draft",
+          created_by: userId
         }])
       
       if (error) throw error
@@ -77,6 +86,7 @@ export default function CreateMeetingPage() {
       router.push("/meeting/mom")
     },
     onError: (error) => {
+      console.error("Mutation error:", error)
       toast({ variant: "destructive", title: "Error", description: "Gagal membuat meeting" })
     }
   })
@@ -96,193 +106,209 @@ export default function CreateMeetingPage() {
       const { data, error } = await supabase.rpc('get_generated_meeting_number_preview')
       if (error) {
         console.warn("Failed to fetch meeting number preview:", error)
-        return null 
+        return null
       }
       return data as string
-    }
+    },
+    staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
+    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
   })
 
-  // Submit Handler
+  
+  // Submit Handler dengan validasi auth
   const onSubmit = form.handleSubmit((data) => {
+    if (!userId) {
+      toast({ variant: "destructive", title: "Error", description: "User tidak terautentikasi" })
+      return
+    }
     mutation.mutate(data)
   })
 
+  
   return (
     <div className="w-full mx-auto md:p-6">
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center gap-4 mb-4">
+      {isLoading ? (
+        <div className="flex justify-center items-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-primary mx-auto mb-2"></div>
+            <p className="text-gray-600">Memeriksa autentikasi...</p>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-6">
+          {/* Header */}
+          <div className="flex items-center gap-4 mb-4">
             <Button variant="ghost" size="icon" onClick={() => router.back()}>
-                <ArrowLeft className="h-4 w-4" />
+              <ArrowLeft className="h-4 w-4" />
             </Button>
             <div>
-                <h1 className="text-2xl font-bold text-brand-primary">Buat Meeting Baru</h1>
-                <p className="text-gray-600">Jadwalkan meeting baru dan undang peserta</p>
+              <h1 className="text-2xl font-bold text-brand-primary">Buat Meeting Baru</h1>
+              <p className="text-gray-600">Jadwalkan meeting baru dan undang peserta</p>
             </div>
-        </div>
+          </div>
 
-        {/* Form */}
-        <Card>
+          {/* Form */}
+          <Card>
             <CardContent className="p-6">
-                <form onSubmit={onSubmit} className="space-y-8">
-                    {/* Section 1: Informasi Utama */}
-                    <div className="space-y-4">
-                        <div className="flex items-center gap-2 border-b pb-2">
-                             <div className="w-8 h-8 rounded-full bg-brand-primary text-white flex items-center justify-center font-bold text-sm">
-                                1
-                            </div>
-                            <h3 className="text-lg font-semibold">Informasi Meeting</h3>
-                        </div>
+              <form onSubmit={onSubmit} className="space-y-8">
+                {/* Section 1: Informasi Utama */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 border-b pb-2">
+                    <div className="w-8 h-8 rounded-full bg-brand-primary text-white flex items-center justify-center font-bold text-sm">
+                      1
+                    </div>
+                    <h3 className="text-lg font-semibold">Informasi Meeting</h3>
+                  </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="col-span-1 md:col-span-2">
-                                <Label htmlFor="meeting_number">Meeting Number (Auto-generated)</Label>
-                                <Input 
-                                    id="meeting_number" 
-                                    value={generatedNumber || fallbackNumber} 
-                                    disabled 
-                                    className="bg-gray-100 cursor-not-allowed mt-1" 
-                                />
-                                <p className="text-xs text-gray-400 mt-1">*Nomor ini adalah preview, nomor asli akan digenerate saat disimpan</p>
-                            </div>
-
-                            <div className="col-span-1 md:col-span-2">
-                                <Label htmlFor="title">Judul Meeting *</Label>
-                                <Input
-                                    id="title"
-                                    placeholder="Contoh: Rapat Koordinasi Proyek Q1"
-                                    {...form.register("title")}
-                                />
-                                {form.formState.errors.title && (
-                                  <p className="text-sm text-red-500 mt-1">{form.formState.errors.title.message}</p>
-                                )}
-                            </div>
-
-                             <div>
-                                <Label htmlFor="meeting_type">Tipe Meeting *</Label>
-                                <select
-                                    id="meeting_type"
-                                    className="w-full border rounded-md p-2 h-10"
-                                    {...form.register("meeting_type")}
-                                >
-                                    <option value="internal">Internal</option>
-                                    <option value="external">External</option>
-                                </select>
-                            </div>
-
-                             <div>
-                                <div className="flex justify-between items-center mb-1">
-                                    <Label htmlFor="location">Lokasi / Link *</Label>
-                                    <Button 
-                                        type="button" 
-                                        variant="link" 
-                                        className="h-auto p-0 text-xs text-brand-primary"
-                                        onClick={() => window.open('https://meet.google.com/landing', '_blank')}
-                                    >
-                                        Buat Link Meeting ↗
-                                    </Button>
-                                </div>
-                                <Input
-                                    id="location"
-                                    placeholder="Ruang Meeting A atau Link Zoom"
-                                    {...form.register("location")}
-                                />
-                                {form.formState.errors.location && (
-                                  <p className="text-sm text-red-500 mt-1">{form.formState.errors.location.message}</p>
-                                )}
-                            </div>
-
-                            <div>
-                                <Label htmlFor="meeting_date">Tanggal *</Label>
-                                <Input
-                                    id="meeting_date"
-                                    type="date"
-                                    {...form.register("meeting_date")}
-                                />
-                                {form.formState.errors.meeting_date && (
-                                  <p className="text-sm text-red-500 mt-1">{form.formState.errors.meeting_date.message}</p>
-                                )}
-                            </div>
-
-                            <div>
-                                <Label htmlFor="meeting_time">Waktu *</Label>
-                                <Input
-                                    id="meeting_time"
-                                    type="time"
-                                    {...form.register("meeting_time")}
-                                />
-                                {form.formState.errors.meeting_time && (
-                                  <p className="text-sm text-red-500 mt-1">{form.formState.errors.meeting_time.message}</p>
-                                )}
-                            </div>
-                        </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="col-span-1 md:col-span-2">
+                      <Label htmlFor="meeting_number">Meeting Number (Auto-generated)</Label>
+                      <Input
+                        id="meeting_number"
+                        value={generatedNumber || fallbackNumber}
+                        disabled
+                        className="bg-gray-100 cursor-not-allowed mt-1"
+                      />
+                      <p className="text-xs text-gray-400 mt-1">*Nomor ini adalah preview, nomor asli akan digenerate saat disimpan</p>
                     </div>
 
-                    {/* Section 2: Peserta */}
-                    <div className="space-y-4">
-                        <div className="flex items-center gap-2 border-b pb-2">
-                             <div className="w-8 h-8 rounded-full bg-brand-primary text-white flex items-center justify-center font-bold text-sm">
-                                2
-                            </div>
-                            <h3 className="text-lg font-semibold">Peserta</h3>
-                        </div>
+                    <div className="col-span-1 md:col-span-2">
+                      <Label htmlFor="title">Judul Meeting *</Label>
+                      <Input
+                        id="title"
+                        placeholder="Contoh: Rapat Koordinasi Proyek Q1"
+                        {...form.register("title")}
+                      />
+                      {form.formState.errors.title && (
+                        <p className="text-sm text-red-500 mt-1">{form.formState.errors.title.message}</p>
+                      )}
+                    </div>
+
+                    <div>
+                      <Label htmlFor="meeting_type">Tipe Meeting *</Label>
+                      <select
+                        id="meeting_type"
+                        className="w-full border rounded-md p-2 h-10"
+                        {...form.register("meeting_type")}
+                      >
+                        <option value="internal">Internal</option>
+                        <option value="external">External</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <div className="flex justify-between items-center mb-1">
+                        <Label htmlFor="location">Lokasi / Link *</Label>
+                        <Button
+                          type="button"
+                          variant="link"
+                          className="h-auto p-0 text-xs text-brand-primary"
+                          onClick={() => window.open('https://meet.google.com/landing', '_blank')}
+                        >
+                          Buat Link Meeting ↗
+                        </Button>
+                      </div>
+                      <Input
+                        id="location"
+                        placeholder="Ruang Meeting A atau Link Zoom"
+                        {...form.register("location")}
+                      />
+                      {form.formState.errors.location && (
+                        <p className="text-sm text-red-500 mt-1">{form.formState.errors.location.message}</p>
+                      )}
+                    </div>
+
+                    <div>
+                      <Label htmlFor="meeting_date">Tanggal *</Label>
+                      <Input
+                        id="meeting_date"
+                        type="date"
+                        {...form.register("meeting_date")}
+                      />
+                      {form.formState.errors.meeting_date && (
+                        <p className="text-sm text-red-500 mt-1">{form.formState.errors.meeting_date.message}</p>
+                      )}
+                    </div>
+
+                    <div>
+                      <Label htmlFor="meeting_time">Waktu *</Label>
+                      <Input
+                        id="meeting_time"
+                        type="time"
+                        {...form.register("meeting_time")}
+                      />
+                      {form.formState.errors.meeting_time && (
+                        <p className="text-sm text-red-500 mt-1">{form.formState.errors.meeting_time.message}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Section 2: Peserta */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 border-b pb-2">
+                    <div className="w-8 h-8 rounded-full bg-brand-primary text-white flex items-center justify-center font-bold text-sm">
+                      2
+                    </div>
+                    <h3 className="text-lg font-semibold">Peserta</h3>
+                  </div>
                         
-                        <div>
-                             <Label htmlFor="participants">Daftar Peserta *</Label>
-                             <div className="mt-1">
-                                <TagsInput
-                                    value={form.watch("participants")}
-                                    onChange={(value) => form.setValue("participants", value)}
-                                    placeholder="Ketik email/nama lalu tekan Enter..."
-                                />
-                             </div>
-                             <p className="text-xs text-gray-500 mt-1">
-                                Masukkan nama atau email peserta yang akan diundang.
-                             </p>
-                             {form.formState.errors.participants && (
-                                  <p className="text-sm text-red-500 mt-1">{form.formState.errors.participants.message}</p>
-                            )}
-                        </div>
+                  <div>
+                    <Label htmlFor="participants">Daftar Peserta *</Label>
+                    <div className="mt-1">
+                      <TagsInput
+                        value={form.watch("participants")}
+                        onChange={(value) => form.setValue("participants", value)}
+                        placeholder="Ketik email/nama lalu tekan Enter..."
+                      />
                     </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Masukkan nama atau email peserta yang akan diundang.
+                    </p>
+                    {form.formState.errors.participants && (
+                      <p className="text-sm text-red-500 mt-1">{form.formState.errors.participants.message}</p>
+                    )}
+                  </div>
+                </div>
 
-                    {/* Section 3: Deskripsi */}
-                    <div className="space-y-4">
-                        <div className="flex items-center gap-2 border-b pb-2">
-                             <div className="w-8 h-8 rounded-full bg-brand-primary text-white flex items-center justify-center font-bold text-sm">
-                                3
-                            </div>
-                            <h3 className="text-lg font-semibold">Deskripsi / Agenda</h3>
-                        </div>
-                         <div>
-                            <Label htmlFor="description">Deskripsi Meeting *</Label>
-                            <Textarea
-                                id="description"
-                                placeholder="Jelaskan tujuan dan agenda meeting..."
-                                className="min-h-[150px] mt-1"
-                                {...form.register("description")}
-                            />
-                            {form.formState.errors.description && (
-                                  <p className="text-sm text-red-500 mt-1">{form.formState.errors.description.message}</p>
-                            )}
-                        </div>
+                {/* Section 3: Deskripsi */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 border-b pb-2">
+                    <div className="w-8 h-8 rounded-full bg-brand-primary text-white flex items-center justify-center font-bold text-sm">
+                      3
                     </div>
+                    <h3 className="text-lg font-semibold">Deskripsi / Agenda</h3>
+                  </div>
+                  <div>
+                    <Label htmlFor="description">Deskripsi Meeting *</Label>
+                    <Textarea
+                      id="description"
+                      placeholder="Jelaskan tujuan dan agenda meeting..."
+                      className="min-h-[150px] mt-1"
+                      {...form.register("description")}
+                    />
+                    {form.formState.errors.description && (
+                      <p className="text-sm text-red-500 mt-1">{form.formState.errors.description.message}</p>
+                    )}
+                  </div>
+                </div>
 
-                     {/* Action Buttons */}
-                    <div className="flex gap-4 justify-end">
-                        <Button type="button" variant="outline" onClick={() => router.back()}>
-                            Batal
-                        </Button>
-                        <Button type="submit" disabled={mutation.isPending}>
-                            <Save className="mr-2 h-4 w-4" />
-                            {mutation.isPending ? "Menyimpan..." : "Buat Jadwal Meeting"}
-                        </Button>
-                    </div>
+                {/* Action Buttons */}
+                <div className="flex gap-4 justify-end">
+                  <Button type="button" variant="outline" onClick={() => router.back()}>
+                    Batal
+                  </Button>
+                  <Button type="submit" disabled={mutation.isPending}>
+                    <Save className="mr-2 h-4 w-4" />
+                    {mutation.isPending ? "Menyimpan..." : "Buat Jadwal Meeting"}
+                  </Button>
+                </div>
 
-                </form>
+              </form>
             </CardContent>
-        </Card>
-      </div>
+          </Card>
+        </div>
+      )}
     </div>
   )
 }
-
