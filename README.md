@@ -8,7 +8,7 @@ A comprehensive Enterprise Resource Planning (ERP) system designed for construct
 - **RAB Management**: Detailed creation and calculation of project cost budgets.
 - **Meeting Management**: Meeting scheduling and Minutes of Meeting (MoM) recording.
 - **Document Export**: Support for exporting reports to PDF and Excel formats.
-- **Authentication**: Secure login system using Supabase Auth.
+- **Auth & Permissions**: Secure login with Supabase Auth and Role-Based Access Control (RBAC).
 - **Modern Design**: Responsive and user-friendly interface.
 
 ## Tech Stack
@@ -57,3 +57,18 @@ Ensure you have Node.js and a package manager installed (recommended: **pnpm**).
 - `pnpm start`: Run the production build.
 - `pnpm lint`: Run the linter to check code quality.
 - `pnpm db:pull`: Update TypeScript types from the Supabase database.
+
+## 📂 Project Structure
+
+- `src/app`: App Router pages and API routes.
+- `src/components`: UI components (Shadcn) and feature modules.
+- `src/lib`: Utility functions, Supabase clients, and hooks.
+- `src/types`: TypeScript definitions and database schemas.
+- `src/hooks`: Custom React hooks (e.g., `useRABCalculation`).
+
+## 📚 Internal Documentation
+
+- **[Authentication Guide](./AUTH.md)**: Details on Supabase Auth & protected routes.
+- **[Caching Strategy](./CACHING_IMPLEMENTATION.md)**: How the app handles data caching for performance.
+- **[CRM Optimization](./CRM_FETCHING_OPTIMIZATIONS.md)**: Specifics on how CRM data loading is optimized.
+- **[Color Palette](./COLOR_PALETTE.md)**: The design system's color codes and usage.
