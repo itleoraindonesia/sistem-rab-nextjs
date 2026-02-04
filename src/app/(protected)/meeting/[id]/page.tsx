@@ -23,21 +23,30 @@ export default function MeetingDetailPage({ params }: { params: Promise<{ id: st
   const { data: meeting, isLoading, error } = useQuery({
     queryKey: ['meeting', meetingId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('mom_meetings')
-        .select(`
-          *,
-          users!mom_meetings_created_by_fkey (
-            nama,
-            email
-          )
-        `)
-        .eq('id', meetingId)
-        .single()
-      
-      if (error) throw error
-      return data
+      try {
+        const { data, error } = await supabase
+          .from('mom_meetings')
+          .select(`
+            *,
+            users!mom_meetings_created_by_fkey (
+              nama,
+              email
+            )
+          `)
+          .eq('id', meetingId)
+          .single()
+        
+        if (error) throw error
+        return data
+      } catch (error: any) {
+        if (error.name === 'AbortError' || error.message?.includes('aborted')) {
+          console.log('Request aborted');
+          return null;
+        }
+        throw error;
+      }
     },
+    placeholderData: (prev) => prev, // Keep previous data visible
     enabled: !!meetingId
   })
 
@@ -78,7 +87,8 @@ export default function MeetingDetailPage({ params }: { params: Promise<{ id: st
     })
   }
 
-  if (isLoading) {
+  // Only show loading if no data exists
+  if (isLoading && !meeting) {
     return (
       <div className="w-full mx-auto md:p-6 flex items-center justify-center min-h-[400px]">
         <div className="text-center">

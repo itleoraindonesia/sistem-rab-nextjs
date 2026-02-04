@@ -120,7 +120,7 @@ function LoginForm() {
                  alt="Logo Leora" 
                  width={500} 
                  height={500} 
-                 className="w-48 md:w-64 h-auto object-contain"
+                 className="w-48 h-auto object-contain"
                />
             </div>
             <h2 className="text-3xl font-bold text-slate-900 tracking-tight">

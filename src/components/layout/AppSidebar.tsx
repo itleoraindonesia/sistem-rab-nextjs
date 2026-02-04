@@ -55,17 +55,18 @@ const navItems = [
     icon: Users,
     children: ["/crm/dashboard", "/crm/input", "/crm/clients"],
   },
-  {
-    name: "Supply Chain (soon)",
-    path: "/supply-chain",
-    icon: Truck,
-    children: [
-      "/supply-chain/dashboard",
-      "/supply-chain/pr",
-      "/supply-chain/po",
-      "/supply-chain/list-material"
-    ],
-  },
+  // Hidden temporarily - Supply Chain
+  // {
+  //   name: "Supply Chain (soon)",
+  //   path: "/supply-chain",
+  //   icon: Truck,
+  //   children: [
+  //     "/supply-chain/dashboard",
+  //     "/supply-chain/pr",
+  //     "/supply-chain/po",
+  //     "/supply-chain/list-material"
+  //   ],
+  // },
   {
     name: "Meeting",
     path: "/meeting",
@@ -75,12 +76,13 @@ const navItems = [
       "/meeting/baru"
     ],
   },
-  {
-    name: "Master Data",
-    path: "/master",
-    icon: Package,
-    children: ["/master/panel", "/master/ongkir"], // Child route patterns
-  },
+  // Hidden temporarily - Master Data
+  // {
+  //   name: "Master Data",
+  //   path: "/master",
+  //   icon: Package,
+  //   children: ["/master/panel", "/master/ongkir"], // Child route patterns
+  // },
 ]
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {

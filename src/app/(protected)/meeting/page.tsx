@@ -27,35 +27,47 @@ export default function MoMPage() {
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
-  const fetchMeetings = async () => {
-    const from = (page - 1) * ITEMS_PER_PAGE;
-    const to = from + ITEMS_PER_PAGE - 1;
+  const fetchMeetings = async ({ signal }: { signal: AbortSignal }) => {
+    try {
+      const from = (page - 1) * ITEMS_PER_PAGE;
+      const to = from + ITEMS_PER_PAGE - 1;
 
-    let query = supabase
-      .from('mom_meetings')
-      .select(`
-        *,
-        users!mom_meetings_created_by_fkey (
-          nama
-        )
-      `, { count: 'exact' });
+      console.log(`[MeetingPage] Fetching page ${page} (range ${from}-${to})`);
 
-    if (filterType) query = query.eq('meeting_type', filterType);
-    
-    if (debouncedSearch && debouncedSearch.trim() !== '') {
-        const term = debouncedSearch.trim();
-        // Search by title or meeting number
-        query = query.or(`title.ilike.%${term}%,meeting_number.ilike.%${term}%`);
+      let query = supabase
+        .from('mom_meetings')
+        .select(`
+          *,
+          users!mom_meetings_created_by_fkey (
+            nama
+          )
+          )
+        `, { count: 'exact' })
+        // .abortSignal(signal); // Temporarily removed to prevent premature aborts
+
+      if (filterType) query = query.eq('meeting_type', filterType);
+      
+      if (debouncedSearch && debouncedSearch.trim() !== '') {
+          const term = debouncedSearch.trim();
+          query = query.or(`title.ilike.%${term}%,meeting_number.ilike.%${term}%`);
+      }
+
+      const { data, error, count } = await query
+        .order('meeting_date', { ascending: false })
+        .range(from, to);
+      
+      if (error) throw error;
+      
+      console.log(`[MeetingPage] Fetched ${data?.length} rows for page ${page}`);
+      return { data: data || [], totalCount: count || 0 };
+    } catch (error: any) {
+      if (error.name === 'AbortError' || error.message?.includes('aborted')) {
+        console.log('[MeetingPage] Request aborted gracefully');
+        throw error;
+      }
+      console.error('[MeetingPage] Unexpected error:', error);
+      throw error;
     }
-
-    const { data, error, count } = await query
-      .order('meeting_date', { ascending: false })
-      .range(from, to);
-    
-    if (error) throw error;
-    
-    // Type assertion or mapping if needed, simplified here
-    return { data: data || [], totalCount: count || 0 };
   }
 
   const { data, isLoading, error, isFetching } = useQuery({
@@ -68,7 +80,7 @@ export default function MoMPage() {
   const totalCount = data?.totalCount || 0;
   const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE);
 
-  if (error) {
+  if (error && (error as any).name !== 'AbortError') {
     return (
       <div className="container mx-auto p-6">
         <div className="text-red-500">Error loading meetings: {error.message}</div>
@@ -348,7 +360,7 @@ export default function MoMPage() {
         <div className="flex justify-center items-center gap-4 mt-6 pb-8">
             <button
             onClick={() => setPage((p) => Math.max(1, p - 1))}
-            disabled={page === 1 || (isLoading && !isFetching)}
+            disabled={page === 1 || isLoading}
             className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed bg-white"
             >
             Sebelumnya
@@ -360,7 +372,7 @@ export default function MoMPage() {
 
             <button
             onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-            disabled={page === totalPages || (isLoading && !isFetching)}
+            disabled={page === totalPages || isLoading}
             className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed bg-white"
             >
             Selanjutnya

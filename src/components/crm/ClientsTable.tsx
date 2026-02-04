@@ -1,49 +1,51 @@
-'use client';
-
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Client, supabase } from '@/lib/supabaseClient';
 import { formatWhatsAppDisplay, formatDate, formatLuasan } from '@/lib/crm/formatters';
-import { VALID_KEBUTUHAN } from '@/lib/crm/validators';
 import { getFirstName } from '@/lib/utils/nameUtils';
 import { MessageCircle, MapPin, ChevronRight } from 'lucide-react';
 
 interface ClientsTableProps {
   onClientSelect?: (client: Client) => void;
+  searchTerm: string;
+  filterKebutuhan: string;
 }
 
 const ITEMS_PER_PAGE = 20;
 
-export default function ClientsTable({ onClientSelect }: ClientsTableProps) {
-  const [searchTerm, setSearchTerm] = useState('');
+export default function ClientsTable({ onClientSelect, searchTerm, filterKebutuhan }: ClientsTableProps) {
   const [debouncedSearch, setDebouncedSearch] = useState('');
-  const [filterKebutuhan, setFilterKebutuhan] = useState<string>('');
   const [sortBy, setSortBy] = useState<'created_at' | 'nama'>('created_at');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [page, setPage] = useState(1);
 
   // Debounce search input
   useEffect(() => {
+    console.log('[ClientsTable] Search term changed:', searchTerm);
     const timer = setTimeout(() => {
       setDebouncedSearch(searchTerm);
-      setPage(1); // Reset to page 1 on new search
+      if (searchTerm !== debouncedSearch) {
+        console.log('[ClientsTable] Resetting to page 1 due to search');
+        setPage(1); 
+      }
     }, 300);
 
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
-  const fetchClients = async () => {
+  const fetchClients = async ({ signal }: { signal: AbortSignal }) => {
     if (!supabase) throw new Error('Database connection unavailable');
 
     try {
       const from = (page - 1) * ITEMS_PER_PAGE;
       const to = from + ITEMS_PER_PAGE - 1;
 
-      console.log('Fetching clients query:', { page, debouncedSearch, filterKebutuhan, sortBy, sortOrder });
+      console.log(`[ClientsTable] Fetching page ${page} (range ${from}-${to})`);
 
       let query = supabase
         .from('clients')
         .select('*', { count: 'exact' });
+        // .abortSignal(signal); // Temporarily removed to prevent premature aborts
 
       if (filterKebutuhan) query = query.eq('kebutuhan', filterKebutuhan);
       
@@ -59,19 +61,22 @@ export default function ClientsTable({ onClientSelect }: ClientsTableProps) {
       const { data, error, count } = await query;
 
       if (error) {
-        console.error('Supabase error:', error);
+        if (error.code === 'PGRST116' || error.message.includes('AbortError')) {
+           console.warn('[ClientsTable] Fetch aborted or incomplete');
+        } else {
+           console.error('[ClientsTable] Supabase error:', error);
+        }
         throw new Error(`Database error: ${error.message}`);
       }
 
+      console.log(`[ClientsTable] Fetched ${data?.length} rows for page ${page}`);
       return { data: (data as Client[]) || [], totalCount: count || 0 };
     } catch (error: any) {
-      // Better error messages for common issues
-      if (error.name === 'AbortError') {
-        throw new Error('Request timeout - server took too long to respond');
+      if (error.name === 'AbortError' || error.message?.includes('aborted')) {
+        console.log('[ClientsTable] Request aborted gracefully');
+        throw error;
       }
-      if (error.message?.includes('Failed to fetch')) {
-        throw new Error('Network error - please check your internet connection');
-      }
+      console.error('[ClientsTable] Unexpected error:', error);
       throw error;
     }
   };
@@ -79,18 +84,22 @@ export default function ClientsTable({ onClientSelect }: ClientsTableProps) {
   const { data, isLoading, error, refetch, isFetching } = useQuery({
     queryKey: ['clients', page, debouncedSearch, filterKebutuhan, sortBy, sortOrder],
     queryFn: fetchClients,
-    staleTime: 45 * 1000, // 45 seconds (reduced from 1 minute for better freshness)
-    refetchOnWindowFocus: true, // Refetch when window regains focus
-    refetchOnReconnect: true, // Refetch when internet reconnects
-    refetchOnMount: true, // Always refetch on mount for fresh data
-    retry: 3, // Retry 3 times on failure (increased from 2)
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
-    placeholderData: (previousData: any) => previousData, // Keep previous data while fetching new data to prevent flicker
+    placeholderData: (previousData) => previousData, // Keep showing old data while refetching
   });
 
   const clients = data?.data || [];
   const totalCount = data?.totalCount || 0;
   const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE);
+
+  // Debug: Log query state
+  console.log('[ClientsTable] Query State:', {
+    hasData: !!data,
+    isLoading,
+    isFetching,
+    clientsCount: clients.length,
+    totalCount,
+    queryKey: ['clients', page, debouncedSearch, filterKebutuhan, sortBy, sortOrder]
+  });
 
   const handleSort = (column: 'created_at' | 'nama') => {
     if (sortBy === column) {
@@ -102,7 +111,7 @@ export default function ClientsTable({ onClientSelect }: ClientsTableProps) {
     setPage(1);
   };
 
-  if (error) {
+  if (error && (error as any).name !== 'AbortError') {
     return (
       <div className="flex flex-col items-center justify-center py-12 gap-4 bg-white rounded-lg border border-gray-200">
         <div className="text-red-500">Error: {(error as Error).message}</div>
@@ -118,7 +127,9 @@ export default function ClientsTable({ onClientSelect }: ClientsTableProps) {
     );
   }
 
-  if (isLoading && page === 1 && clients.length === 0) {
+  // Show loading ONLY on initial load (no data at all)
+  // If we have cached data, show it even while refetching
+  if (isLoading && !data) {
     return (
       <div className="flex items-center justify-center py-12">
         <div className="text-gray-500">Loading...</div>
@@ -126,65 +137,27 @@ export default function ClientsTable({ onClientSelect }: ClientsTableProps) {
     );
   }
 
-  const isLoadingMore = isLoading && clients.length > 0;
+  // If no data after loading finished, show empty state
+  if (!isLoading && (!data || clients.length === 0)) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="text-gray-500">Tidak ada data client</div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
-      {/* Filters */}
-      <div className="space-y-3 mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {/* Search */}
-          <div>
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="🔍 Cari Nama, WA, atau Lokasi..."
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-transparent"
-            />
-          </div>
-
-          {/* Filter Kebutuhan */}
-          <div>
-            <select
-              value={filterKebutuhan}
-              onChange={(e) => setFilterKebutuhan(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-transparent cursor-pointer"
-            >
-              <option value="">Semua Kebutuhan</option>
-              {VALID_KEBUTUHAN.map(k => (
-                <option key={k} value={k}>{k}</option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        {/* Reset Filter */}
-        {(searchTerm || filterKebutuhan) && (
-          <div className="flex justify-end">
-            <button
-              onClick={() => {
-                setSearchTerm('');
-                setFilterKebutuhan('');
-              }}
-              className="text-sm text-gray-500 hover:text-red-600 flex items-center gap-1"
-            >
-              ✕ Reset Filter
-            </button>
-          </div>
-        )}
-      </div>
-
       {/* Results Count & Pagination Info */}
       <div className="flex justify-between items-center text-sm text-gray-600">
         <div>
           Menampilkan {clients.length} dari {totalCount} client
-          {isFetching && !isLoading && <span className="ml-2 text-primary">🔄 Memperbarui...</span>}
+          {isFetching && !isLoading && <span className="ml-2 text-primary animate-pulse">🔄 Memperbarui data...</span>}
         </div>
       </div>
 
       {/* Desktop Table */}
-      <div className="hidden md:block bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm">
+      <div className="hidden md:block bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm relative">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
               <thead className="bg-gray-50 border-b border-gray-200">
@@ -300,7 +273,8 @@ export default function ClientsTable({ onClientSelect }: ClientsTableProps) {
       </div>
 
       {/* Mobile Card Layout */}
-      <div className="md:hidden space-y-3">
+      <div className="md:hidden relative">
+        <div className="space-y-3">
         {clients.length === 0 ? (
           <div className="bg-white p-8 rounded-lg border border-gray-200 text-center text-gray-500">
             Tidak ada data client ditemukan
@@ -367,29 +341,33 @@ export default function ClientsTable({ onClientSelect }: ClientsTableProps) {
             </div>
           ))
         )}
+        </div>
       </div>
 
        {/* Pagination Controls */}
-       {totalCount > 0 && (
+       {totalPages > 1 && (
         <div className="flex justify-center items-center gap-4 mt-6">
           <button
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={page === 1 || isLoading}
-            className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            Sebelumnya
+            ← Sebelumnya
           </button>
           
-          <span className="text-sm text-gray-600">
+          <span className="text-sm text-gray-600 font-medium">
             Halaman {page} dari {totalPages}
           </span>
 
           <button
-            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-            disabled={page === totalPages || isLoading}
-            className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={() => {
+               console.log('[ClientsTable] Next Page Clicked. Current:', page, 'Total:', totalPages);
+               setPage((p) => Math.min(totalPages, p + 1));
+            }}
+            disabled={page >= totalPages || isLoading}
+            className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            Selanjutnya
+            Selanjutnya →
           </button>
         </div>
       )}

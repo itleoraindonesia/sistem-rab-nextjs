@@ -149,16 +149,23 @@ export default function CRMDashboard() {
   const { data: stats, isLoading, error, refetch, isFetching } = useQuery({
     queryKey: ['crm-stats'],
     queryFn: fetchStats,
-    staleTime: 2 * 60 * 1000, // 2 minutes (reduced from 5 minutes for better freshness)
-    refetchInterval: 3 * 60 * 1000, // Auto-refetch every 3 minutes when window is focused
-    refetchIntervalInBackground: false, // Don't refetch in background to save resources
-    refetchOnWindowFocus: true, // Refetch when window regains focus
-    retry: 3, // Retry 3 times on failure (increased from 2)
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
-    refetchOnMount: true, // Always refetch on mount for fresh data
+    placeholderData: (previousData) => previousData, // Keep showing old data while refetching
   });
 
-  if (isLoading && !stats) return <div className="flex justify-center py-12 text-gray-500">Loading dashboard...</div>;
+  // Debug: Log query state
+  console.log('[CRMDashboard] Query State:', {
+    hasStats: !!stats,
+    isLoading,
+    isFetching,
+    total: stats?.total,
+    prospek: stats?.prospek,
+    closing: stats?.closing
+  });
+
+  // Show loading ONLY on initial load (no data at all)
+  if (isLoading && !stats) {
+    return <div className="flex justify-center py-12 text-gray-500">Loading dashboard...</div>;
+  }
   
   if (error) {
     return (
@@ -176,6 +183,7 @@ export default function CRMDashboard() {
     );
   }
 
+  // If no stats after loading, return null
   if (!stats) return null;
 
 

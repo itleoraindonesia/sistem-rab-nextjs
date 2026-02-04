@@ -10,19 +10,18 @@ export default function QueryProvider({ children }: { children: React.ReactNode 
       new QueryClient({
         defaultOptions: {
           queries: {
-            // Optimized caching strategy for persistence (reduce loading states)
-            staleTime: 5 * 60 * 1000, // Data fresh for 5 minutes (no refetch on navigate)
-            gcTime: 15 * 60 * 1000, // Keep in memory for 15 minutes before garbage collection
-            retry: 2,
-            retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
-            refetchOnWindowFocus: false, // Disable refetch on window focus (prevent annoying loaders)
+            staleTime: 1 * 60 * 1000, // Data fresh for 1 minute
+            gcTime: 60 * 60 * 1000, // Keep in cache for 60 minutes
+            refetchInterval: 10 * 60 * 1000, // Background refresh every 10 mins
+            refetchOnMount: true,
+            refetchOnWindowFocus: true,
             refetchOnReconnect: true,
-            refetchOnMount: false, // Only fetch if stale (prevents reload on page navigation)
-            networkMode: 'online',
+            retry: 3,
+            networkMode: 'always',
           },
           mutations: {
-            retry: 2, // Retry mutations twice (increased from 1)
-            networkMode: 'online',
+            retry: 3,
+            networkMode: 'always',
           },
         },
       })
