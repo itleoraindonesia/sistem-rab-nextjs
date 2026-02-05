@@ -8,7 +8,6 @@ import Button from "@/components/ui/Button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { TagsInput } from "@/components/ui/TagsInput"
 
 // Hook Form & Zod
@@ -16,19 +15,13 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { meetingSchema, type MeetingFormData } from "@/lib/meeting/schemas"
 
-// React Query & Supabase
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+// React Query & Custom Hooks
 import { useToast } from "@/components/ui/use-toast"
-import { supabase } from "@/lib/supabase/client"
+import { useCreateMeeting, useMeetingNumberPreview } from "@/hooks/useMeetings"
 
 export default function CreateMeetingPage() {
   const router = useRouter()
   const { toast } = useToast()
-  const queryClient = useQueryClient()
-  
-  // Auth check dengan state loading
-  const [isLoading, setIsLoading] = React.useState(true)
-  const [userId, setUserId] = React.useState<string>("")
 
   const form = useForm<MeetingFormData>({
     resolver: zodResolver(meetingSchema),
@@ -43,53 +36,7 @@ export default function CreateMeetingPage() {
     }
   })
 
-  React.useEffect(() => {
-    const getAuthUser = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession()
-        if (session?.user) {
-          setUserId(session.user.id)
-        }
-      } catch (error) {
-        console.error("Error getting auth session:", error)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-    getAuthUser()
-  }, [])
-
-  
-  const mutation = useMutation({
-    mutationFn: async (data: MeetingFormData) => {
-      if (!userId) throw new Error("User not authenticated")
-
-      const { data: result, error } = await supabase
-        .from("mom_meetings")
-        .insert([{
-          title: data.title,
-          meeting_type: data.meeting_type,
-          meeting_date: new Date(`${data.meeting_date}T${data.meeting_time}`).toISOString(),
-          location: data.location,
-          description: data.description,
-          participants: data.participants,
-          status: "draft",
-          created_by: userId
-        }])
-      
-      if (error) throw error
-      return result
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["mom-meetings"] })
-      toast({ title: "Success", description: "Meeting berhasil dibuat" })
-      router.push("/meeting")
-    },
-    onError: (error) => {
-      console.error("Mutation error:", error)
-      toast({ variant: "destructive", title: "Error", description: "Gagal membuat meeting" })
-    }
-  })
+  const createMutation = useCreateMeeting()
 
   // Helper untuk generate nomor surat dinamis (Mock/Fallback)
   const getRomanMonth = (date: Date) => {
@@ -100,42 +47,25 @@ export default function CreateMeetingPage() {
   const fallbackNumber = `[AUTO]/MOM/${getRomanMonth(today)}/${today.getFullYear()}`;
 
   // Fetch Next Meeting Number Preview
-  const { data: generatedNumber } = useQuery({
-    queryKey: ['meeting-number-preview'],
-    queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_generated_meeting_number_preview')
-      if (error) {
-        console.warn("Failed to fetch meeting number preview:", error)
-        return null
-      }
-      return data as string
-    },
-    staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
-    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
-  })
+  const { data: generatedNumber } = useMeetingNumberPreview()
 
   
-  // Submit Handler dengan validasi auth
+  // Submit Handler
   const onSubmit = form.handleSubmit((data) => {
-    if (!userId) {
-      toast({ variant: "destructive", title: "Error", description: "User tidak terautentikasi" })
-      return
-    }
-    mutation.mutate(data)
+    createMutation.mutate(data, {
+      onSuccess: () => {
+        toast({ title: "Success", description: "Meeting berhasil dibuat" })
+        router.push("/meeting")
+      },
+      onError: () => {
+        toast({ variant: "destructive", title: "Error", description: "Gagal membuat meeting" })
+      }
+    })
   })
 
-  
   return (
     <div className="w-full mx-auto md:p-6">
-      {isLoading ? (
-        <div className="flex justify-center items-center h-64">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-primary mx-auto mb-2"></div>
-            <p className="text-gray-600">Memeriksa autentikasi...</p>
-          </div>
-        </div>
-      ) : (
-        <div className="space-y-6">
+      <div className="space-y-6">
           {/* Header */}
           <div className="flex items-center gap-4 mb-4">
             <Button variant="ghost" size="icon" onClick={() => router.back()}>
@@ -298,9 +228,9 @@ export default function CreateMeetingPage() {
                   <Button type="button" variant="outline" onClick={() => router.back()}>
                     Batal
                   </Button>
-                  <Button type="submit" disabled={mutation.isPending}>
+                  <Button type="submit" disabled={createMutation.isPending}>
                     <Save className="mr-2 h-4 w-4" />
-                    {mutation.isPending ? "Menyimpan..." : "Buat Jadwal Meeting"}
+                    {createMutation.isPending ? "Menyimpan..." : "Buat Jadwal Meeting"}
                   </Button>
                 </div>
 
@@ -308,7 +238,6 @@ export default function CreateMeetingPage() {
             </CardContent>
           </Card>
         </div>
-      )}
     </div>
   )
 }

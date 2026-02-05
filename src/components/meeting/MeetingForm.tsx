@@ -4,10 +4,10 @@ import * as React from "react"
 import { useEffect, useState } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { useToast } from "@/components/ui/use-toast"
 import { useRouter } from "next/navigation"
 import { meetingSchema, type MeetingFormData } from "@/lib/meeting/schemas"
+import { useCreateMeeting } from "@/hooks/useMeetings"
 import { supabase } from "@/lib/supabase/client"
 import Button from "@/components/ui/Button"
 import { Input } from "@/components/ui/input"
@@ -20,7 +20,6 @@ import { TagsInput } from "@/components/ui/TagsInput"
 export function MeetingForm() {
   const router = useRouter()
   const { toast } = useToast()
-  const queryClient = useQueryClient()
   const [userId, setUserId] = useState<string>("")
 
   useEffect(() => {
@@ -56,47 +55,34 @@ export function MeetingForm() {
     }
   })
 
-  const mutation = useMutation({
-    mutationFn: async (data: MeetingFormData) => {
-      if (!userId) {
-        throw new Error("User not authenticated")
-      }
+  const createMutation = useCreateMeeting()
 
-      const { data: result, error } = await supabase
-        .from("mom_meetings")
-        .insert([{
-          title: data.title,
-          meeting_type: data.meeting_type,
-          meeting_date: new Date(`${data.meeting_date}T${data.meeting_time}`),
-          location: data.location,
-          description: data.description,
-          participants: data.participants,
-          status: "draft",
-          created_by: userId
-        }])
-      
-      if (error) throw error
-      return result
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["mom-meetings"] })
-      toast({
-        title: "Success",
-        description: "Meeting berhasil dibuat"
-      })
-      router.push("/meeting")
-    },
-    onError: (error) => {
+  const onSubmit = form.handleSubmit((data) => {
+    if (!userId) {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Gagal membuat meeting"
+        description: "User tidak terautentikasi"
       })
+      return
     }
-  })
-
-  const onSubmit = form.handleSubmit((data) => {
-    mutation.mutate(data)
+    
+    createMutation.mutate(data, {
+      onSuccess: () => {
+        toast({
+          title: "Success",
+          description: "Meeting berhasil dibuat"
+        })
+        router.push("/meeting")
+      },
+      onError: () => {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Gagal membuat meeting"
+        })
+      }
+    })
   })
 
   return (
@@ -219,9 +205,9 @@ export function MeetingForm() {
             </Button>
             <Button
               type="submit"
-              disabled={mutation.isPending}
+              disabled={createMutation.isPending}
             >
-              {mutation.isPending ? "Menyimpan..." : "Buat Jadwal Meeting"}
+              {createMutation.isPending ? "Menyimpan..." : "Buat Jadwal Meeting"}
             </Button>
           </div>
         </form>

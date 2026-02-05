@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { Client, supabase } from '@/lib/supabaseClient';
+import { useClients, type Client } from '@/hooks/useClients';
 import { formatWhatsAppDisplay, formatDate, formatLuasan } from '@/lib/crm/formatters';
 import { getFirstName } from '@/lib/utils/nameUtils';
 import { MessageCircle, MapPin, ChevronRight } from 'lucide-react';
@@ -33,63 +32,17 @@ export default function ClientsTable({ onClientSelect, searchTerm, filterKebutuh
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
-  const fetchClients = async ({ signal }: { signal: AbortSignal }) => {
-    if (!supabase) throw new Error('Database connection unavailable');
-
-    try {
-      const from = (page - 1) * ITEMS_PER_PAGE;
-      const to = from + ITEMS_PER_PAGE - 1;
-
-      console.log(`[ClientsTable] Fetching page ${page} (range ${from}-${to})`);
-
-      let query = supabase
-        .from('clients')
-        .select('*', { count: 'exact' });
-        // .abortSignal(signal); // Temporarily removed to prevent premature aborts
-
-      if (filterKebutuhan) query = query.eq('kebutuhan', filterKebutuhan);
-      
-      if (debouncedSearch && debouncedSearch.trim() !== '') {
-         const searchTerm = debouncedSearch.trim();
-         query = query.or(`nama.ilike.%${searchTerm}%,whatsapp.ilike.%${searchTerm}%,kabupaten.ilike.%${searchTerm}%`);
-      }
-
-      query = query
-        .order(sortBy, { ascending: sortOrder === 'asc' })
-        .range(from, to);
-
-      const { data, error, count } = await query;
-
-      if (error) {
-        if (error.code === 'PGRST116' || error.message.includes('AbortError')) {
-           console.warn('[ClientsTable] Fetch aborted or incomplete');
-        } else {
-           console.error('[ClientsTable] Supabase error:', error);
-        }
-        throw new Error(`Database error: ${error.message}`);
-      }
-
-      console.log(`[ClientsTable] Fetched ${data?.length} rows for page ${page}`);
-      return { data: (data as Client[]) || [], totalCount: count || 0 };
-    } catch (error: any) {
-      if (error.name === 'AbortError' || error.message?.includes('aborted')) {
-        console.log('[ClientsTable] Request aborted gracefully');
-        throw error;
-      }
-      console.error('[ClientsTable] Unexpected error:', error);
-      throw error;
-    }
-  };
-
-  const { data, isLoading, error, refetch, isFetching } = useQuery({
-    queryKey: ['clients', page, debouncedSearch, filterKebutuhan, sortBy, sortOrder],
-    queryFn: fetchClients,
-    placeholderData: (previousData) => previousData, // Keep showing old data while refetching
+  const { data, isLoading, error, refetch, isFetching } = useClients({
+    page,
+    search: debouncedSearch,
+    filterKebutuhan,
+    sortBy,
+    sortOrder
   });
 
   const clients = data?.data || [];
   const totalCount = data?.totalCount || 0;
-  const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE);
+  const totalPages = data?.totalPages || 1;
 
   // Debug: Log query state
   console.log('[ClientsTable] Query State:', {
@@ -98,7 +51,7 @@ export default function ClientsTable({ onClientSelect, searchTerm, filterKebutuh
     isFetching,
     clientsCount: clients.length,
     totalCount,
-    queryKey: ['clients', page, debouncedSearch, filterKebutuhan, sortBy, sortOrder]
+    queryKey: ['clients', { page, search: debouncedSearch, filterKebutuhan, sortBy, sortOrder }]
   });
 
   const handleSort = (column: 'created_at' | 'nama') => {
@@ -109,6 +62,13 @@ export default function ClientsTable({ onClientSelect, searchTerm, filterKebutuh
       setSortOrder('asc');
     }
     setPage(1);
+  };
+
+  const handlePageChange = (newPage: number) => {
+    console.log(`[ClientsTable] Changing page from ${page} to ${newPage}`);
+    setPage(newPage);
+    // Scroll to top of table
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   if (error && (error as any).name !== 'AbortError') {
@@ -158,6 +118,15 @@ export default function ClientsTable({ onClientSelect, searchTerm, filterKebutuh
 
       {/* Desktop Table */}
       <div className="hidden md:block bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm relative">
+        {/* Loading Overlay for Pagination */}
+        {isFetching && (
+          <div className="absolute inset-0 bg-white/50 z-10 flex items-center justify-center">
+            <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-lg shadow-lg border">
+              <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+              <span className="text-sm text-gray-600">Memuat halaman {page}...</span>
+            </div>
+          </div>
+        )}
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
               <thead className="bg-gray-50 border-b border-gray-200">
@@ -230,7 +199,7 @@ export default function ClientsTable({ onClientSelect, searchTerm, filterKebutuh
                         {client.produk || '-'}
                       </td>
                       <td className="px-4 py-3 text-gray-600 font-mono text-xs">
-                        {formatLuasan(client.luasan, client.kebutuhan)}
+                        {formatLuasan(client.luasan ? parseFloat(client.luasan) : null, client.kebutuhan)}
                       </td>
                       <td className="px-4 py-3">
                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium border ${
@@ -260,9 +229,9 @@ export default function ClientsTable({ onClientSelect, searchTerm, filterKebutuh
                             >
                               <MessageCircle className="h-4 w-4" />
                             </button>
-                          ) : (
+                         ) : (
                             <span className="text-gray-300">-</span>
-                          )}
+                         )}
                       </td>
                     </tr>
                   ))
@@ -274,6 +243,15 @@ export default function ClientsTable({ onClientSelect, searchTerm, filterKebutuh
 
       {/* Mobile Card Layout */}
       <div className="md:hidden relative">
+        {/* Loading Overlay for Pagination (Mobile) */}
+        {isFetching && (
+          <div className="absolute inset-0 bg-white/50 z-10 flex items-center justify-center">
+            <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-lg shadow-lg border">
+              <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+              <span className="text-sm text-gray-600">Memuat...</span>
+            </div>
+          </div>
+        )}
         <div className="space-y-3">
         {clients.length === 0 ? (
           <div className="bg-white p-8 rounded-lg border border-gray-200 text-center text-gray-500">
@@ -310,7 +288,7 @@ export default function ClientsTable({ onClientSelect, searchTerm, filterKebutuh
                 <div className="text-xs text-gray-600">
                   <div className="font-medium text-primary mb-0.5">{client.kebutuhan}</div>
                   <div className="truncate max-w-[180px]">{client.produk || '-'}</div>
-                  <div className="text-gray-400 mt-0.5">{formatLuasan(client.luasan, client.kebutuhan)}</div>
+                  <div className="text-gray-400 mt-0.5">{formatLuasan(client.luasan ? parseFloat(client.luasan) : null, client.kebutuhan)}</div>
                 </div>
 
                  {/* Actions */}
@@ -348,23 +326,25 @@ export default function ClientsTable({ onClientSelect, searchTerm, filterKebutuh
        {totalPages > 1 && (
         <div className="flex justify-center items-center gap-4 mt-6">
           <button
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-            disabled={page === 1 || isLoading}
+            onClick={() => handlePageChange(Math.max(1, page - 1))}
+            disabled={page === 1 || isFetching}
             className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             ← Sebelumnya
           </button>
           
-          <span className="text-sm text-gray-600 font-medium">
-            Halaman {page} dari {totalPages}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-600 font-medium">
+              Halaman {page} dari {totalPages}
+            </span>
+            {isFetching && (
+              <span className="text-xs text-gray-400 animate-pulse">(loading...)</span>
+            )}
+          </div>
 
           <button
-            onClick={() => {
-               console.log('[ClientsTable] Next Page Clicked. Current:', page, 'Total:', totalPages);
-               setPage((p) => Math.min(totalPages, p + 1));
-            }}
-            disabled={page >= totalPages || isLoading}
+            onClick={() => handlePageChange(Math.min(totalPages, page + 1))}
+            disabled={page >= totalPages || isFetching}
             className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             Selanjutnya →

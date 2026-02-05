@@ -191,7 +191,7 @@ export default function BulkInputForm() {
 
       // Invalidate queries to refresh dashboard and table in background
       queryClient.invalidateQueries({ queryKey: ['clients'] });
-      queryClient.invalidateQueries({ queryKey: ['crm-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['clients', 'stats'] });
     } else {
       if (errors.length > 0) {
         message = `❌ Error: ${errors[0]}`;

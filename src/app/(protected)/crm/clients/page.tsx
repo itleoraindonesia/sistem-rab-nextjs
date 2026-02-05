@@ -5,7 +5,7 @@ import ClientsTable from '@/components/crm/ClientsTable';
 import EditClientModal from '@/components/crm/EditClientModal';
 import ConnectionStatus from '@/components/crm/ConnectionStatus';
 import Link from 'next/link';
-import { Client } from '@/lib/supabaseClient';
+import { Client } from '@/hooks/useClients';
 import { useQueryClient } from '@tanstack/react-query';
 import { VALID_KEBUTUHAN } from '@/lib/crm/validators';
 
@@ -25,7 +25,7 @@ export default function ClientsPage() {
 
   const handleEditSuccess = () => {
     queryClient.invalidateQueries({ queryKey: ['clients'] });
-    queryClient.invalidateQueries({ queryKey: ['crm-stats'] });
+    queryClient.invalidateQueries({ queryKey: ['clients', 'stats'] });
   };
 
   return (

@@ -4,11 +4,10 @@ import * as React from "react"
 import { useEffect } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useToast } from "@/components/ui/use-toast"
 import { useRouter } from "next/navigation"
 import { meetingSchema, type MeetingFormData } from "@/lib/meeting/schemas"
-import { supabase } from "@/lib/supabase/client"
+import { useMeeting, useUpdateMeeting } from "@/hooks/useMeetings"
 import Button from "@/components/ui/Button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -25,23 +24,12 @@ interface EditMeetingFormProps {
 export function EditMeetingForm({ meetingId }: EditMeetingFormProps) {
   const router = useRouter()
   const { toast } = useToast()
-  const queryClient = useQueryClient()
 
   // Fetch existing meeting data
-  const { data: meeting, isLoading, error } = useQuery({
-    queryKey: ['meeting', meetingId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('mom_meetings')
-        .select('*')
-        .eq('id', meetingId)
-        .single()
-      
-      if (error) throw error
-      return data
-    },
-    enabled: !!meetingId
-  })
+  const { data: meeting, isLoading, error } = useMeeting(meetingId)
+
+  // Update mutation
+  const updateMutation = useUpdateMeeting(meetingId)
 
   const form = useForm<MeetingFormData>({
     resolver: zodResolver(meetingSchema),
@@ -72,44 +60,23 @@ export function EditMeetingForm({ meetingId }: EditMeetingFormProps) {
     }
   }, [meeting, form])
 
-  // Update mutation
-  const mutation = useMutation({
-    mutationFn: async (data: MeetingFormData) => {
-      const { data: result, error } = await supabase
-        .from("mom_meetings")
-        .update({
-          title: data.title,
-          meeting_type: data.meeting_type,
-          meeting_date: new Date(`${data.meeting_date}T${data.meeting_time}`),
-          location: data.location,
-          description: data.description,
-          participants: data.participants
-        })
-        .eq('id', meetingId)
-      
-      if (error) throw error
-      return result
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["mom-meetings"] })
-      queryClient.invalidateQueries({ queryKey: ["meeting", meetingId] })
-      toast({
-        title: "Success",
-        description: "Meeting berhasil diupdate"
-      })
-      router.push(`/meeting/${meetingId}`)
-    },
-    onError: (error) => {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Gagal mengupdate meeting"
-      })
-    }
-  })
-
   const onSubmit = form.handleSubmit((data) => {
-    mutation.mutate(data)
+    updateMutation.mutate(data, {
+      onSuccess: () => {
+        toast({
+          title: "Success",
+          description: "Meeting berhasil diupdate"
+        })
+        router.push(`/meeting/${meetingId}`)
+      },
+      onError: () => {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Gagal mengupdate meeting"
+        })
+      }
+    })
   })
 
   if (isLoading) {
@@ -252,9 +219,9 @@ export function EditMeetingForm({ meetingId }: EditMeetingFormProps) {
             </Button>
             <Button
               type="submit"
-              disabled={mutation.isPending}
+              disabled={updateMutation.isPending}
             >
-              {mutation.isPending ? "Menyimpan..." : "Update Meeting"}
+              {updateMutation.isPending ? "Menyimpan..." : "Update Meeting"}
             </Button>
           </div>
         </form>

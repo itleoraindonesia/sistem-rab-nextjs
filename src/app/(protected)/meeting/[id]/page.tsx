@@ -6,77 +6,38 @@ import { ArrowLeft, Edit, FileDown, Trash2, Calendar, Clock, MapPin, Users, Load
 import { Card, CardContent } from "@/components/ui"
 import Button from "@/components/ui/Button"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { useToast } from "@/components/ui/use-toast"
-import { supabase } from "@/lib/supabase/client"
+import { useMeeting, useDeleteMeeting } from "@/hooks/useMeetings"
 import Link from "next/link"
 
 export default function MeetingDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter()
   const { toast } = useToast()
-  const queryClient = useQueryClient()
   
   // Unwrap params using React.use() for Next.js 15+ compatibility
   const { id: meetingId } = React.use(params)
 
   // Fetch Meeting Data
-  const { data: meeting, isLoading, error } = useQuery({
-    queryKey: ['meeting', meetingId],
-    queryFn: async () => {
-      try {
-        const { data, error } = await supabase
-          .from('mom_meetings')
-          .select(`
-            *,
-            users!mom_meetings_created_by_fkey (
-              nama,
-              email
-            )
-          `)
-          .eq('id', meetingId)
-          .single()
-        
-        if (error) throw error
-        return data
-      } catch (error: any) {
-        if (error.name === 'AbortError' || error.message?.includes('aborted')) {
-          console.log('Request aborted');
-          return null;
-        }
-        throw error;
-      }
-    },
-    placeholderData: (prev) => prev, // Keep previous data visible
-    enabled: !!meetingId
-  })
+  const { data: meeting, isLoading, error } = useMeeting(meetingId)
 
   // Delete Mutation
-  const deleteMutation = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase
-        .from('mom_meetings')
-        .delete()
-        .eq('id', meetingId)
-      
-      if (error) throw error
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['mom-meetings'] })
-      toast({ title: "Success", description: "Meeting berhasil dihapus" })
-      router.push('/meeting')
-    },
-    onError: (error) => {
-      toast({ 
-        variant: "destructive", 
-        title: "Error", 
-        description: "Gagal menghapus meeting: " + (error as Error).message 
-      })
-    }
-  })
+  const deleteMutation = useDeleteMeeting()
 
   const handleDelete = () => {
     if (confirm('Apakah Anda yakin ingin menghapus meeting ini?')) {
-      deleteMutation.mutate()
+      deleteMutation.mutate(meetingId, {
+        onSuccess: () => {
+          toast({ title: "Success", description: "Meeting berhasil dihapus" })
+          router.push('/meeting')
+        },
+        onError: (error) => {
+          toast({ 
+            variant: "destructive", 
+            title: "Error", 
+            description: "Gagal menghapus meeting: " + (error as Error).message 
+          })
+        }
+      })
     }
   }
 

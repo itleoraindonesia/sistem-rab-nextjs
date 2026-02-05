@@ -3,13 +3,10 @@
 import * as React from "react"
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { Plus, FileDown, Loader2, Search, MapPin, Calendar, Clock, ChevronRight, MoreHorizontal } from "lucide-react"
+import { Plus, FileDown, Loader2, Search, MapPin, Calendar, Clock, ChevronRight } from "lucide-react"
 import { Card, CardContent } from "@/components/ui"
 import Button from "@/components/ui/Button"
-import { useQuery } from "@tanstack/react-query"
-import { supabase } from "@/lib/supabase/client"
-
-const ITEMS_PER_PAGE = 10;
+import { useMeetings } from "@/hooks/useMeetings"
 
 export default function MoMPage() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -27,58 +24,15 @@ export default function MoMPage() {
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
-  const fetchMeetings = async ({ signal }: { signal: AbortSignal }) => {
-    try {
-      const from = (page - 1) * ITEMS_PER_PAGE;
-      const to = from + ITEMS_PER_PAGE - 1;
-
-      console.log(`[MeetingPage] Fetching page ${page} (range ${from}-${to})`);
-
-      let query = supabase
-        .from('mom_meetings')
-        .select(`
-          *,
-          users!mom_meetings_created_by_fkey (
-            nama
-          )
-          )
-        `, { count: 'exact' })
-        // .abortSignal(signal); // Temporarily removed to prevent premature aborts
-
-      if (filterType) query = query.eq('meeting_type', filterType);
-      
-      if (debouncedSearch && debouncedSearch.trim() !== '') {
-          const term = debouncedSearch.trim();
-          query = query.or(`title.ilike.%${term}%,meeting_number.ilike.%${term}%`);
-      }
-
-      const { data, error, count } = await query
-        .order('meeting_date', { ascending: false })
-        .range(from, to);
-      
-      if (error) throw error;
-      
-      console.log(`[MeetingPage] Fetched ${data?.length} rows for page ${page}`);
-      return { data: data || [], totalCount: count || 0 };
-    } catch (error: any) {
-      if (error.name === 'AbortError' || error.message?.includes('aborted')) {
-        console.log('[MeetingPage] Request aborted gracefully');
-        throw error;
-      }
-      console.error('[MeetingPage] Unexpected error:', error);
-      throw error;
-    }
-  }
-
-  const { data, isLoading, error, isFetching } = useQuery({
-    queryKey: ['mom-meetings', page, debouncedSearch, filterType],
-    queryFn: fetchMeetings,
-    placeholderData: (previousData: any) => previousData, // Prevent flickering
+  const { data, isLoading, error, isFetching } = useMeetings({
+    page,
+    search: debouncedSearch,
+    filterType
   })
 
   const meetings = data?.data || [];
   const totalCount = data?.totalCount || 0;
-  const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE);
+  const totalPages = data?.totalPages || 1;
 
   if (error && (error as any).name !== 'AbortError') {
     return (

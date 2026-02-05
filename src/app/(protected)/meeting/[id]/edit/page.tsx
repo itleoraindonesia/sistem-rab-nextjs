@@ -3,7 +3,7 @@
 import * as React from "react"
 import { useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { ArrowLeft, Save, Send, Loader2 } from "lucide-react"
+import { ArrowLeft, Save, Loader2 } from "lucide-react"
 import { Card, CardContent } from "@/components/ui"
 import Button from "@/components/ui/Button"
 import { Input } from "@/components/ui/input"
@@ -17,34 +17,19 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { meetingSchema, type MeetingFormData } from "@/lib/meeting/schemas"
 
-// React Query & Supabase
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+// React Query & Custom Hooks
 import { useToast } from "@/components/ui/use-toast"
-import { supabase } from "@/lib/supabase/client"
+import { useMeeting, useUpdateMeeting } from "@/hooks/useMeetings"
 
 export default function EditMoMPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter()
   const { toast } = useToast()
-  const queryClient = useQueryClient()
   
   // Unwrap params using React.use() for Next.js 15+ compatibility
   const { id: meetingId } = React.use(params)
 
   // 1. Fetch Existing Meeting Data
-  const { data: meeting, isLoading, error } = useQuery({
-    queryKey: ['meeting', meetingId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('mom_meetings')
-        .select('*')
-        .eq('id', meetingId)
-        .single()
-      
-      if (error) throw error
-      return data
-    },
-    enabled: !!meetingId
-  })
+  const { data: meeting, isLoading, error } = useMeeting(meetingId)
 
   // 2. Form Setup
   const form = useForm<MeetingFormData>({
@@ -82,40 +67,18 @@ export default function EditMoMPage({ params }: { params: Promise<{ id: string }
   }, [meeting, form])
 
   // 4. Update Mutation
-  const mutation = useMutation({
-    mutationFn: async (data: MeetingFormData) => {
-      // Create proper ISO date string from date + time inputs
-      const isoDateTime = new Date(`${data.meeting_date}T${data.meeting_time}`).toISOString()
-
-      const { data: result, error } = await supabase
-        .from("mom_meetings")
-        .update({
-          title: data.title,
-          meeting_type: data.meeting_type,
-          meeting_date: isoDateTime,
-          location: data.location,
-          description: data.description,
-          participants: data.participants,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', meetingId)
-      
-      if (error) throw error
-      return result
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["mom-meetings"] })
-      queryClient.invalidateQueries({ queryKey: ["meeting", meetingId] })
-      toast({ title: "Success", description: "Meeting berhasil diperbarui" })
-      router.push(`/meeting/${meetingId}`)
-    },
-    onError: (error) => {
-      toast({ variant: "destructive", title: "Error", description: "Gagal memperbarui meeting: " + error.message })
-    }
-  })
+  const updateMutation = useUpdateMeeting(meetingId)
 
   const onSubmit = form.handleSubmit((data) => {
-    mutation.mutate(data)
+    updateMutation.mutate(data, {
+      onSuccess: () => {
+        toast({ title: "Success", description: "Meeting berhasil diperbarui" })
+        router.push(`/meeting/${meetingId}`)
+      },
+      onError: (error) => {
+        toast({ variant: "destructive", title: "Error", description: "Gagal memperbarui meeting: " + error.message })
+      }
+    })
   })
 
   // Helper untuk generate nomor surat dinamis (Fallback Display)
@@ -238,26 +201,26 @@ export default function EditMoMPage({ params }: { params: Promise<{ id: string }
                   </div>
                   
                    <div>
-                         <div className="flex justify-between items-center mb-1">
-                              <Label htmlFor="location">Lokasi / Link *</Label>
-                              <Button 
-                                  type="button" 
-                                  variant="link" 
-                                  className="h-auto p-0 text-xs text-brand-primary"
-                                  onClick={() => window.open('https://meet.google.com/landing', '_blank')}
-                              >
-                                  Buat Link Meeting ↗
-                              </Button>
-                          </div>
-                          <Input
-                              id="location"
-                              placeholder="Ruang Meeting A atau Link Zoom"
-                              {...form.register("location")}
-                          />
-                          {form.formState.errors.location && (
-                            <p className="text-sm text-red-500 mt-1">{form.formState.errors.location.message}</p>
-                          )}
-                    </div>
+                          <div className="flex justify-between items-center mb-1">
+                               <Label htmlFor="location">Lokasi / Link *</Label>
+                               <Button 
+                                   type="button" 
+                                   variant="link" 
+                                   className="h-auto p-0 text-xs text-brand-primary"
+                                   onClick={() => window.open('https://meet.google.com/landing', '_blank')}
+                               >
+                                   Buat Link Meeting ↗
+                               </Button>
+                           </div>
+                           <Input
+                               id="location"
+                               placeholder="Ruang Meeting A atau Link Zoom"
+                               {...form.register("location")}
+                           />
+                           {form.formState.errors.location && (
+                             <p className="text-sm text-red-500 mt-1">{form.formState.errors.location.message}</p>
+                           )}
+                     </div>
                 </div>
               </div>
 
@@ -324,9 +287,9 @@ export default function EditMoMPage({ params }: { params: Promise<{ id: string }
                 <Button type="button" variant="outline" onClick={() => router.back()}>
                   Batal
                 </Button>
-                <Button type="submit" disabled={mutation.isPending}>
+                <Button type="submit" disabled={updateMutation.isPending}>
                   <Save className="mr-2 h-4 w-4" />
-                  {mutation.isPending ? "Menyimpan..." : "Simpan Perubahan"}
+                  {updateMutation.isPending ? "Menyimpan..." : "Simpan Perubahan"}
                 </Button>
               </div>
             </form>

@@ -5,6 +5,7 @@ import { Providers } from "../components/Providers";
 import PWAInstallBanner from "../components/ui/PWAInstallBanner";
 import PWALoadingScreen from "../components/ui/PWALoadingScreen";
 import { Toaster } from "@/components/ui/toaster";
+import ClearPersistCache from "../components/ClearPersistCache";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -50,6 +51,7 @@ export default function RootLayout({
         <link rel='icon' href='/favicon.ico' />
       </head>
       <body className={`${inter.variable} font-sans antialiased`}>
+        <ClearPersistCache />
         <PWALoadingScreen />
         <PWAInstallBanner />
         <Providers>{children}</Providers>
