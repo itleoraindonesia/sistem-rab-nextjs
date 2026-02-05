@@ -9,10 +9,9 @@ jest.mock('../../context/MasterDataContext', () => ({
     ongkir: mockOngkir,
     parameters: {
       wasteFactor: 1.05,
-      jointFactorDinding: 2.5,
-      jointFactorLantai: 1.8,
-      upahPasang: 50000,
-      hargaJoint: 2500,
+      wasteFactor: 1.1,
+      upahPasang: 200000,
+      hargaJoint: 2300,
     },
     loading: false,
     error: null,
@@ -22,11 +21,9 @@ jest.mock('../../context/MasterDataContext', () => ({
 
 describe('useRABCalculation', () => {
   const defaultParameters = {
-    wasteFactor: 1.05,
-    jointFactorDinding: 2.5,
-    jointFactorLantai: 1.8,
-    upahPasang: 50000,
-    hargaJoint: 2500,
+    wasteFactor: 1.1,
+    upahPasang: 200000,
+    hargaJoint: 2300,
   }
 
   beforeEach(() => {
@@ -102,9 +99,9 @@ describe('useRABCalculation', () => {
       const { calculateRAB } = result.current
       const calculation = calculateRAB(mockValidFormData)
 
-      // Wall area: 72m², panel area: 1.8m², waste factor: 1.05
-      // Expected: ceil(72 / 1.8 * 1.05) = ceil(42) = 42
-      expect(calculation?.lembarDinding).toBe(42)
+      // Wall area: 72m², panel area: 1.8m², waste factor: 1.1
+      // Expected: ceil(72 / 1.8 * 1.1) = ceil(44) = 44
+      expect(calculation?.lembarDinding).toBe(44)
     })
 
     it('should calculate floor panel requirements with waste factor', () => {
@@ -115,9 +112,9 @@ describe('useRABCalculation', () => {
       const { calculateRAB } = result.current
       const calculation = calculateRAB(mockValidFormData)
 
-      // Floor area: 32m², panel area: 1.8m², waste factor: 1.05
-      // Expected: ceil(32 / 1.8 * 1.05) = ceil(18.666) = 19
-      expect(calculation?.lembarLantai).toBe(19)
+      // Floor area: 32m², panel area: 1.8m², waste factor: 1.1
+      // Expected: ceil(32 / 1.8 * 1.1) = ceil(19.55) = 20
+      expect(calculation?.lembarLantai).toBe(20)
     })
 
     it('should skip wall calculations when hitung_dinding is false', () => {
@@ -156,9 +153,9 @@ describe('useRABCalculation', () => {
       const { calculateRAB } = result.current
       const calculation = calculateRAB(mockValidFormData)
 
-      // Wall area: 72m², joint factor: 2.5
-      // Expected: round(72 * 2.5) = 180
-      expect(calculation?.titikJointDinding).toBe(180)
+      // Wall panels: 44, joint formula: qty * 5
+      // Expected: 44 * 5 = 220
+      expect(calculation?.titikJointDinding).toBe(220)
     })
 
     it('should calculate floor joints correctly', () => {
@@ -169,9 +166,9 @@ describe('useRABCalculation', () => {
       const { calculateRAB } = result.current
       const calculation = calculateRAB(mockValidFormData)
 
-      // Floor area: 32m², joint factor: 1.8
-      // Expected: ceil(32 * 1.8) = 58
-      expect(calculation?.titikJointLantai).toBe(58)
+      // Floor panels: 20, joint formula: qty * 5
+      // Expected: 20 * 5 = 100
+      expect(calculation?.titikJointLantai).toBe(100)
     })
   })
 
@@ -184,11 +181,11 @@ describe('useRABCalculation', () => {
       const { calculateRAB } = result.current
       const calculation = calculateRAB(mockValidFormData)
 
-      // Panel cost: 42 × 150000 = 6,300,000
-      // Labor cost: 72 × 50000 = 3,600,000
-      // Joint cost: 180 × 2500 = 450,000
-      // Total: 10,350,000
-      expect(calculation?.subtotalDinding).toBe(10350000)
+      // Panel cost: 44 × 150000 = 6,600,000
+      // Labor cost: 72 × 200000 = 14,400,000
+      // Joint cost: 220 × 2300 = 506,000
+      // Total: 21,506,000
+      expect(calculation?.subtotalDinding).toBe(21506000)
     })
 
     it('should calculate floor subtotal correctly', () => {
@@ -199,11 +196,11 @@ describe('useRABCalculation', () => {
       const { calculateRAB } = result.current
       const calculation = calculateRAB(mockValidFormData)
 
-      // Panel cost: 19 × 180000 = 3,420,000
-      // Labor cost: 32 × 50000 = 1,600,000
-      // Joint cost: 58 × 2500 = 145,000
-      // Total: 5,165,000
-      expect(calculation?.subtotalLantai).toBe(5165000)
+      // Panel cost: 20 × 180000 = 3,600,000
+      // Labor cost: 32 × 200000 = 6,400,000
+      // Joint cost: 100 × 2300 = 230,000
+      // Total: 10,230,000
+      expect(calculation?.subtotalLantai).toBe(10230000)
     })
 
     it('should calculate shipping cost based on truck requirements', () => {
@@ -229,8 +226,8 @@ describe('useRABCalculation', () => {
       const { calculateRAB } = result.current
       const calculation = calculateRAB(mockValidFormData)
 
-      // Wall: 10,350,000 + Floor: 5,165,000 + Shipping: 3,000,000 = 18,515,000
-      expect(calculation?.grandTotal).toBe(18515000)
+      // Wall: 21,506,000 + Floor: 10,230,000 + Shipping: 3,000,000 = 34,736,000
+      expect(calculation?.grandTotal).toBe(34736000)
     })
   })
 
@@ -250,9 +247,9 @@ describe('useRABCalculation', () => {
       expect(wallItems).toHaveLength(1)
       expect(wallItems?.[0]).toEqual({
         desc: 'Panel Dinding Standard',
-        qty: 42,
+        qty: 44,
         unit_price: 150000,
-        amount: 6300000,
+        amount: 6600000,
       })
     })
 
@@ -271,9 +268,9 @@ describe('useRABCalculation', () => {
       expect(floorItems).toHaveLength(1)
       expect(floorItems?.[0]).toEqual({
         desc: 'Panel Lantai Standard',
-        qty: 19,
+        qty: 20,
         unit_price: 180000,
-        amount: 3420000,
+        amount: 3600000,
       })
     })
 

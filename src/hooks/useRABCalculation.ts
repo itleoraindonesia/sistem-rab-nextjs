@@ -18,8 +18,6 @@ interface Ongkir {
 
 interface Parameters {
   wasteFactor: number;
-  jointFactorDinding: number;
-  jointFactorLantai: number;
   upahPasang: number;
   hargaJoint: number;
 }
@@ -42,11 +40,9 @@ export function useRABCalculation(
   panels: Panel[] = [],
   ongkir: Ongkir[] = [],
   parameters: Parameters = {
-    wasteFactor: 1.05,
-    jointFactorDinding: 2.5,
-    jointFactorLantai: 1.8,
-    upahPasang: 50000,
-    hargaJoint: 2500,
+    wasteFactor: 1.1,
+    upahPasang: 200000,
+    hargaJoint: 2300,
   },
   masterLoading: boolean = false
 ) {
@@ -103,9 +99,7 @@ export function useRABCalculation(
           (luasDinding / (panelDinding.luas_per_lembar || 1.8)) *
             parameters.wasteFactor
         );
-        titikJointDinding = Math.round(
-          luasDinding * parameters.jointFactorDinding
-        );
+        titikJointDinding = lembarDinding * 5;
 
         const biayaPanel = lembarDinding * panelDinding.harga;
         const biayaUpah = luasDinding * parameters.upahPasang;
@@ -122,7 +116,7 @@ export function useRABCalculation(
           (luasLantai / (panelLantai.luas_per_lembar || 1.8)) *
             parameters.wasteFactor
         );
-        titikJointLantai = Math.ceil(luasLantai * parameters.jointFactorLantai);
+        titikJointLantai = lembarLantai * 5;
 
         const biayaPanel = lembarLantai * panelLantai.harga;
         const biayaUpah = luasLantai * parameters.upahPasang;

@@ -87,11 +87,9 @@ export function useRABEdit(id: string): UseRABEditResult {
   // Stabilize calculation parameters
   const calculationParameters = useMemo(
     () => ({
-      wasteFactor: 1.05,
-      jointFactorDinding: 2.5,
-      jointFactorLantai: 1.8,
-      upahPasang: 50000,
-      hargaJoint: 2500,
+      wasteFactor: 1.1,
+      upahPasang: 200000,
+      hargaJoint: 2300,
     }),
     []
   );
