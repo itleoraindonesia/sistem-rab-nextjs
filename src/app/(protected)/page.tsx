@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import CommitRecap from "@/components/CommitRecap";
 
 export default function Dashboard() {
   return (
@@ -30,23 +31,9 @@ export default function Dashboard() {
           </Link>
         </div>
 
-        {/* Tips Cepat */}
-        <div className='mt-8 grid grid-cols-1 gap-6'>
-          <div className='bg-brand-primary text-white rounded-lg p-6'>
-            <h3 className='font-bold text-lg mb-2'>💡 Tips Leora ERP</h3>
-            <ul className='space-y-2 text-sm opacity-90'>
-              <li>• Gunakan status 'Draft' untuk simpan sementara</li>
-              <li>
-                • Ubah ke 'Terkirim' ketika dokumen telah akan diprint dan
-                dikirimkan ke klien. Harga akan terkunci jika sudah terkirim.
-              </li>
-              <li>
-                • Jika sudah disetujui klien, maka ubah dokumen ke "Disetujui"
-                maka dokumen sudah terkunci.
-              </li>
-              <li>• Export Excel untuk analisis lanjutan</li>
-            </ul>
-          </div>
+        {/* Pembaruan Terbaru */}
+        <div className='mt-8'>
+          <CommitRecap />
         </div>
       </div>
     </div>

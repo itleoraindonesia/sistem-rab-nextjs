@@ -7,7 +7,7 @@ import Button from '../ui/Button'
 import { Input } from '../ui/input'
 import { Search, Upload, Filter, List, Grid } from 'lucide-react'
 
-interface FileItem {
+export interface FileItem {
   name: string
   size: number
   lastModified: Date
