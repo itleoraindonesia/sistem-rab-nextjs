@@ -34,6 +34,10 @@ export const PERMISSIONS = {
   'supply-chain.view': 'View Supply Chain',
   'supply-chain.manage': 'Manage Supply Chain',
 
+  // File Manager permissions
+  'files.view': 'View File Manager',
+  'files.download': 'Download Files',
+
   // User management
   'users.manage': 'Manage Users',
   'users.view': 'View Users'
@@ -48,19 +52,22 @@ export const PERMISSION_MATRIX = {
   manager: {
     'Corsec': [
       'dashboard.view',
-      'meeting.view', 'meeting.manage'
+      'meeting.view', 'meeting.manage',
+      'files.view'
       // Security-related modules - can be expanded as needed
     ],
     'Finance': [
       'dashboard.view',
       'dokumen.create', 'produk-rab.view', 'produk-rab.create', 'produk-rab.edit',
       'master.view', 'master.manage',
-      'meeting.view', 'meeting.manage'
+      'meeting.view', 'meeting.manage',
+      'files.view'
     ],
     'Human Capital': [
       'dashboard.view',
       'dokumen.create', 'dokumen.submit', 'dokumen.review', 'dokumen.approve',
-      'meeting.view', 'meeting.manage'
+      'meeting.view', 'meeting.manage',
+      'files.view'
     ],
     'Konstruksi': [
       'dashboard.view',
@@ -68,18 +75,21 @@ export const PERMISSION_MATRIX = {
       'produk-rab.view', 'produk-rab.create', 'produk-rab.edit', 'produk-rab.delete',
       'crm.view', 'crm.manage', 'crm.create', 'crm.edit',
       'master.view', 'master.manage',
-      'meeting.view', 'meeting.manage'
+      'meeting.view', 'meeting.manage',
+      'files.view'
     ],
     'Marketing': [
       'dashboard.view',
       'crm.view', 'crm.manage', 'crm.create', 'crm.edit',
-      'meeting.view', 'meeting.manage'
+      'meeting.view', 'meeting.manage',
+      'files.view'
     ],
     'PBD': Object.keys(PERMISSIONS), // FULL ACCESS like admin
     'SCM': [
       'dashboard.view',
       'supply-chain.view', 'supply-chain.manage',
-      'meeting.view', 'meeting.manage'
+      'meeting.view', 'meeting.manage',
+      'files.view'
     ]
   },
 
@@ -170,6 +180,7 @@ export const MENU_PERMISSIONS = {
   '/crm': ['crm.view', 'crm.manage'],
   '/master': ['master.view', 'master.manage'],
   '/meeting': ['meeting.view', 'meeting.manage'],
+  '/files': ['files.view'],
   '/supply-chain': ['supply-chain.view', 'supply-chain.manage'] // Not implemented yet
 } as const
 

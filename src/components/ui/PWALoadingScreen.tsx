@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Image from "next/image";
+import Link from "next/link";
 
 export default function PWALoadingScreen() {
   const [isLoading, setIsLoading] = useState(true);
@@ -61,16 +61,15 @@ export default function PWALoadingScreen() {
       <div className='relative z-10 flex flex-col items-center space-y-6'>
         {/* Logo */}
         <div className='relative'>
-          <Image
-            src='/Logo-Leora-PNG.png'
-            alt='Logo Leora'
-            width={120}
-            height={120}
-            className='drop-shadow-lg'
-            priority
-          />
-          {/* Pulse animation */}
-          <div className='absolute inset-0 rounded-full bg-blue-500/20 animate-ping' />
+          <Link href="/">
+            <img
+              src='/Logo-Leora-PNG.png'
+              alt='Logo Leora'
+              width={120}
+              height={120}
+              className='pointer-events-none select-none object-contain'
+            />
+          </Link>
         </div>
 
         {/* Text */}

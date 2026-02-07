@@ -4,7 +4,7 @@ import * as React from "react"
 import { createPortal } from "react-dom"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { LayoutDashboard, FileText, Package, Home, LogOut, User, ClipboardCheck, CheckSquare, Users, Truck, ChevronDown, ChevronRight, Calendar, Lock, Settings, Eye, EyeOff, AlertCircle } from "lucide-react"
+import { LayoutDashboard, FileText, Package, Home, LogOut, User, ClipboardCheck, CheckSquare, Users, Truck, ChevronDown, ChevronRight, Calendar, Lock, Settings, Eye, EyeOff, AlertCircle, Folder } from "lucide-react"
 import { supabase } from "../../lib/supabase/client"
 import type { Tables } from "../../types/database"
 import { usePermissions } from "../../hooks/usePermissions"
@@ -75,6 +75,12 @@ const navItems = [
       "/meeting",
       "/meeting/baru"
     ],
+  },
+  {
+    name: "File Manager",
+    path: "/files",
+    icon: Folder,
+    children: [],
   },
   // Hidden temporarily - Master Data
   // {
@@ -308,7 +314,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             <SidebarMenuButton className={`w-full ${isCollapsed ? 'justify-center' : ''}`} size="lg" asChild>
               <Link href="/">
                 <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                  <Image src="/logo-only.png" alt="Logo" width={20} height={20} />
+                  <img src="/logo-only.png" alt="Logo" className="w-5 h-5 pointer-events-none select-none" />
                 </div>
                 {!isCollapsed && (
                   <div className="grid flex-1 text-left text-sm leading-tight text-sidebar-foreground">
