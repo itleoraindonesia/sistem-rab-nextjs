@@ -46,8 +46,9 @@ function LoginForm() {
         }
         setError(errorMessage)
       } else if (data.user) {
-        // Redirect to the intended page or dashboard
-        router.push(redirect)
+        // Use window.location.href instead of router.push to ensure
+        // cookies are sent to server and middleware can verify auth
+        window.location.href = redirect
       }
     } catch (err) {
       setError("Terjadi kesalahan saat login")

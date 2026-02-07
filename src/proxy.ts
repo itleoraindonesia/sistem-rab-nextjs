@@ -32,12 +32,17 @@ export async function proxy(request: NextRequest) {
   })
 
   // 2. Check cached auth first (FAST PATH)
+  // But skip cache if we have Supabase auth cookies (fresh login/logout)
+  const hasSupabaseCookies = request.cookies.getAll().some(cookie => 
+    cookie.name.startsWith('sb-') && cookie.name.includes('-auth-token')
+  );
+  
   const authCacheCookie = request.cookies.get(AUTH_CACHE_COOKIE)?.value;
   let cachedAuth: AuthCache | null = null;
   let user: any = null;
   let usedCache = false;
 
-  if (authCacheCookie) {
+  if (authCacheCookie && !hasSupabaseCookies) {
     try {
       cachedAuth = JSON.parse(authCacheCookie) as AuthCache;
       const now = Date.now();
@@ -52,6 +57,8 @@ export async function proxy(request: NextRequest) {
       // Invalid cache, will fetch fresh
       console.log('[Proxy] Invalid auth cache, fetching fresh');
     }
+  } else if (hasSupabaseCookies) {
+    console.log('[Proxy] Supabase cookies detected, skipping cache for fresh auth check');
   }
 
   // 3. Only call Supabase API if cache miss or expired
