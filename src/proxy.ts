@@ -3,14 +3,16 @@ import { NextResponse, type NextRequest } from 'next/server'
 
 // Define protected routes
 const protectedRoutes = [
+  '/',
   '/produk-rab',
   '/dokumen',
   '/crm',
   '/master',
-  '/supply-chain'
+  '/supply-chain',
+  '/meeting'
 ];
 const authRoutes = ['/login'];
-const publicRoutes = ['/', '/auth/callback'];
+const publicRoutes = ['/auth/callback'];
 
 // Cache duration in milliseconds (5 minutes)
 const AUTH_CACHE_DURATION = 5 * 60 * 1000;
@@ -155,7 +157,8 @@ export async function proxy(request: NextRequest) {
   });
 
   // If accessing protected route without user, redirect to login
-  if (isProtectedRoute && !user && !isPublicRoute) {
+  // But don't redirect if it's an auth route (like /login itself)
+  if (isProtectedRoute && !user && !isPublicRoute && !isAuthRoute) {
     console.log('Redirecting to login - protected route without auth');
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('redirect', pathname);
