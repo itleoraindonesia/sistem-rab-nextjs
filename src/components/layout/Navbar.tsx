@@ -161,7 +161,7 @@ export default function Navbar({
             <Image src='/logo-only.png' width={100} height={100} alt='logo' />
           </div>
           <div>
-            <h1 className='text-lg font-bold'>Sistem RAB Leora</h1>
+            <h1 className='text-lg font-bold'>Leora ERP</h1>
             <p className='text-xs opacity-80'>Hitung Cepat & Akurat</p>
           </div>
         </Link>

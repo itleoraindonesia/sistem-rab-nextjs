@@ -9,7 +9,7 @@ export default function Dashboard() {
         {/* Header */}
         <div className='mb-4'>
           <h1 className='text-2xl font-bold text-brand-primary'>Dashboard</h1>
-          <p className='text-gray-600'>Selamat datang di Sistem RAB Leora</p>
+          <p className='text-gray-600'>Selamat datang di Leora ERP</p>
         </div>
 
         {/* Quick Links */}
@@ -33,7 +33,7 @@ export default function Dashboard() {
         {/* Tips Cepat */}
         <div className='mt-8 grid grid-cols-1 gap-6'>
           <div className='bg-brand-primary text-white rounded-lg p-6'>
-            <h3 className='font-bold text-lg mb-2'>💡 Tips Sistem RAB Leora</h3>
+            <h3 className='font-bold text-lg mb-2'>💡 Tips Leora ERP</h3>
             <ul className='space-y-2 text-sm opacity-90'>
               <li>• Gunakan status 'Draft' untuk simpan sementara</li>
               <li>

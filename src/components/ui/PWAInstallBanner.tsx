@@ -88,7 +88,7 @@ export default function PWAInstallBanner() {
           </div>
           <div className='flex-1 min-w-0'>
             <p className='text-sm font-medium truncate'>
-              Install Aplikasi Sistem RAB
+              Install Leora ERP
             </p>
             <p className='text-xs opacity-90'>
               Untuk pengalaman terbaik di perangkat Anda

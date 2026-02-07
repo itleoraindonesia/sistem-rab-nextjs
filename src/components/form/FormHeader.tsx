@@ -20,7 +20,7 @@ export default function FormHeader({ isEdit = false }: FormHeaderProps) {
           </div>
           <div className="hidden md:block">
             <div className="text-right">
-              <div className="text-sm text-subtle">Sistem RAB</div>
+              <div className="text-sm text-subtle">Leora ERP</div>
               <div className="text-lg font-semibold text-brand-primary">Leora</div>
             </div>
           </div>

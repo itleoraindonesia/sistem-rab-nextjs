@@ -19,7 +19,7 @@ export default async function UnauthorizedPage() {
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
           <h1 className="text-3xl font-bold text-brand-primary mb-2">
-            Sistem RAB Leora
+            Leora ERP
           </h1>
         </div>
 

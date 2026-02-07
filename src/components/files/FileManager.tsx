@@ -3,7 +3,6 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase/client'
 import { FileList } from './FileList'
 import { FileModal } from './FileModal'
-import { SearchBar } from '../ui/SearchBar'
 import Button from '../ui/Button'
 import { Input } from '../ui/input'
 import { Search, Upload, Filter, List, Grid } from 'lucide-react'
@@ -115,7 +114,7 @@ export function FileManager() {
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold mb-1">File Manager</h1>
-          <p className="text-gray-600">Kelola dan akses file dari Supabase Storage</p>
+          <p className="text-gray-600">Kelola dan akses file dari Leora ERP</p>
         </div>
         
         <div className="flex flex-col sm:flex-row gap-3">

@@ -75,7 +75,7 @@ export default function PWALoadingScreen() {
         {/* Text */}
         <div className='text-center space-y-2'>
           <h1 className='text-2xl font-bold text-brand-primary tracking-wide'>
-            Sistem RAB Leora
+            Leora ERP
           </h1>
         </div>
 

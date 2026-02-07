@@ -1,7 +1,7 @@
 {
-  "name": "Sistem Leora",
-  "short_name": "Sistem Leora",
-  "description": "Sistem Manajemen Leora",
+  "name": "Leora ERP",
+  "short_name": "Leora ERP",
+  "description": "Enterprise Resource Planning System",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#f8fafc",

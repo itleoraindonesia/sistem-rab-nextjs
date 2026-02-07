@@ -269,7 +269,7 @@ function LoginForm() {
                 <Lock className="w-3 h-3" />
                 <span>Terenskripsi & Aman</span>
                 <span>•</span>
-                <span>ERP Leora v1.0</span>
+                <span>Leora ERP v1.0</span>
              </div>
           </div>
         </div>

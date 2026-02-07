@@ -318,7 +318,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 </div>
                 {!isCollapsed && (
                   <div className="grid flex-1 text-left text-sm leading-tight text-sidebar-foreground">
-                     <span className="truncate font-semibold">Sistem Leora</span>
+                     <span className="truncate font-semibold">Leora ERP</span>
                      <span className="truncate text-xs text-muted-foreground">Aplikasi Internal Manajemen</span>
                   </div>
                 )}

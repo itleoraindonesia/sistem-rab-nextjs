@@ -8,7 +8,7 @@ export default function ClearPersistCache() {
   useEffect(() => {
     // Clear old persist cache from localStorage
     const keysToRemove = [
-      'sistem-rab-query-cache',
+      'leora-erp-query-cache',
       'react-query-cache',
       'tanstack-query-cache'
     ];
