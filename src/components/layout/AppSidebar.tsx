@@ -10,6 +10,7 @@ import type { Tables } from "../../types/database"
 import { usePermissions } from "../../hooks/usePermissions"
 import { canAccessMenu } from "../../lib/permissions"
 import { CompactRoleBadge } from "../../components/ui/RoleBadge"
+import { usePendingReviews, usePendingApprovals } from "../../hooks/useLetters"
 import {
   Sidebar,
   SidebarContent,
@@ -32,14 +33,14 @@ const navItems = [
   { name: "Dashboard", path: "/", icon: LayoutDashboard, children: [] },
   {
     name: "Administrasi",
-    path: "/dokumen",
+    path: "/documents",
     icon: FileText,
     children: [
-      "/dokumen/dashboard",
-      "/dokumen/surat-keluar",
-      "/dokumen/memo",
-      "/dokumen/review",
-      "/dokumen/approval",
+      "/documents/dashboard",
+      "/documents/outgoing-letter",
+      "/documents/memo",
+      "/documents/review",
+      "/documents/approval",
     ],
   },
   {
@@ -110,6 +111,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const [mounted, setMounted] = React.useState(false)
   const { canAccessMenu } = usePermissions()
 
+  // Hooks for badges
+  const { data: pendingReviews } = usePendingReviews(user?.id)
+  const { data: pendingApprovals } = usePendingApprovals(user?.id)
+
   const isCollapsed = isMobile ? false : sidebarState === "collapsed"
 
   // Fetch user data
@@ -143,9 +148,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     setIsLoggingOut(true)
 
     try {
-      // Create a timeout promise (2 seconds - faster!)
+      // Increase timeout to 5 seconds for more reliable logout
       const timeoutPromise = new Promise<never>((_, reject) => 
-        setTimeout(() => reject(new Error('Logout timeout')), 2000)
+        setTimeout(() => reject(new Error('Logout timeout')), 5000)
       )
 
       // Race between logout and timeout
@@ -154,12 +159,18 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         timeoutPromise
       ])
     } catch (error) {
-      // Only log if it's NOT a timeout error
-      if (!(error instanceof Error && error.message === 'Logout timeout')) {
-        console.error('Logout error:', error)
-      }
+      // Log all errors for debugging
+      console.error('Logout error:', error)
       // Continue to login page even if logout fails or times out
     } finally {
+      // Clear user state
+      setUser(null)
+      
+      // Clear auth cache cookie to force middleware to re-check auth
+      if (typeof document !== 'undefined') {
+        document.cookie = 'auth-cache=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;'
+      }
+      
       // Always redirect to login
       router.push('/login')
       setIsLoggingOut(false)
@@ -305,6 +316,15 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     }
   }, [pathname, isMobile, setOpenMobile])
 
+  const Badge = ({ count }: { count: number }) => {
+    if (count === 0) return null;
+    return (
+      <span className="bg-red-500 text-white text-[10px] w-5 h-5 flex items-center justify-center rounded-full font-bold">
+        {count}
+      </span>
+    );
+  };
+
   return (
     <>
       <Sidebar collapsible="icon" {...props}>
@@ -339,6 +359,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               const hasChildren = item.children && item.children.length > 0
               const isExpanded = expandedCategory === item.name
 
+              // Calculate badge for Administrasi parent menu
+              let totalAdminBadge = 0
+              if (item.name === "Administrasi") {
+                totalAdminBadge = (pendingReviews?.length || 0) + (pendingApprovals?.length || 0)
+              }
+
               return (
                 <SidebarMenuItem key={item.name}>
                   <SidebarMenuButton
@@ -356,12 +382,19 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                         <Icon className="size-4 shrink-0" />
                         {!isCollapsed && <span>{item.name}</span>}
                       </div>
-                      {hasChildren && !isCollapsed && (
-                        <div className="ml-auto">
-                          {isExpanded ? (
-                            <ChevronDown className="size-4" />
-                          ) : (
-                            <ChevronRight className="size-4" />
+                      
+                      {!isCollapsed && (
+                        <div className="ml-auto flex items-center gap-2">
+                          {item.name === "Administrasi" && totalAdminBadge > 0 && (
+                            <Badge count={totalAdminBadge} />
+                          )}
+                          
+                          {hasChildren && (
+                            isExpanded ? (
+                              <ChevronDown className="size-4" />
+                            ) : (
+                              <ChevronRight className="size-4" />
+                            )
                           )}
                         </div>
                       )}
@@ -386,8 +419,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                         }
 
                         // Custom labels for different menu types
-                        let childLabel = "Buat RAB Baru"
-                        let badgeNumber = 0
+                        let childLabel: React.ReactNode = ""
+                        let badge: React.ReactNode = null;
+                        const pendingReviewsCount = pendingReviews?.length || 0;
+                        const pendingApprovalsCount = pendingApprovals?.length || 0;
 
                         if (childPath === "/produk-rab/dashboard") {
                           childLabel = "Dashboard Produk & RAB"
@@ -403,19 +438,19 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                           childLabel = "Input Data"
                         } else if (childPath === "/crm/clients") {
                           childLabel = "Daftar Client"
-                        } else if (childPath === "/dokumen/dashboard") {
-                          childLabel = "Dashboard Administrasi"
-                        } else if (childPath === "/dokumen/review") {
-                          childLabel = "Review"
-                          badgeNumber = 3
-                        } else if (childPath === "/dokumen/approval") {
-                          childLabel = "Approval"
-                          badgeNumber = 2
+                        } else if (childPath === "/documents/dashboard") {
+                          childLabel = "Dashboard";
+                        } else if (childPath === "/documents/review") {
+                          childLabel = "Review";
+                          badge = pendingReviewsCount > 0 ? <Badge count={pendingReviewsCount} /> : null;
+                        } else if (childPath === "/documents/approval") {
+                          childLabel = "Approval";
+                          badge = pendingApprovalsCount > 0 ? <Badge count={pendingApprovalsCount} /> : null;
                         } else if (childPath === "/master/panel") {
                           childLabel = "Data Panel"
                         } else if (childPath === "/master/ongkir") {
                           childLabel = "Data Ongkir"
-                        } else if (childPath === "/dokumen/surat-keluar") {
+                        } else if (childPath === "/documents/outgoing-letter") {
                           childLabel = "Surat Keluar"
                         } else if (childPath === "/supply-chain/dashboard") {
                           childLabel = "Dashboard Supply Chain"
@@ -425,7 +460,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                           childLabel = "PO"
                         } else if (childPath === "/supply-chain/list-material") {
                           childLabel = "List Material"
-                        } else if (childPath === "/dokumen/memo") {
+                        } else if (childPath === "/documents/memo") {
                           childLabel = "Internal Memo"
                         } else if (childPath === "/meeting") {
                           childLabel = "List Meeting"
@@ -442,11 +477,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                             >
                               <Link href={childPath} className="flex items-center justify-between w-full">
                                 <span>{childLabel}</span>
-                                {badgeNumber > 0 && (
-                                  <span className="bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center ml-2">
-                                    {badgeNumber}
-                                  </span>
-                                )}
+                                {badge}
                               </Link>
                             </SidebarMenuSubButton>
                           </SidebarMenuSubItem>

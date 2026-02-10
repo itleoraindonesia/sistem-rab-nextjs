@@ -1,3 +1,5 @@
+import { createPortal } from 'react-dom'
+import { useEffect, useState } from 'react'
 import { FileItem } from './FileManager'
 import Button from '../ui/Button'
 import { X, Download, Eye, File, FileText, FileImage, FileVideo, FileAudio, FileArchive } from 'lucide-react'
@@ -9,6 +11,13 @@ interface FileModalProps {
 }
 
 export function FileModal({ file, onClose, onDownload }: FileModalProps) {
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+    return () => setMounted(false)
+  }, [])
+
   const getFileIcon = (filename: string) => {
     const extension = filename.split('.').pop()?.toLowerCase()
     
@@ -51,13 +60,15 @@ export function FileModal({ file, onClose, onDownload }: FileModalProps) {
   const extension = file.name.split('.').pop()?.toUpperCase() || 'Unknown'
   const isImage = ['JPG', 'JPEG', 'PNG', 'GIF', 'BMP', 'SVG', 'WEBP'].includes(extension)
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+  if (!mounted) return null
+
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-center justify-center h-screen w-screen">
       <div 
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" 
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity h-full w-full" 
         onClick={onClose}
       />
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200 mx-4">
         
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-white z-10">
@@ -154,6 +165,7 @@ export function FileModal({ file, onClose, onDownload }: FileModalProps) {
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }

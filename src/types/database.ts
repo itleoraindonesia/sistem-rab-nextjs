@@ -68,6 +68,96 @@ export type Database = {
         }
         Relationships: []
       }
+      document_types: {
+        Row: {
+          category: string | null
+          code: string
+          created_at: string | null
+          description: string | null
+          id: number
+          is_active: boolean | null
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          category?: string | null
+          code: string
+          created_at?: string | null
+          description?: string | null
+          id?: number
+          is_active?: boolean | null
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string | null
+          code?: string
+          created_at?: string | null
+          description?: string | null
+          id?: number
+          is_active?: boolean | null
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      document_workflow_configs: {
+        Row: {
+          completion_rule: string | null
+          created_at: string | null
+          document_type_id: number
+          id: number
+          is_active: boolean | null
+          is_required: boolean | null
+          review_mode: string | null
+          sequence: number
+          stage_type: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          completion_rule?: string | null
+          created_at?: string | null
+          document_type_id: number
+          id?: number
+          is_active?: boolean | null
+          is_required?: boolean | null
+          review_mode?: string | null
+          sequence: number
+          stage_type: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          completion_rule?: string | null
+          created_at?: string | null
+          document_type_id?: number
+          id?: number
+          is_active?: boolean | null
+          is_required?: boolean | null
+          review_mode?: string | null
+          sequence?: number
+          stage_type?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_workflow_configs_document_type_id_fkey"
+            columns: ["document_type_id"]
+            isOneToOne: false
+            referencedRelation: "document_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_workflow_configs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       instansi: {
         Row: {
           alamat: string | null
@@ -97,6 +187,171 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      letter_histories: {
+        Row: {
+          action_by_id: string
+          action_type: string
+          created_at: string | null
+          from_status: string | null
+          id: number
+          letter_id: string
+          notes: string | null
+          sequence: number | null
+          stage_type: string | null
+          to_status: string | null
+        }
+        Insert: {
+          action_by_id: string
+          action_type: string
+          created_at?: string | null
+          from_status?: string | null
+          id?: number
+          letter_id: string
+          notes?: string | null
+          sequence?: number | null
+          stage_type?: string | null
+          to_status?: string | null
+        }
+        Update: {
+          action_by_id?: string
+          action_type?: string
+          created_at?: string | null
+          from_status?: string | null
+          id?: number
+          letter_id?: string
+          notes?: string | null
+          sequence?: number | null
+          stage_type?: string | null
+          to_status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "letter_histories_action_by_id_fkey"
+            columns: ["action_by_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "letter_histories_letter_id_fkey"
+            columns: ["letter_id"]
+            isOneToOne: false
+            referencedRelation: "outgoing_letters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      letter_versions: {
+        Row: {
+          body: string | null
+          closing: string | null
+          created_at: string | null
+          created_by_id: string | null
+          id: number
+          letter_id: string
+          opening: string | null
+          recipient_address: string | null
+          recipient_company: string | null
+          recipient_name: string | null
+          subject: string | null
+          version_number: number
+        }
+        Insert: {
+          body?: string | null
+          closing?: string | null
+          created_at?: string | null
+          created_by_id?: string | null
+          id?: number
+          letter_id: string
+          opening?: string | null
+          recipient_address?: string | null
+          recipient_company?: string | null
+          recipient_name?: string | null
+          subject?: string | null
+          version_number: number
+        }
+        Update: {
+          body?: string | null
+          closing?: string | null
+          created_at?: string | null
+          created_by_id?: string | null
+          id?: number
+          letter_id?: string
+          opening?: string | null
+          recipient_address?: string | null
+          recipient_company?: string | null
+          recipient_name?: string | null
+          subject?: string | null
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "letter_versions_created_by_id_fkey"
+            columns: ["created_by_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "letter_versions_letter_id_fkey"
+            columns: ["letter_id"]
+            isOneToOne: false
+            referencedRelation: "outgoing_letters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      letter_workflow_trackings: {
+        Row: {
+          action_at: string | null
+          assigned_to_id: string
+          created_at: string | null
+          id: number
+          letter_id: string
+          notes: string | null
+          sequence: number
+          stage_type: string
+          status: string | null
+        }
+        Insert: {
+          action_at?: string | null
+          assigned_to_id: string
+          created_at?: string | null
+          id?: number
+          letter_id: string
+          notes?: string | null
+          sequence: number
+          stage_type: string
+          status?: string | null
+        }
+        Update: {
+          action_at?: string | null
+          assigned_to_id?: string
+          created_at?: string | null
+          id?: number
+          letter_id?: string
+          notes?: string | null
+          sequence?: number
+          stage_type?: string
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "letter_workflow_trackings_assigned_to_id_fkey"
+            columns: ["assigned_to_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "letter_workflow_trackings_letter_id_fkey"
+            columns: ["letter_id"]
+            isOneToOne: false
+            referencedRelation: "outgoing_letters"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       master_ongkir: {
         Row: {
@@ -211,6 +466,125 @@ export type Database = {
           {
             foreignKeyName: "mom_meetings_created_by_fkey"
             columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      outgoing_letters: {
+        Row: {
+          approved_at: string | null
+          attachments: Json | null
+          body: string
+          closing: string | null
+          company_id: string | null
+          created_at: string | null
+          created_by_id: string
+          document_number: string | null
+          document_type_id: number
+          has_attachments: boolean | null
+          id: string
+          letter_date: string
+          opening: string | null
+          recipient_address: string
+          recipient_company: string
+          recipient_email: string | null
+          recipient_name: string
+          recipient_whatsapp: string
+          rejected_at: string | null
+          sender_department: string | null
+          sender_email: string | null
+          sender_id: string | null
+          sender_name: string | null
+          signatories: Json | null
+          status: string
+          subject: string
+          updated_at: string | null
+        }
+        Insert: {
+          approved_at?: string | null
+          attachments?: Json | null
+          body: string
+          closing?: string | null
+          company_id?: string | null
+          created_at?: string | null
+          created_by_id: string
+          document_number?: string | null
+          document_type_id: number
+          has_attachments?: boolean | null
+          id?: string
+          letter_date?: string
+          opening?: string | null
+          recipient_address: string
+          recipient_company: string
+          recipient_email?: string | null
+          recipient_name: string
+          recipient_whatsapp: string
+          rejected_at?: string | null
+          sender_department?: string | null
+          sender_email?: string | null
+          sender_id?: string | null
+          sender_name?: string | null
+          signatories?: Json | null
+          status?: string
+          subject: string
+          updated_at?: string | null
+        }
+        Update: {
+          approved_at?: string | null
+          attachments?: Json | null
+          body?: string
+          closing?: string | null
+          company_id?: string | null
+          created_at?: string | null
+          created_by_id?: string
+          document_number?: string | null
+          document_type_id?: number
+          has_attachments?: boolean | null
+          id?: string
+          letter_date?: string
+          opening?: string | null
+          recipient_address?: string
+          recipient_company?: string
+          recipient_email?: string | null
+          recipient_name?: string
+          recipient_whatsapp?: string
+          rejected_at?: string | null
+          sender_department?: string | null
+          sender_email?: string | null
+          sender_id?: string | null
+          sender_name?: string | null
+          signatories?: Json | null
+          status?: string
+          subject?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "outgoing_letters_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "instansi"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "outgoing_letters_created_by_id_fkey"
+            columns: ["created_by_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "outgoing_letters_document_type_id_fkey"
+            columns: ["document_type_id"]
+            isOneToOne: false
+            referencedRelation: "document_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "outgoing_letters_sender_id_fkey"
+            columns: ["sender_id"]
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
@@ -415,9 +789,21 @@ export type Database = {
     }
     Functions: {
       _email_local_part: { Args: { email: string }; Returns: string }
+      backfill_existing_auth_users: {
+        Args: never
+        Returns: {
+          auth_user_id: string
+          email: string
+          status: string
+        }[]
+      }
       get_generated_meeting_number_preview: { Args: never; Returns: string }
       get_next_meeting_number_preview: { Args: never; Returns: string }
       get_roman_month: { Args: { month_int: number }; Returns: string }
+      submit_letter_for_review: {
+        Args: { p_letter_id: string; p_user_id: string }
+        Returns: Json
+      }
     }
     Enums: {
       meeting_status_enum: "draft" | "published"

@@ -25,7 +25,7 @@ export default function Dashboard() {
             <p className='text-sm text-gray-600'>Kelola data client dan prospek</p>
           </Link>
           
-          <Link href='/dokumen' className='bg-white rounded-lg shadow p-6 hover:shadow-lg transition'>
+          <Link href='/documents' className='bg-white rounded-lg shadow p-6 hover:shadow-lg transition'>
             <h3 className='font-semibold text-lg mb-2'>Administrasi</h3>
             <p className='text-sm text-gray-600'>Kelola dokumen perusahaan</p>
           </Link>

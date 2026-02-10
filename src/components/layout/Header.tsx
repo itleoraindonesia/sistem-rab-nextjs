@@ -16,6 +16,7 @@ import {
 const BREADCRUMB_MAP: Record<string, string> = {
   "produk-rab": "Dokumen RAB",
   "dokumen": "Administrasi",
+  "documents": "Administrasi",
   "crm": "Marketing (CRM)",
   "supply-chain": "Supply Chain",
   "master": "Master Data",
@@ -25,7 +26,7 @@ const BREADCRUMB_MAP: Record<string, string> = {
   "panel-lantai-dinding": "Panel Lantai & Dinding",
   "pagar-beton": "Pagar Beton",
   "dashboard": "Dashboard",
-  "surat-keluar": "Surat Keluar",
+  "outgoing-letter": "Surat Keluar",
   "memo": "Memo",
   "mom": "MoM",
   "review": "Review",

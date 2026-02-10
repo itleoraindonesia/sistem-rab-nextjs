@@ -5,7 +5,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 const protectedRoutes = [
   '/',
   '/produk-rab',
-  '/dokumen',
+  '/documents',
   '/crm',
   '/master',
   '/supply-chain',
@@ -192,6 +192,6 @@ export const config = {
      * - favicon.ico (favicon file)
      * - auth/callback (auth callback route)
      */
-    '/((?!api|_next/static|_next/image|favicon.ico|auth/callback).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico|auth/callback|.*\\.(?:png|jpg|jpeg|gif|svg|webp|ico)).*)',
   ],
 };

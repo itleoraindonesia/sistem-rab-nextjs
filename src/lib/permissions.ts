@@ -175,7 +175,7 @@ export function canAccess(user: User | null, permissions: string[], requireAll =
 // Menu permissions mapping
 export const MENU_PERMISSIONS = {
   '/': ['dashboard.view'],
-  '/dokumen': ['dokumen.create', 'dokumen.review', 'dokumen.approve'],
+  '/documents': ['dokumen.create', 'dokumen.review', 'dokumen.approve'],
   '/produk-rab': ['produk-rab.view', 'produk-rab.create'],
   '/crm': ['crm.view', 'crm.manage'],
   '/master': ['master.view', 'master.manage'],

@@ -68,7 +68,15 @@ Ensure you have Node.js and a package manager installed (recommended: **pnpm**).
 
 ## 📚 Internal Documentation
 
-- **[Authentication Guide](./AUTH.md)**: Details on Supabase Auth & protected routes.
-- **[Caching Strategy](./CACHING_IMPLEMENTATION.md)**: How the app handles data caching for performance.
-- **[CRM Optimization](./CRM_FETCHING_OPTIMIZATIONS.md)**: Specifics on how CRM data loading is optimized.
-- **[Color Palette](./COLOR_PALETTE.md)**: The design system's color codes and usage.
+- **[Authentication Guide](./docs/AUTH.md)**: Details on Supabase Auth & protected routes.
+- **[Caching Strategy](./docs/CACHING_IMPLEMENTATION.md)**: How the app handles data caching for performance.
+- **[CRM Optimization](./docs/CRM_FETCHING_OPTIMIZATIONS.md)**: Specifics on how CRM data loading is optimized.
+- **[Color Palette](./docs/COLOR_PALETTE.md)**: The design system's color codes and usage.
+- **[CRM Module](./docs/CRM_MODULE.md)**: CRM Client Input Module documentation.
+- **[Feature Tracking Source](./docs/FEATURE_TRACKING_SOURCE.md)**: Tracking source for Instagram and WhatsApp leads.
+- **[Forgot Password Setup](./docs/FORGOT_PASSWORD_SETUP.md)**: Supabase forgot password configuration.
+- **[Letters Documentation](./docs/LETTERS.md)**: Letter/document generation system.
+- **[Meeting Tests Summary](./docs/MEETING_TESTS_SUMMARY.md)**: Meeting module testing summary.
+- **[Audit Logs Update](./docs/UPDATE_AUDIT_LOGS.md)**: Database audit columns documentation.
+- **[Pipeline Status Update](./docs/UPDATE_PIPELINE_STATUS.md)**: Sales pipeline status documentation.
+- **[Produk Column Update](./docs/UPDATE_PRODUK_COLUMN.md)**: Product column documentation.

@@ -58,9 +58,9 @@ export default function Navbar({
 
   const logout = async () => {
     try {
-      // Create a timeout promise (2 seconds - faster!)
+      // Increase timeout to 5 seconds for more reliable logout
       const timeoutPromise = new Promise<never>((_, reject) => 
-        setTimeout(() => reject(new Error('Logout timeout')), 2000)
+        setTimeout(() => reject(new Error('Logout timeout')), 5000)
       )
 
       // Race between logout and timeout
@@ -69,12 +69,16 @@ export default function Navbar({
         timeoutPromise
       ])
     } catch (error) {
-      // Only log if it's NOT a timeout error
-      if (!(error instanceof Error && error.message === 'Logout timeout')) {
-        console.error('Logout error:', error)
-      }
+      // Log all errors for debugging
+      console.error('Logout error:', error)
       // Continue to login page even if logout fails or times out
     } finally {
+      // Clear user state
+      setUser(null)
+      
+      // Clear auth cache cookie to force middleware to re-check auth
+      document.cookie = 'auth-cache=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;'
+      
       // Always redirect to login
       router.push('/login')
     }

@@ -88,11 +88,9 @@ function ResetPasswordForm() {
           <div className="w-full max-w-sm mx-auto space-y-8">
             <div className="text-center">
               <div className="mb-6 md:mb-12 flex flex-col items-center">
-                <Image 
+                <img 
                   src="/Logo-Leora-PNG.png" 
                   alt="Logo Leora" 
-                  width={500} 
-                  height={500} 
                   className="w-48 md:w-64 h-auto object-contain"
                 />
               </div>
@@ -136,11 +134,9 @@ function ResetPasswordForm() {
           <div className="w-full max-w-sm mx-auto space-y-8">
             <div className="text-center">
               <div className="mb-6 md:mb-12 flex flex-col items-center">
-                <Image 
+                <img 
                   src="/Logo-Leora-PNG.png" 
                   alt="Logo Leora" 
-                  width={500} 
-                  height={500} 
                   className="w-48 md:w-64 h-auto object-contain"
                 />
               </div>
@@ -182,11 +178,9 @@ function ResetPasswordForm() {
         <div className="w-full max-w-sm mx-auto space-y-8">
           <div className="text-center">
             <div className="mb-6 md:mb-12 flex flex-col items-center">
-              <Image 
+              <img 
                 src="/Logo-Leora-PNG.png" 
                 alt="Logo Leora" 
-                width={500} 
-                height={500} 
                 className="w-48 md:w-64 h-auto object-contain"
               />
             </div>

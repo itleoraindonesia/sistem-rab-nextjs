@@ -116,11 +116,9 @@ function LoginForm() {
         <div className="w-full max-w-sm mx-auto space-y-8">
           <div className="text-center lg:text-left">
             <div className="mb-6 md:mb-12 flex flex-col items-center lg:items-start">
-              <Image 
+              <img 
                  src="/Logo-Leora-PNG.png" 
                  alt="Logo Leora" 
-                 width={500} 
-                 height={500} 
                  className="w-48 h-auto object-contain"
                />
             </div>

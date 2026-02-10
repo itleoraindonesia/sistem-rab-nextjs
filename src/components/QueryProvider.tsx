@@ -4,25 +4,25 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { useState } from 'react';
 
-// Create QueryClient with optimal settings for data persistence across navigation
+// Create QueryClient with session-based caching
+// Cache only exists during browser session, fresh data on page reload
 const createQueryClient = () =>
   new QueryClient({
     defaultOptions: {
       queries: {
-        staleTime: 30 * 60 * 1000, // Data fresh for 30 minutes
-        gcTime: 24 * 60 * 60 * 1000, // Keep in memory cache for 24 hours (survives tab switch)
+        staleTime: 5 * 60 * 1000, // Data fresh for 5 minutes during session
+        gcTime: 0, // Clear cache when browser/tab closes (session-based)
         refetchInterval: false, // No automatic refetch
-        refetchOnMount: false, // Don't refetch on mount - use cache
+        refetchOnMount: true, // Always fetch fresh data when component mounts
         refetchOnWindowFocus: false, // Don't refetch on focus to avoid AbortError
         refetchOnReconnect: false, // Don't auto-refetch on reconnect
         retry: 3,
-        networkMode: 'offlineFirst', // Use cache when offline
-        // Keep data in cache even when component unmounts
+        networkMode: 'online', // Require network connection
         structuralSharing: true, // Enable structural sharing for better cache efficiency
       },
       mutations: {
         retry: 3,
-        networkMode: 'offlineFirst',
+        networkMode: 'online',
       },
     },
   });
