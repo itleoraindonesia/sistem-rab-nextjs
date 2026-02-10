@@ -122,7 +122,7 @@ export default function BuatSuratKeluarPage() {
   }
 
   const handleSaveDraft = async () => {
-    if (!formRef.current?.checkValidity()) {
+    if (formRef.current && !formRef.current.checkValidity()) {
       formRef.current.reportValidity()
       return
     }
@@ -150,8 +150,8 @@ export default function BuatSuratKeluarPage() {
         sender_email: selectedSender?.email || '',
         sender_department: selectedSender?.departemen || '',
         has_attachments: hasLampiran,
-        attachments: attachments.length > 0 ? attachments : null,
-        signatories: signatures.length > 0 ? signatures : null,
+        attachments: attachments.length > 0 ? JSON.parse(JSON.stringify(attachments)) : null,
+        signatories: signatures.length > 0 ? JSON.parse(JSON.stringify(signatures)) : null,
       }
       
       const letter = await createLetter.mutateAsync(letterData)
@@ -168,7 +168,7 @@ export default function BuatSuratKeluarPage() {
   }
 
   const handleSubmit = async () => {
-    if (!formRef.current?.checkValidity()) {
+    if (formRef.current && !formRef.current.checkValidity()) {
       formRef.current.reportValidity()
       return
     }
@@ -196,8 +196,8 @@ export default function BuatSuratKeluarPage() {
         sender_email: selectedSender?.email || '',
         sender_department: selectedSender?.departemen || '',
         has_attachments: hasLampiran,
-        attachments: attachments.length > 0 ? attachments : null,
-        signatories: signatures.length > 0 ? signatures : null,
+        attachments: attachments.length > 0 ? JSON.parse(JSON.stringify(attachments)) : null,
+        signatories: signatures.length > 0 ? JSON.parse(JSON.stringify(signatures)) : null,
       }
       
       const letter = await createLetter.mutateAsync(letterData)

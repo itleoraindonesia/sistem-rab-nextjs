@@ -8,6 +8,7 @@ import Button from "../../../../../components/ui/Button"
 import { Alert, AlertDescription, AlertTitle } from "../../../../../components/ui/alert"
 import { useLetter, useSubmitForReview } from "../../../../../hooks/useLetters"
 import { useUser } from "../../../../../hooks/useUser"
+import { LetterHistory } from "../../../../../types/letter"
 
 export default function SuratDetailPage() {
   const router = useRouter()
@@ -47,8 +48,8 @@ export default function SuratDetailPage() {
   }
 
   // Helper to get approval info
-  const approvalHistory = letter.histories?.find(h => h.to_status === 'APPROVED');
-  const approverName = approvalHistory?.action_by?.nama || '-';
+  const approvalHistory = letter.histories?.find((h: LetterHistory) => h.to_status === 'APPROVED');
+  const approverName = approvalHistory?.action_by_id || '-';
 
   return (
     <div className="container mx-auto max-w-5xl">
@@ -211,7 +212,7 @@ export default function SuratDetailPage() {
 
                 {/* Timeline Items from History */}
                 <div className="space-y-6">
-                  {letter.histories?.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()).map((history, index) => (
+                  {letter.histories?.sort((a: LetterHistory, b: LetterHistory) => new Date(a.created_at || '').getTime() - new Date(b.created_at || '').getTime()).map((history: LetterHistory, index: number) => (
                      <div key={index} className="relative flex gap-4">
                         <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-white font-bold z-10 ${
                            history.action_type.includes('REJECTED') || history.action_type.includes('REVISION') ? 'bg-red-500' : 'bg-green-500'
@@ -232,7 +233,7 @@ export default function SuratDetailPage() {
                                     <p className={`text-sm mt-1 ${
                                        history.action_type.includes('REJECTED') || history.action_type.includes('REVISION') ? 'text-red-700' : 'text-green-700'
                                     }`}>
-                                       Oleh <strong>{history.action_by?.nama}</strong>
+                                       Oleh <strong>{history.action_by_id}</strong>
                                     </p>
                                     {history.notes && (
                                        <p className={`text-xs mt-2 italic flex items-center gap-1 ${
@@ -246,7 +247,7 @@ export default function SuratDetailPage() {
                                  <span className={`text-xs font-medium ${
                                     history.action_type.includes('REJECTED') || history.action_type.includes('REVISION') ? 'text-red-600' : 'text-green-600'
                                  }`}>
-                                    {new Date(history.created_at).toLocaleDateString("id-ID", {
+                                    {new Date(history.created_at || '').toLocaleDateString("id-ID", {
                                        day: "2-digit",
                                        month: "short",
                                        year: "numeric",

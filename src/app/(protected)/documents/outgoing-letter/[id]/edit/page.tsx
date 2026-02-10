@@ -164,7 +164,7 @@ export default function EditSuratKeluarPage() {
 
   const handleSaveDraft = async () => {
     if (!formRef.current?.checkValidity()) {
-      formRef.current.reportValidity()
+      formRef.current?.reportValidity()
       return
     }
 
@@ -191,8 +191,8 @@ export default function EditSuratKeluarPage() {
         sender_email: selectedSender?.email || '',
         sender_department: selectedSender?.departemen || '',
         has_attachments: hasLampiran,
-        attachments: attachments.length > 0 ? attachments : null,
-        signatories: signatures.length > 0 ? signatures : null,
+        attachments: (attachments.length > 0 ? attachments : null) as any,
+        signatories: (signatures.length > 0 ? signatures : null) as any,
       }
       
       await updateLetter.mutateAsync({ letterId: id, updates: letterData })
@@ -208,7 +208,7 @@ export default function EditSuratKeluarPage() {
 
   const handleSubmit = async () => {
     if (!formRef.current?.checkValidity()) {
-      formRef.current.reportValidity()
+      formRef.current?.reportValidity()
       return
     }
 
@@ -235,8 +235,8 @@ export default function EditSuratKeluarPage() {
         sender_email: selectedSender?.email || '',
         sender_department: selectedSender?.departemen || '',
         has_attachments: hasLampiran,
-        attachments: attachments.length > 0 ? attachments : null,
-        signatories: signatures.length > 0 ? signatures : null,
+        attachments: (attachments.length > 0 ? attachments : null) as any,
+        signatories: (signatures.length > 0 ? signatures : null) as any,
       }
       
       await updateLetter.mutateAsync({ letterId: id, updates: letterData })
