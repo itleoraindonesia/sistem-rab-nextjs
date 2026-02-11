@@ -17,7 +17,7 @@ export default function ReviewDetailPage() {
   const user = useUser()
   
   // Hooks
-  const { letter, trackings, canReview } = useLetterWorkflow(id, user?.id)
+  const { letter, histories, canReview } = useLetterWorkflow(id, user?.id)
   const reviewLetter = useReviewLetter()
   
   const [notes, setNotes] = React.useState("")
@@ -255,7 +255,7 @@ export default function ReviewDetailPage() {
                  </div>
               </div>
               {/* Reviewers */}
-              {trackings?.filter((t: any) => t.stage_type === 'REVIEW').map((t: any, i: number) => (
+              {histories?.filter((t: any) => t.stage_type === 'REVIEW').map((t: any, i: number) => (
                  <div key={i} className="flex items-center gap-3">
                     <div className={`h-8 w-8 rounded-full flex items-center justify-center text-white font-bold ${t.status === 'APPROVED' ? 'bg-green-500' : 'bg-orange-500'}`}>
                        {t.status === 'APPROVED' ? '✓' : '⏳'}

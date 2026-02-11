@@ -17,7 +17,7 @@ export default function ApprovalDetailPage() {
   const user = useUser()
   
   // Hooks
-  const { letter, trackings, canApprove } = useLetterWorkflow(id, user?.id)
+  const { letter, histories, canApprove } = useLetterWorkflow(id, user?.id)
   const approveLetter = useApproveLetter()
   const rejectLetter = useRejectLetter()
   
@@ -71,7 +71,7 @@ export default function ApprovalDetailPage() {
   }
 
   // Get reviewer notes
-  const reviewerTrackings = trackings?.filter((t: any) => t.stage_type === 'REVIEW' && t.status === 'APPROVED');
+  const reviewerTrackings = histories?.filter((t: any) => t.stage_type === 'REVIEW' && t.status === 'APPROVED');
 
   return (
     <div className="container mx-auto max-w-5xl">
@@ -275,7 +275,7 @@ export default function ApprovalDetailPage() {
                  </div>
               </div>
               {/* Reviewers */}
-              {trackings?.filter((t: any) => t.stage_type === 'REVIEW').map((t: any, i: number) => (
+              {histories?.filter((t: any) => t.stage_type === 'REVIEW').map((t: any, i: number) => (
                  <div key={i} className="flex items-center gap-3">
                     <div className={`h-8 w-8 rounded-full flex items-center justify-center text-white font-bold ${t.status === 'APPROVED' ? 'bg-green-500' : 'bg-orange-500'}`}>
                        {t.status === 'APPROVED' ? '✓' : '⏳'}
@@ -287,7 +287,7 @@ export default function ApprovalDetailPage() {
                  </div>
               ))}
                {/* Approvers */}
-              {trackings?.filter((t: any) => t.stage_type === 'APPROVAL').map((t: any, i: number) => (
+               {histories?.filter((t: any) => t.stage_type === 'APPROVAL').map((t: any, i: number) => (
                  <div key={i} className="flex items-center gap-3">
                     <div className={`h-8 w-8 rounded-full flex items-center justify-center text-white font-bold ${t.status === 'APPROVED' ? 'bg-green-500' : (t.status === 'REJECTED' ? 'bg-red-500' : 'bg-orange-500')}`}>
                        {t.status === 'APPROVED' ? '✓' : (t.status === 'REJECTED' ? '✕' : '⏳')}

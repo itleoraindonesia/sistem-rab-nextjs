@@ -8,7 +8,6 @@ jest.mock('../../context/MasterDataContext', () => ({
     panels: mockPanels,
     ongkir: mockOngkir,
     parameters: {
-      wasteFactor: 1.05,
       wasteFactor: 1.1,
       upahPasang: 200000,
       hargaJoint: 2300,
