@@ -1,6 +1,7 @@
 import CRMDashboard from '@/components/crm/CRMDashboard';
 import ConnectionStatus from '@/components/crm/ConnectionStatus';
 import Link from 'next/link';
+import { supabase } from "@/lib/supabase/client";
 
 export default function CRMDashboardPage() {
   return (

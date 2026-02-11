@@ -8,6 +8,7 @@ import Link from 'next/link';
 import { Client } from '@/hooks/useClients';
 import { useQueryClient } from '@tanstack/react-query';
 import { VALID_KEBUTUHAN } from '@/lib/crm/validators';
+import { supabase } from "@/lib/supabase/client";
 
 export default function ClientsPage() {
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);

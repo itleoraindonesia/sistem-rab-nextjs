@@ -4,6 +4,7 @@ import {
   File, FileText, FileImage, FileVideo, FileAudio, FileArchive, 
   Download, FileSpreadsheet, FileCode
 } from 'lucide-react'
+import { supabase } from '@/lib/supabase/client';
 
 interface FileCardProps {
   file: FileItem

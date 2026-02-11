@@ -101,59 +101,52 @@ export type Database = {
         }
         Relationships: []
       }
-      document_workflow_configs: {
+      document_workflow_stages: {
         Row: {
-          completion_rule: string | null
+          assignees: Json
+          completion_rule: string
           created_at: string | null
-          document_type_id: number
+          document_type_id: number | null
           id: number
-          is_active: boolean | null
-          is_required: boolean | null
-          review_mode: string | null
+          is_active: boolean
+          is_required: boolean
           sequence: number
+          stage_name: string
           stage_type: string
           updated_at: string | null
-          user_id: string
         }
         Insert: {
-          completion_rule?: string | null
+          assignees?: Json
+          completion_rule?: string
           created_at?: string | null
-          document_type_id: number
+          document_type_id?: number | null
           id?: number
-          is_active?: boolean | null
-          is_required?: boolean | null
-          review_mode?: string | null
+          is_active?: boolean
+          is_required?: boolean
           sequence: number
+          stage_name: string
           stage_type: string
           updated_at?: string | null
-          user_id: string
         }
         Update: {
-          completion_rule?: string | null
+          assignees?: Json
+          completion_rule?: string
           created_at?: string | null
-          document_type_id?: number
+          document_type_id?: number | null
           id?: number
-          is_active?: boolean | null
-          is_required?: boolean | null
-          review_mode?: string | null
+          is_active?: boolean
+          is_required?: boolean
           sequence?: number
+          stage_name?: string
           stage_type?: string
           updated_at?: string | null
-          user_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "document_workflow_configs_document_type_id_fkey"
+            foreignKeyName: "document_workflow_stages_document_type_id_fkey"
             columns: ["document_type_id"]
             isOneToOne: false
             referencedRelation: "document_types"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "document_workflow_configs_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -191,39 +184,42 @@ export type Database = {
       letter_histories: {
         Row: {
           action_by_id: string
-          action_type: string
+          action_type: Database["public"]["Enums"]["letter_action_type"]
+          assigned_to_id: string | null
           created_at: string | null
-          from_status: string | null
+          from_status: Database["public"]["Enums"]["letter_status"] | null
           id: number
           letter_id: string
           notes: string | null
           sequence: number | null
           stage_type: string | null
-          to_status: string | null
+          to_status: Database["public"]["Enums"]["letter_status"] | null
         }
         Insert: {
           action_by_id: string
-          action_type: string
+          action_type: Database["public"]["Enums"]["letter_action_type"]
+          assigned_to_id?: string | null
           created_at?: string | null
-          from_status?: string | null
+          from_status?: Database["public"]["Enums"]["letter_status"] | null
           id?: number
           letter_id: string
           notes?: string | null
           sequence?: number | null
           stage_type?: string | null
-          to_status?: string | null
+          to_status?: Database["public"]["Enums"]["letter_status"] | null
         }
         Update: {
           action_by_id?: string
-          action_type?: string
+          action_type?: Database["public"]["Enums"]["letter_action_type"]
+          assigned_to_id?: string | null
           created_at?: string | null
-          from_status?: string | null
+          from_status?: Database["public"]["Enums"]["letter_status"] | null
           id?: number
           letter_id?: string
           notes?: string | null
           sequence?: number | null
           stage_type?: string | null
-          to_status?: string | null
+          to_status?: Database["public"]["Enums"]["letter_status"] | null
         }
         Relationships: [
           {
@@ -234,118 +230,14 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "letter_histories_letter_id_fkey"
-            columns: ["letter_id"]
-            isOneToOne: false
-            referencedRelation: "outgoing_letters"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      letter_versions: {
-        Row: {
-          body: string | null
-          closing: string | null
-          created_at: string | null
-          created_by_id: string | null
-          id: number
-          letter_id: string
-          opening: string | null
-          recipient_address: string | null
-          recipient_company: string | null
-          recipient_name: string | null
-          subject: string | null
-          version_number: number
-        }
-        Insert: {
-          body?: string | null
-          closing?: string | null
-          created_at?: string | null
-          created_by_id?: string | null
-          id?: number
-          letter_id: string
-          opening?: string | null
-          recipient_address?: string | null
-          recipient_company?: string | null
-          recipient_name?: string | null
-          subject?: string | null
-          version_number: number
-        }
-        Update: {
-          body?: string | null
-          closing?: string | null
-          created_at?: string | null
-          created_by_id?: string | null
-          id?: number
-          letter_id?: string
-          opening?: string | null
-          recipient_address?: string | null
-          recipient_company?: string | null
-          recipient_name?: string | null
-          subject?: string | null
-          version_number?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "letter_versions_created_by_id_fkey"
-            columns: ["created_by_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "letter_versions_letter_id_fkey"
-            columns: ["letter_id"]
-            isOneToOne: false
-            referencedRelation: "outgoing_letters"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      letter_workflow_trackings: {
-        Row: {
-          action_at: string | null
-          assigned_to_id: string
-          created_at: string | null
-          id: number
-          letter_id: string
-          notes: string | null
-          sequence: number
-          stage_type: string
-          status: string | null
-        }
-        Insert: {
-          action_at?: string | null
-          assigned_to_id: string
-          created_at?: string | null
-          id?: number
-          letter_id: string
-          notes?: string | null
-          sequence: number
-          stage_type: string
-          status?: string | null
-        }
-        Update: {
-          action_at?: string | null
-          assigned_to_id?: string
-          created_at?: string | null
-          id?: number
-          letter_id?: string
-          notes?: string | null
-          sequence?: number
-          stage_type?: string
-          status?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "letter_workflow_trackings_assigned_to_id_fkey"
+            foreignKeyName: "letter_histories_assigned_to_id_fkey"
             columns: ["assigned_to_id"]
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "letter_workflow_trackings_letter_id_fkey"
+            foreignKeyName: "letter_histories_letter_id_fkey"
             columns: ["letter_id"]
             isOneToOne: false
             referencedRelation: "outgoing_letters"
@@ -481,6 +373,7 @@ export type Database = {
           company_id: string | null
           created_at: string | null
           created_by_id: string
+          current_stage_id: number | null
           document_number: string | null
           document_type_id: number
           has_attachments: boolean | null
@@ -498,7 +391,7 @@ export type Database = {
           sender_id: string | null
           sender_name: string | null
           signatories: Json | null
-          status: string
+          status: Database["public"]["Enums"]["letter_status"]
           subject: string
           updated_at: string | null
         }
@@ -510,6 +403,7 @@ export type Database = {
           company_id?: string | null
           created_at?: string | null
           created_by_id: string
+          current_stage_id?: number | null
           document_number?: string | null
           document_type_id: number
           has_attachments?: boolean | null
@@ -527,7 +421,7 @@ export type Database = {
           sender_id?: string | null
           sender_name?: string | null
           signatories?: Json | null
-          status?: string
+          status?: Database["public"]["Enums"]["letter_status"]
           subject: string
           updated_at?: string | null
         }
@@ -539,6 +433,7 @@ export type Database = {
           company_id?: string | null
           created_at?: string | null
           created_by_id?: string
+          current_stage_id?: number | null
           document_number?: string | null
           document_type_id?: number
           has_attachments?: boolean | null
@@ -556,7 +451,7 @@ export type Database = {
           sender_id?: string | null
           sender_name?: string | null
           signatories?: Json | null
-          status?: string
+          status?: Database["public"]["Enums"]["letter_status"]
           subject?: string
           updated_at?: string | null
         }
@@ -573,6 +468,13 @@ export type Database = {
             columns: ["created_by_id"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "outgoing_letters_current_stage_id_fkey"
+            columns: ["current_stage_id"]
+            isOneToOne: false
+            referencedRelation: "document_workflow_stages"
             referencedColumns: ["id"]
           },
           {
@@ -800,12 +702,36 @@ export type Database = {
       get_generated_meeting_number_preview: { Args: never; Returns: string }
       get_next_meeting_number_preview: { Args: never; Returns: string }
       get_roman_month: { Args: { month_int: number }; Returns: string }
+      review_letter: {
+        Args: {
+          p_action: string
+          p_letter_id: string
+          p_notes?: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
       submit_letter_for_review: {
         Args: { p_letter_id: string; p_user_id: string }
         Returns: Json
       }
     }
     Enums: {
+      letter_action_type:
+        | "CREATED"
+        | "SUBMITTED"
+        | "APPROVED_REVIEW"
+        | "APPROVED_FINAL"
+        | "REJECTED"
+        | "REVISION_REQUESTED"
+        | "REVISED"
+      letter_status:
+        | "DRAFT"
+        | "SUBMITTED_TO_REVIEW"
+        | "REVIEWED"
+        | "APPROVED"
+        | "REJECTED"
+        | "REVISION_REQUESTED"
       meeting_status_enum: "draft" | "published"
       meeting_type_enum: "internal" | "external"
       sales_stage:
@@ -945,6 +871,23 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      letter_action_type: [
+        "CREATED",
+        "SUBMITTED",
+        "APPROVED_REVIEW",
+        "APPROVED_FINAL",
+        "REJECTED",
+        "REVISION_REQUESTED",
+        "REVISED",
+      ],
+      letter_status: [
+        "DRAFT",
+        "SUBMITTED_TO_REVIEW",
+        "REVIEWED",
+        "APPROVED",
+        "REJECTED",
+        "REVISION_REQUESTED",
+      ],
       meeting_status_enum: ["draft", "published"],
       meeting_type_enum: ["internal", "external"],
       sales_stage: [

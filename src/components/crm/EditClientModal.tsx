@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { supabase } from '@/lib/supabaseClient';
+import { supabase } from '@/lib/supabase/client';
 import { Client } from '@/hooks/useClients';
 import { VALID_KEBUTUHAN, VALID_PRODUCTS } from '@/lib/crm/validators';
 import { clientSchema, clientFormValues } from '@/lib/crm/schemas';

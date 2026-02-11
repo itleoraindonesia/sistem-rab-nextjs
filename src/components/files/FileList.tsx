@@ -1,6 +1,7 @@
 import { FileItem } from './FileManager'
 import { FileCard } from './FileCard'
 import { FileListItem } from './FileListItem'
+import { supabase } from '@/lib/supabase/client';
 
 
 interface FileListProps {

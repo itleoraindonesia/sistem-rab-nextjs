@@ -1,5 +1,6 @@
 import BulkInputForm from '@/components/crm/BulkInputForm';
 import Link from 'next/link';
+import { supabase } from "@/lib/supabase/client";
 
 export default function CRMInputPage() {
   return (

@@ -1,5 +1,6 @@
 import { useCallback, useState } from "react";
 import { RABFormData } from "../schemas/rabSchema";
+import { supabase } from "../lib/supabase/client";
 
 interface Panel {
   id: number;

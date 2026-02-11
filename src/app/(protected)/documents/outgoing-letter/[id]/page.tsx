@@ -19,11 +19,21 @@ export default function SuratDetailPage() {
   const { data: letter, isLoading, error } = useLetter(id)
   const submitMutation = useSubmitForReview()
 
+  // Debug logging
+  React.useEffect(() => {
+    console.log('Letter ID:', id);
+    console.log('Is Loading:', isLoading);
+    console.log('Error:', error);
+    console.log('Letter Data:', letter);
+  }, [id, isLoading, error, letter]);
+
   if (isLoading) {
     return (
       <div className="container mx-auto py-8">
         <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-brand-primary mb-4"></div>
           <p>Memuat data surat...</p>
+          <p className="text-sm text-gray-500 mt-2">Letter ID: {id}</p>
         </div>
       </div>
     )
@@ -49,7 +59,7 @@ export default function SuratDetailPage() {
 
   // Helper to get approval info
   const approvalHistory = letter.histories?.find((h: LetterHistory) => h.to_status === 'APPROVED');
-  const approverName = approvalHistory?.action_by_id || '-';
+  const approverName = approvalHistory?.action_by?.nama || '-';
 
   return (
     <div className="container mx-auto max-w-5xl">
@@ -117,7 +127,7 @@ export default function SuratDetailPage() {
         <Card className="shadow-lg">
           <CardContent className="p-0">
             {/* A4 Paper Simulation */}
-            <div className="bg-white" style={{ aspectRatio: "210/297" }}>
+            <div className="bg-white flex flex-col" style={{ aspectRatio: "210/297" }}>
               {/* HEADER - Company Letterhead */}
               <div className="border-b-4 border-brand-primary p-8">
                 <div className="flex items-start justify-between">
@@ -143,13 +153,21 @@ export default function SuratDetailPage() {
               </div>
 
               {/* LETTER CONTENT */}
-              <div className="p-8 space-y-6">
+              <div className="p-8 space-y-6 flex-1">
                 {/* Reference Number & Date */}
                 <div className="flex justify-between text-sm">
-                  <div>
-                    <p>Nomor: <strong>{letter.document_number || "Pending"}</strong></p>
-                    <p>Lampiran: {Array.isArray(letter.attachments) ? letter.attachments.length : 0} file</p>
-                    <p>Perihal: <strong>{letter.subject}</strong></p>
+                  <div className="grid grid-cols-[80px_10px_1fr] gap-y-1">
+                    <div>Nomor</div>
+                    <div>:</div>
+                    <div className="font-bold">{letter.document_number || "Pending"}</div>
+
+                    <div>Lampiran</div>
+                    <div>:</div>
+                    <div>{Array.isArray(letter.attachments) && letter.attachments.length > 0 ? `${letter.attachments.length} file` : "-"}</div>
+
+                    <div>Perihal</div>
+                    <div>:</div>
+                    <div className="font-bold">{letter.subject}</div>
                   </div>
                   <div className="text-right">
                     <p>Jakarta, {new Date(letter.letter_date).toLocaleDateString("id-ID", {
@@ -177,20 +195,37 @@ export default function SuratDetailPage() {
                 </div>
 
                 {/* Signature */}
-                <div className="flex justify-end mt-12">
-                  <div className="text-center">
-                    <p className="text-sm mb-16">Hormat kami,</p>
-                    <div className="border-t-2 border-gray-800 pt-2 min-w-[200px]">
-                      <p className="font-semibold">{letter.sender?.nama || letter.created_by?.nama}</p>
-                      <p className="text-sm text-gray-600">{letter.sender?.jabatan || "Staff"}</p>
-                      <p className="text-sm text-gray-600">{letter.sender?.departemen || "PT Leora Indonesia"}</p>
+                <div className="mt-40 px-12">
+                  {letter.signatories && Array.isArray(letter.signatories) && letter.signatories.length > 0 ? (
+                    <div className={`flex w-full ${(letter.signatories as any[]).length === 1 ? 'justify-end' : 'justify-between items-end'} gap-8`}>
+                       {/* Sort by order if available */}
+                      {(letter.signatories as any[]).sort((a: any, b: any) => (a.order || 0) - (b.order || 0)).map((sig: any, index: number) => (
+                        <div key={index} className="text-center min-w-[200px]">
+                          <p className="text-sm mb-16 font-medium">{sig.pihak || (index === 0 && letter.signatories.length === 1 ? "Hormat kami," : "")}</p>
+                          <div className="border-t-2 border-gray-800 pt-2">
+                            <p className="font-semibold">{sig.name}</p>
+                            <p className="text-sm text-gray-600">{sig.position}</p>
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                  </div>
+                  ) : (
+                    <div className="flex justify-end">
+                      <div className="text-center min-w-[200px]">
+                        <p className="text-sm mb-16">Hormat kami,</p>
+                        <div className="border-t-2 border-gray-800 pt-2">
+                          <p className="font-semibold">{letter.sender?.nama || letter.created_by?.nama}</p>
+                          <p className="text-sm text-gray-600">{letter.sender?.jabatan || "Staff"}</p>
+                          <p className="text-sm text-gray-600">{letter.sender?.departemen || "PT Leora Indonesia"}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
               {/* FOOTER */}
-              <div className="border-t-2 border-brand-primary p-4 mt-8">
+              <div className="border-t-2 border-brand-primary p-4">
                 <div className="flex justify-between items-center text-xs text-gray-600">
                   <p>© 2026 PT Leora Indonesia - All Rights Reserved</p>
                   <p>Halaman 1 dari 1</p>
@@ -233,7 +268,7 @@ export default function SuratDetailPage() {
                                     <p className={`text-sm mt-1 ${
                                        history.action_type.includes('REJECTED') || history.action_type.includes('REVISION') ? 'text-red-700' : 'text-green-700'
                                     }`}>
-                                       Oleh <strong>{history.action_by_id}</strong>
+                                       Oleh <strong>{history.action_by?.nama || history.action_by_id}</strong>
                                     </p>
                                     {history.notes && (
                                        <p className={`text-xs mt-2 italic flex items-center gap-1 ${

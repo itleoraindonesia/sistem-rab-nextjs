@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { FileItem } from './FileManager'
 import Button from '../ui/Button'
 import { X, Download, Eye, File, FileText, FileImage, FileVideo, FileAudio, FileArchive } from 'lucide-react'
+import { supabase } from '@/lib/supabase/client';
 
 interface FileModalProps {
   file: FileItem

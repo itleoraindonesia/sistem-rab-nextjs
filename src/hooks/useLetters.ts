@@ -7,7 +7,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useUser } from './useUser';
 import * as letterService from '@/lib/supabase/letters';
-import { supabase } from '@/lib/supabaseClient';
+import { supabase } from '@/lib/supabase/client';
 
 // ============================================
 // QUERY HOOKS
@@ -117,6 +117,38 @@ export function useUsersList() {
   });
 }
 
+/**
+ * Create document type mutation
+ */
+export function useCreateDocumentType() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: {
+      name: string;
+      code: string;
+      description?: string;
+      category?: string;
+    }) => {
+      const { data: newDocType, error } = await supabase
+        .from('document_types')
+        .insert({
+          ...data,
+          is_active: true,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return newDocType;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['document-types'] });
+      queryClient.invalidateQueries({ queryKey: ['document-types-with-workflow'] });
+    },
+  });
+}
+
 // ============================================
 // MUTATION HOOKS
 // ============================================
@@ -215,9 +247,18 @@ export function useReviewLetter() {
       notes?: string;
     }) => letterService.reviewLetter(letterId, user?.id || '', action, notes),
     onSuccess: (_, variables) => {
+      // Invalidate all related queries including userId
       queryClient.invalidateQueries({ queryKey: ['letter', variables.letterId] });
-      queryClient.invalidateQueries({ queryKey: ['pending-reviews'] });
-      queryClient.invalidateQueries({ queryKey: ['pending-approvals'] });
+      queryClient.invalidateQueries({ queryKey: ['letters'] });
+      queryClient.invalidateQueries({ queryKey: ['pending-reviews', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['pending-approvals', user?.id] });
+      // Also invalidate revision memos query
+      queryClient.invalidateQueries({ 
+        queryKey: ['letters', { status: 'REVISION_REQUESTED', created_by_id: user?.id }] 
+      });
+    },
+    onError: (error: any) => {
+      console.error('Review mutation failed:', error);
     },
   });
 }
@@ -287,31 +328,48 @@ export function useReviseAndResubmit() {
 /**
  * Get workflow info for a letter
  * Returns review/approval status for current user
+ * Uses letter_histories instead of letter_workflow_trackings
  */
 export function useLetterWorkflow(letterId: string, userId?: string) {
   const { data: letter } = useLetter(letterId);
-  const { data: trackings } = useQuery({
-    queryKey: ['letter-workflow-trackings', letterId],
+  const { data: histories } = useQuery({
+    queryKey: ['letter-workflow-histories', letterId],
     queryFn: async () => {
       const { data } = await supabase
-        .from('letter_workflow_trackings')
-        .select('*, assigned_to:users(id, nama, email)')
+        .from('letter_histories')
+        .select('*, action_by:users(id, nama, email)')
         .eq('letter_id', letterId)
-        .order('sequence', { ascending: true });
+        .not('stage_type', 'is', null)
+        .order('sequence', { ascending: true })
+        .order('created_at', { ascending: false });
       return data;
     },
     enabled: !!letterId,
   });
 
-  const myTracking = trackings?.find(t => t.assigned_to_id === userId);
+  // Get the latest history entry for current user (if any)
+  const myHistory = histories?.find(h => h.assigned_to_id === userId);
+  
+  // Check if user has a pending review/approval (to_status is null for pending items)
+  const myPendingReview = histories?.find(
+    h => h.assigned_to_id === userId && 
+         h.stage_type === 'REVIEW' && 
+         h.to_status === null
+  );
+  
+  const myPendingApproval = histories?.find(
+    h => h.assigned_to_id === userId && 
+         h.stage_type === 'APPROVAL' && 
+         h.to_status === null
+  );
 
   return {
     letter,
-    trackings,
-    myTracking,
-    canReview: myTracking?.stage_type === 'REVIEW' && myTracking?.status === 'PENDING',
-    canApprove: myTracking?.stage_type === 'APPROVAL' && myTracking?.status === 'PENDING',
-    canRevise: letter?.status === 'NEEDS_REVISION' && letter?.created_by_id === userId,
+    histories,
+    myHistory,
+    canReview: !!myPendingReview,
+    canApprove: !!myPendingApproval,
+    canRevise: letter?.status === 'REVISION_REQUESTED' && letter?.created_by_id === userId,
     canSubmit: letter?.status === 'DRAFT' && letter?.created_by_id === userId,
   };
 }

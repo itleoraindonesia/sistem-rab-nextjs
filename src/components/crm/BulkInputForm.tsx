@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { parseCSV, ParsedRow } from '@/lib/crm/parsers';
-import { supabase } from '@/lib/supabaseClient';
+import { supabase } from '@/lib/supabase/client';
 import { getAllValidKabupaten, validateKabupatenWithSuggestions } from '@/lib/crm/validators';
 import { useToast } from '@/components/ui/use-toast';
 import { getFirstName } from '@/lib/utils/nameUtils';

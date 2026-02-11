@@ -3,7 +3,7 @@ import { useForm, useFieldArray, FieldArrayWithId } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { RABFormData, rabSchema } from "../schemas/rabSchema";
 import { useRouter } from "next/navigation";
-import { supabase } from "../lib/supabaseClient";
+import { supabase } from "../lib/supabase/client";
 import { useRABCalculation } from "./useRABCalculation";
 import { useMasterData } from "../context/MasterDataContext";
 

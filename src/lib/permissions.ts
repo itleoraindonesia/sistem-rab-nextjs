@@ -1,3 +1,5 @@
+import { supabase } from './supabase/client';
+
 // Permission system berdasarkan AUTH.md specification
 export const PERMISSIONS = {
   // Dashboard
@@ -40,7 +42,10 @@ export const PERMISSIONS = {
 
   // User management
   'users.manage': 'Manage Users',
-  'users.view': 'View Users'
+  'users.view': 'View Users',
+
+  // Workflow permissions
+  'workflow.manage': 'Manage Workflows'
 } as const
 
 export type Permission = keyof typeof PERMISSIONS
@@ -181,7 +186,9 @@ export const MENU_PERMISSIONS = {
   '/master': ['master.view', 'master.manage'],
   '/meeting': ['meeting.view', 'meeting.manage'],
   '/files': ['files.view'],
-  '/supply-chain': ['supply-chain.view', 'supply-chain.manage'] // Not implemented yet
+  '/supply-chain': ['supply-chain.view', 'supply-chain.manage'], // Not implemented yet
+  '/setting': ['workflow.manage'],
+  '/setting/workflow': ['workflow.manage']
 } as const
 
 // Check if user can access a specific menu

@@ -7,12 +7,14 @@ import { Card, CardContent } from "../../../../components/ui"
 import Button from "../../../../components/ui/Button"
 import { usePendingReviews, useReviewLetter } from "../../../../hooks/useLetters"
 import { useUser } from "../../../../hooks/useUser"
+import { useToast } from "@/components/ui/use-toast"
 
 export default function ReviewQueuePage() {
   const router = useRouter()
   const user = useUser()
   const { data: pendingReviews, isLoading } = usePendingReviews(user?.id)
   const reviewLetter = useReviewLetter()
+  const { toast } = useToast()
   
   const [selectedLetter, setSelectedLetter] = React.useState<any>(null)
   const [notes, setNotes] = React.useState('')
@@ -38,9 +40,24 @@ export default function ReviewQueuePage() {
       setSelectedLetter(null)
       setNotes('')
       setLoading(null)
+      
+      toast({
+        title: action === 'REQUEST_REVISION' ? "Revisi Diminta" : "Disetujui",
+        description: action === 'REQUEST_REVISION' 
+          ? "Surat telah dikembalikan untuk revisi" 
+          : "Surat telah disetujui",
+      })
+      
+      // Refresh list
+      router.refresh();
     } catch (err: any) {
       setError(err.message || 'Gagal melakukan review')
       setLoading(null)
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: err.message || 'Gagal melakukan review',
+      })
     }
   }
 
@@ -92,8 +109,8 @@ export default function ReviewQueuePage() {
           </Card>
         ) : (
           <div className="grid grid-cols-1 gap-4">
-            {pendingReviews?.map((tracking: any) => (
-              <Card key={tracking.id} className="hover:shadow-md transition-shadow">
+            {pendingReviews?.map((item: any) => (
+              <Card key={item.id} className="hover:shadow-md transition-shadow">
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between gap-4">
                     {/* Letter Info */}
@@ -104,10 +121,10 @@ export default function ReviewQueuePage() {
                         </div>
                         <div>
                           <h3 className="font-semibold text-gray-900">
-                            {tracking.letter.subject}
+                            {item.letter?.subject}
                           </h3>
                           <p className="text-sm text-gray-600">
-                            {tracking.letter.document_type.name} • {tracking.letter.created_by.nama}
+                            {item.letter?.document_type?.name} • {item.letter?.created_by?.nama}
                           </p>
                         </div>
                       </div>
@@ -115,12 +132,12 @@ export default function ReviewQueuePage() {
                       <div className="grid grid-cols-2 gap-4 text-sm">
                         <div>
                           <p className="text-gray-500">Penerima</p>
-                          <p className="font-medium">{tracking.letter.recipient_name}</p>
+                          <p className="font-medium">{item.letter?.recipient_name}</p>
                         </div>
                         <div>
                           <p className="text-gray-500">Tanggal</p>
                           <p className="font-medium">
-                            {new Date(tracking.letter.letter_date).toLocaleDateString('id-ID', {
+                            {new Date(item.letter?.letter_date).toLocaleDateString('id-ID', {
                               day: 'numeric',
                               month: 'long',
                               year: 'numeric'
@@ -132,7 +149,7 @@ export default function ReviewQueuePage() {
                       <div>
                         <p className="text-gray-500 text-sm mb-1">Ringkasan Isi</p>
                         <p className="text-sm text-gray-700 line-clamp-2">
-                          {tracking.letter.body}
+                          {item.letter?.body}
                         </p>
                       </div>
                     </div>
@@ -142,7 +159,7 @@ export default function ReviewQueuePage() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => setSelectedLetter(tracking)}
+                        onClick={() => setSelectedLetter(item)}
                       >
                         <Eye className="h-4 w-4 mr-2" />
                         Detail
@@ -165,10 +182,10 @@ export default function ReviewQueuePage() {
                   <div className="flex items-start justify-between">
                     <div>
                       <h2 className="text-xl font-bold text-gray-900 mb-2">
-                        {selectedLetter.letter.subject}
+                        {selectedLetter.letter?.subject}
                       </h2>
                       <p className="text-sm text-gray-600">
-                        {selectedLetter.letter.document_type.name} • {selectedLetter.letter.created_by.nama}
+                        {selectedLetter.letter?.document_type?.name} • {selectedLetter.letter?.created_by?.nama}
                       </p>
                     </div>
                     <Button variant="ghost" size="icon" onClick={() => setSelectedLetter(null)}>
@@ -183,12 +200,12 @@ export default function ReviewQueuePage() {
                       <div className="grid grid-cols-2 gap-4 text-sm">
                         <div>
                           <p className="text-gray-500">Nomor Surat</p>
-                          <p className="font-medium">{selectedLetter.letter.document_number || '-'}</p>
+                          <p className="font-medium">{selectedLetter.letter?.document_number || '-'}</p>
                         </div>
                         <div>
                           <p className="text-gray-500">Tanggal</p>
                           <p className="font-medium">
-                            {new Date(selectedLetter.letter.letter_date).toLocaleDateString('id-ID', {
+                            {new Date(selectedLetter.letter?.letter_date).toLocaleDateString('id-ID', {
                               day: 'numeric',
                               month: 'long',
                               year: 'numeric'
@@ -197,11 +214,11 @@ export default function ReviewQueuePage() {
                         </div>
                         <div>
                           <p className="text-gray-500">Instansi</p>
-                          <p className="font-medium">{selectedLetter.letter.company?.nama || '-'}</p>
+                          <p className="font-medium">{selectedLetter.letter?.company?.nama || '-'}</p>
                         </div>
                         <div>
                           <p className="text-gray-500">Pengirim</p>
-                          <p className="font-medium">{selectedLetter.letter.sender_name || selectedLetter.letter.created_by.nama}</p>
+                          <p className="font-medium">{selectedLetter.letter?.sender_name || selectedLetter.letter?.created_by?.nama}</p>
                         </div>
                       </div>
                     </div>
@@ -211,19 +228,19 @@ export default function ReviewQueuePage() {
                       <div className="grid grid-cols-2 gap-4 text-sm">
                         <div>
                           <p className="text-gray-500">Nama Instansi</p>
-                          <p className="font-medium">{selectedLetter.letter.recipient_company}</p>
+                          <p className="font-medium">{selectedLetter.letter?.recipient_company}</p>
                         </div>
                         <div>
                           <p className="text-gray-500">Nama Kontak</p>
-                          <p className="font-medium">{selectedLetter.letter.recipient_name}</p>
+                          <p className="font-medium">{selectedLetter.letter?.recipient_name}</p>
                         </div>
                         <div>
                           <p className="text-gray-500">WhatsApp</p>
-                          <p className="font-medium">{selectedLetter.letter.recipient_whatsapp}</p>
+                          <p className="font-medium">{selectedLetter.letter?.recipient_whatsapp}</p>
                         </div>
                         <div>
                           <p className="text-gray-500">Email</p>
-                          <p className="font-medium">{selectedLetter.letter.recipient_email || '-'}</p>
+                          <p className="font-medium">{selectedLetter.letter?.recipient_email || '-'}</p>
                         </div>
                       </div>
                     </div>
@@ -233,23 +250,23 @@ export default function ReviewQueuePage() {
                       <div className="space-y-2 text-sm">
                         <div>
                           <p className="text-gray-500">Pembuka</p>
-                          <p className="text-gray-700">{selectedLetter.letter.opening}</p>
+                          <p className="text-gray-700">{selectedLetter.letter?.opening}</p>
                         </div>
                         <div className="border-t pt-2">
                           <p className="text-gray-500">Isi Utama</p>
                           <div 
                             className="text-gray-700 prose prose-sm max-w-none"
-                            dangerouslySetInnerHTML={{ __html: selectedLetter.letter.body }}
+                            dangerouslySetInnerHTML={{ __html: selectedLetter.letter?.body }}
                           />
                         </div>
                         <div className="border-t pt-2">
                           <p className="text-gray-500">Penutup</p>
-                          <p className="text-gray-700">{selectedLetter.letter.closing}</p>
+                          <p className="text-gray-700">{selectedLetter.letter?.closing}</p>
                         </div>
                       </div>
                     </div>
 
-                    {selectedLetter.letter.attachments && selectedLetter.letter.attachments.length > 0 && (
+                    {selectedLetter.letter?.attachments && selectedLetter.letter.attachments.length > 0 && (
                       <div>
                         <h3 className="font-semibold text-gray-900 mb-2">Lampiran</h3>
                         <div className="space-y-2">
@@ -284,17 +301,27 @@ export default function ReviewQueuePage() {
                         variant="outline"
                         className="flex-1"
                         onClick={() => handleReview(selectedLetter.letter.id, 'REQUEST_REVISION')}
-                        disabled={loading === 'REQUEST_REVISION'}
+                        disabled={loading !== null}
                       >
                         <AlertCircle className="h-4 w-4 mr-2" />
+                        {loading === 'REQUEST_REVISION' ? (
+                          <div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-400 border-t-blue-600 mr-2" />
+                        ) : (
+                          <AlertCircle className="h-4 w-4 mr-2" />
+                        )}
                         {loading === 'REQUEST_REVISION' ? 'Mengirim...' : 'Minta Revisi'}
                       </Button>
                       <Button
                         className="flex-1 bg-green-600 hover:bg-green-700"
                         onClick={() => handleReview(selectedLetter.letter.id, 'APPROVE')}
-                        disabled={loading === 'APPROVE'}
+                        disabled={loading !== null}
                       >
                         <CheckCircle2 className="h-4 w-4 mr-2" />
+                        {loading === 'APPROVE' ? (
+                          <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-green-300 mr-2" />
+                        ) : (
+                          <CheckCircle2 className="h-4 w-4 mr-2" />
+                        )}
                         {loading === 'APPROVE' ? 'Mengirim...' : 'Setujui'}
                       </Button>
                     </div>

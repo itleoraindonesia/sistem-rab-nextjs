@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, FileDown, AlertTriangle } from "lucide-react";
 import * as XLSX from "xlsx";
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/supabase/client";
 import { RABDataTable } from "@/components/tables/RABDataTable";
 import { Card, CardContent } from "@/components/ui";
 import Button from "@/components/ui/Button";

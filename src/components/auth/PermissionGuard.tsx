@@ -1,5 +1,6 @@
 import React from 'react'
 import { usePermissions } from '@/hooks/usePermissions'
+import { supabase } from '@/lib/supabase/client';
 
 interface PermissionGuardProps {
   permissions: string[]

@@ -46,6 +46,9 @@ function LoginForm() {
         }
         setError(errorMessage)
       } else if (data.user) {
+        // Set session ID to trigger cache invalidation on new login
+        sessionStorage.setItem('session_id', data.session?.access_token || Date.now().toString())
+        
         // Use window.location.href instead of router.push to ensure
         // cookies are sent to server and middleware can verify auth
         window.location.href = redirect

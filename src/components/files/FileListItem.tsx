@@ -1,6 +1,7 @@
 import { FileItem } from './FileManager'
 import Button from '../ui/Button'
 import { Download, File, FileText, FileImage, FileVideo, FileAudio, FileArchive } from 'lucide-react'
+import { supabase } from '@/lib/supabase/client';
 
 interface FileListItemProps {
   file: FileItem

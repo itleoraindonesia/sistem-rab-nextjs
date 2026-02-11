@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Download, Edit3, Trash2, Printer, FileText, Calendar, MapPin } from "lucide-react";
-import { supabase } from "../../../../lib/supabaseClient";
+import { supabase } from "../../../../lib/supabase/client";
 import { useMasterData } from "../../../../context/MasterDataContext";
 import { pdf } from "@react-pdf/renderer";
 import RABDocument from "../../../../components/RABDocument";

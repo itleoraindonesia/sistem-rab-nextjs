@@ -54,7 +54,7 @@ export default function SuratKeluarPage() {
             <FileDown className="mr-2 h-4 w-4" />
             Export Excel
           </Button>
-          <Link href="/documents/outgoing-letter/baru">
+          <Link href="/documents/outgoing-letter/new">
             <Button>
               <Plus className="mr-2 h-4 w-4" />
               Buat Surat Baru

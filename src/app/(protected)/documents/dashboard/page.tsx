@@ -149,7 +149,7 @@ export default function AdministrasiDashboardPage() {
               <h3 className="text-lg font-semibold mb-4">Aksi Cepat</h3>
               <div className="space-y-3">
                 <a
-                  href="/documents/outgoing-letter/baru"
+                  href="/documents/outgoing-letter/new"
                   className="flex items-center justify-between p-4 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
                 >
                   <div className="flex items-center gap-3">

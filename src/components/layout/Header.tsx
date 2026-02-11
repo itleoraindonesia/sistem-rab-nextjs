@@ -37,7 +37,8 @@ const BREADCRUMB_MAP: Record<string, string> = {
   "ongkir": "Data Ongkir",
   "pr": "Purchase Request",
   "po": "Purchase Order",
-  "list-material": "List Material"
+  "list-material": "List Material",
+  "setting": "Setting"
 };
 
 export default function Header() {

@@ -153,6 +153,9 @@ export async function proxy(request: NextRequest) {
     pathname.startsWith(route)
   );
 
+  // Check if this is a logout redirect (has logged_out=true param)
+  const isLogoutRedirect = request.nextUrl.searchParams.get('logged_out') === 'true';
+
   console.log('Proxy check:', {
     pathname,
     isPublicRoute,
@@ -160,6 +163,7 @@ export async function proxy(request: NextRequest) {
     isAuthRoute,
     hasUser: !!user,
     usedCache,
+    isLogoutRedirect,
     duration: usedCache ? 'cached' : 'API call'
   });
 
@@ -173,7 +177,8 @@ export async function proxy(request: NextRequest) {
   }
 
   // If accessing login while authenticated, redirect to dashboard
-  if (isAuthRoute && user) {
+  // But skip if this is a logout redirect (logged_out=true param)
+  if (isAuthRoute && user && !isLogoutRedirect) {
     console.log('Redirecting to dashboard - accessing login while authenticated');
     return NextResponse.redirect(new URL('/', request.url));
   }

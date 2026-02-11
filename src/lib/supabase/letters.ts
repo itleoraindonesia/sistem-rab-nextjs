@@ -3,13 +3,14 @@
  * 
  * Handles all database operations for outgoing letters workflow
  * including CRUD and workflow state transitions
+ * Uses simplified schema: letter_histories replaces letter_workflow_trackings
  */
 
-import { supabase } from '../supabaseClient';
+import { supabase } from '../supabase/client';
 import type { 
   OutgoingLetterInsert, 
   LetterHistoryInsert,
-  LetterWorkflowTracking 
+  StageType
 } from '@/types/letter';
 
 // ============================================
@@ -34,7 +35,13 @@ export async function createLetter(data: OutgoingLetterInsert) {
   if (error) throw error;
   
   // Create history record
-  await insertLetterHistory(letter.id, letter.created_by_id, 'CREATED', null, 'DRAFT', 'Letter created');
+  await insertLetterHistory({
+    letter_id: letter.id,
+    action_by_id: letter.created_by_id,
+    action_type: 'CREATED',
+    to_status: 'DRAFT',
+    notes: 'Letter created'
+  });
   
   return letter;
 }
@@ -43,6 +50,8 @@ export async function createLetter(data: OutgoingLetterInsert) {
  * Get a single letter with relations
  */
 export async function getLetter(letterId: string) {
+  console.log('[getLetter] Fetching letter:', letterId);
+  
   const { data, error } = await supabase
     .from('outgoing_letters')
     .select(`
@@ -51,19 +60,21 @@ export async function getLetter(letterId: string) {
       company:instansi(*),
       created_by:users!outgoing_letters_created_by_id_fkey(id, nama, email, jabatan),
       sender:users!outgoing_letters_sender_id_fkey(id, nama, email, jabatan),
-      workflow_trackings:letter_workflow_trackings(
-        *,
-        assigned_to:users(id, nama, email)
-      ),
       histories:letter_histories(
         *,
-        action_by:users(id, nama, email)
+        action_by:users!letter_histories_action_by_id_fkey(id, nama, email)
       )
     `)
     .eq('id', letterId)
     .single();
 
-  if (error) throw error;
+  console.log('[getLetter] Result:', { data, error });
+
+  if (error) {
+    console.error('[getLetter] Error:', error);
+    throw error;
+  }
+  
   return data;
 }
 
@@ -145,7 +156,7 @@ export async function deleteLetter(letterId: string) {
 
 /**
  * Submit letter for review
- * - Creates workflow trackings based on configs
+ * - Creates workflow stages in letter_histories
  * - Updates status to SUBMITTED_TO_REVIEW
  */
 export async function submitForReview(letterId: string, userId: string) {
@@ -182,50 +193,51 @@ export async function submitForReview(letterId: string, userId: string) {
       throw new Error('Only draft letters can be submitted for review');
     }
 
-    // 2. Get workflow configs
-    const { data: configs } = await supabase
-      .from('document_workflow_configs')
+    // 2. Get workflow stages from document_workflow_stages
+    const { data: stages } = await supabase
+      .from('document_workflow_stages')
       .select('*')
       .eq('document_type_id', letter.document_type_id)
       .eq('is_active', true)
+      .eq('stage_type', 'REVIEW')
       .order('sequence', { ascending: true });
 
-    if (!configs || configs.length === 0) {
-      throw new Error('No workflow configuration found for this document type');
+    if (!stages || stages.length === 0) {
+      throw new Error('No workflow stages found for this document type');
     }
 
-    // 3. Create trackings for REVIEW stage (sequence 1)
-    const reviewConfigs = configs.filter(c => c.stage_type === 'REVIEW');
-    if (reviewConfigs.length === 0) {
-      throw new Error('No reviewers configured for this document type');
+    // 3. Create history entries for each reviewer
+    for (const stage of stages) {
+      const assignees = stage.assignees || [];
+      for (const assignee of assignees) {
+        await insertLetterHistory({
+          letter_id: letterId,
+          action_by_id: userId, // submitted by
+          assigned_to_id: assignee.user_id,
+          action_type: 'SUBMITTED',
+          from_status: 'DRAFT',
+          to_status: null, // Pending action - no status yet
+          stage_type: 'REVIEW',
+          sequence: stage.sequence,
+          notes: `Submitted for review - Stage: ${stage.stage_name}`
+        });
+      }
     }
-
-    // Execute in parallel for speed
-    await Promise.all(reviewConfigs.map(config => 
-      supabase.from('letter_workflow_trackings').insert({
-        letter_id: letterId,
-        assigned_to_id: config.user_id,
-        stage_type: 'REVIEW',
-        sequence: config.sequence,
-        status: 'PENDING',
-        created_at: new Date().toISOString(),
-      })
-    ));
 
     // 4. Update letter status
     const updatedLetter = await updateLetter(letterId, {
       status: 'SUBMITTED_TO_REVIEW',
     });
 
-    // 5. Create history
-    await insertLetterHistory(
-      letterId, 
-      userId, 
-      'SUBMITTED', 
-      'DRAFT', 
-      'SUBMITTED_TO_REVIEW', 
-      'Submitted for review'
-    );
+    // 5. Create history for status change
+    await insertLetterHistory({
+      letter_id: letterId,
+      action_by_id: userId,
+      action_type: 'SUBMITTED',
+      from_status: 'DRAFT',
+      to_status: 'SUBMITTED_TO_REVIEW',
+      notes: 'Submitted for review'
+    });
 
     return updatedLetter;
   }
@@ -234,7 +246,7 @@ export async function submitForReview(letterId: string, userId: string) {
 /**
  * Reviewer reviews a letter
  * - Can APPROVE or REQUEST_REVISION
- * - If all reviewers approve, move to APPROVED status
+ * - If all reviewers approve, move to REVIEWED status
  */
 export async function reviewLetter(
   letterId: string, 
@@ -254,112 +266,130 @@ export async function reviewLetter(
 
     if (error) {
       console.warn('RPC review_letter failed, falling back to client logic:', error);
-      throw error; // Jump to catch block for fallback
+      throw error;
     }
 
     if (data && data.success === false) {
       throw new Error(data.error || 'Review failed');
     }
 
-    // Success! Return updated letter
     return getLetter(letterId);
 
   } catch (rpcError) {
     console.log('Using client-side fallback for reviewLetter...');
-    
-    // --- FALLBACK: ORIGINAL CLIENT-SIDE LOGIC ---
-    const letter = await getLetter(letterId);
-    
-    if (letter.status !== 'SUBMITTED_TO_REVIEW') {
-      throw new Error('Letter is not in review stage');
+
+    // --- FALLBACK: SIMPLIFIED CLIENT-SIDE LOGIC ---
+    // Prevent duplicate reviews by checking existing action
+    const { data: existingReview } = await supabase
+      .from('letter_histories')
+      .select('id, to_status')
+      .eq('letter_id', letterId)
+      .eq('assigned_to_id', userId)
+      .eq('stage_type', 'REVIEW')
+      .not('to_status', 'is', null)
+      .order('created_at', { ascending: false })
+      .limit(1);
+
+    if (existingReview && existingReview.length > 0) {
+      console.log('User already reviewed this letter, skipping duplicate');
+      return await getLetter(letterId);
     }
 
-    // Find the user's tracking
-    const { data: tracking } = await supabase
-      .from('letter_workflow_trackings')
+    // Get the pending review entry
+    const { data: pendingReviews, error: selectError } = await supabase
+      .from('letter_histories')
       .select('*')
       .eq('letter_id', letterId)
       .eq('assigned_to_id', userId)
       .eq('stage_type', 'REVIEW')
-      .single();
+      .is('to_status', null)
+      .order('created_at', { ascending: false })
+      .limit(1);
 
-    if (!tracking) {
+    if (selectError) {
+      console.error('Failed to get pending review:', selectError);
+      throw selectError;
+    }
+
+    if (!pendingReviews || pendingReviews.length === 0) {
       throw new Error('You are not assigned to review this letter');
     }
 
-    // Update tracking
-    const trackingStatus = action === 'APPROVE' ? 'APPROVED' : 'REQUESTED_REVISION';
-    
-    await supabase
-      .from('letter_workflow_trackings')
+    const reviewEntry = pendingReviews[0];
+    const newStatus = action === 'REQUEST_REVISION' ? 'REVISION_REQUESTED' : 'APPROVED';
+    const newActionType = action === 'REQUEST_REVISION' ? 'REVISION_REQUESTED' : 'APPROVED_REVIEW';
+
+    // Update existing history entry instead of inserting new one
+    const { error: updateHistoryError } = await supabase
+      .from('letter_histories')
       .update({
-        status: trackingStatus,
+        action_by_id: userId,
+        action_type: newActionType,
+        from_status: 'SUBMITTED_TO_REVIEW',
+        to_status: newStatus,
         notes: notes || null,
-        action_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       })
-      .eq('id', tracking.id);
+      .eq('id', reviewEntry.id);
 
-    // Handle workflow logic
-    if (action === 'REQUEST_REVISION') {
-      // Move to NEEDS_REVISION
-      const updatedLetter = await updateLetter(letterId, {
-        status: 'NEEDS_REVISION',
-      });
+    if (updateHistoryError) {
+      console.error('Failed to update history:', updateHistoryError);
+      throw updateHistoryError;
+    }
 
-      await insertLetterHistory(
-        letterId,
-        userId,
-        'REVISION_REQUESTED',
-        'SUBMITTED_TO_REVIEW',
-        'NEEDS_REVISION',
-        notes || 'Revision requested'
-      );
+    // Update letter status directly
+    const { error: updateStatusError } = await supabase
+      .from('outgoing_letters')
+      .update({
+        status: newStatus,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', letterId);
 
-      return updatedLetter;
-    } else {
-      // APPROVE action - check if ALL reviewers have approved
-      const { data: allTrackings } = await supabase
-        .from('letter_workflow_trackings')
-        .select('*')
-        .eq('letter_id', letterId)
-        .eq('stage_type', 'REVIEW');
+    if (updateStatusError) {
+      console.error('Failed to update letter status:', updateStatusError);
+      throw updateStatusError;
+    }
 
-      const allApproved = allTrackings?.every(t => t.status === 'APPROVED');
+    console.log('Fallback review completed successfully');
+    return await getLetter(letterId);
+  }
+}
 
-      if (allApproved) {
-        // ALL reviewers approved - move to REVIEWED status
-        const updatedLetter = await updateLetter(letterId, {
-          status: 'REVIEWED',
-        });
+/**
+ * Check if all reviewers have approved
+ */
+async function checkAllReviewersApproved(letterId: string): Promise<boolean> {
+  // Get all review stage history entries for this letter
+  const { data: histories } = await supabase
+    .from('letter_histories')
+    .select('*')
+    .eq('letter_id', letterId)
+    .eq('stage_type', 'REVIEW');
 
-        // Create approval stage trackings
-        await createApprovalStageTrackings(letterId, letter.document_type_id);
+  if (!histories || histories.length === 0) return false;
 
-        await insertLetterHistory(
-          letterId,
-          userId,
-          'APPROVED_REVIEW',
-          'SUBMITTED_TO_REVIEW',
-          'REVIEWED',
-          'All reviewers approved - document ready for approval stage'
-        );
-
-        return updatedLetter;
-      } else {
-        // Not all reviewers approved yet
-        await insertLetterHistory(
-          letterId,
-          userId,
-          'APPROVED_REVIEW',
-          'SUBMITTED_TO_REVIEW',
-          'SUBMITTED_TO_REVIEW',
-          notes || 'Reviewer approved - waiting for other reviewers'
-        );
-
-        return letter;
+  // Group by assigned_to_id to check each reviewer's latest action
+  const reviewerStatus = new Map<string, string>();
+  
+  for (const history of histories) {
+    if (history.assigned_to_id) {
+      const current = reviewerStatus.get(history.assigned_to_id);
+      // Keep the latest entry (by created_at)
+      if (!current || new Date(history.created_at) > new Date(current)) {
+        reviewerStatus.set(history.assigned_to_id, history.to_status);
       }
     }
   }
+
+  // Check if all have approved
+  for (const status of reviewerStatus.values()) {
+    if (status !== 'APPROVED') {
+      return false;
+    }
+  }
+
+  return reviewerStatus.size > 0;
 }
 
 /**
@@ -374,31 +404,37 @@ export async function approveLetter(letterId: string, userId: string) {
     throw new Error('Letter is not ready for approval');
   }
 
-  // Find the approver's tracking
-  const { data: tracking } = await supabase
-    .from('letter_workflow_trackings')
+  // Find the approver's pending approval entry (to_status is null for pending)
+  const { data: pendingApprovals } = await supabase
+    .from('letter_histories')
     .select('*')
     .eq('letter_id', letterId)
     .eq('assigned_to_id', userId)
     .eq('stage_type', 'APPROVAL')
-    .single();
+    .is('to_status', null)
+    .order('created_at', { ascending: false });
 
-  if (!tracking) {
+  if (!pendingApprovals || pendingApprovals.length === 0) {
     throw new Error('You are not assigned to approve this letter');
   }
+
+  const approvalEntry = pendingApprovals[0];
 
   // Generate document number
   const { data: docNumber } = await supabase
     .rpc('generate_test_document_number');
 
-  // Update tracking
-  await supabase
-    .from('letter_workflow_trackings')
-    .update({
-      status: 'APPROVED',
-      action_at: new Date().toISOString(),
-    })
-    .eq('id', tracking.id);
+  // Update history entry
+  await insertLetterHistory({
+    letter_id: letterId,
+    action_by_id: userId,
+    action_type: 'APPROVED_FINAL',
+    from_status: 'REVIEWED',
+    to_status: 'APPROVED',
+    stage_type: 'APPROVAL',
+    sequence: approvalEntry.sequence,
+    notes: `Letter approved. Document number: ${docNumber}`
+  });
 
   // Update letter
   const updatedLetter = await updateLetter(letterId, {
@@ -406,16 +442,6 @@ export async function approveLetter(letterId: string, userId: string) {
     document_number: docNumber,
     approved_at: new Date().toISOString(),
   });
-
-  // Create history
-  await insertLetterHistory(
-    letterId,
-    userId,
-    'APPROVED_FINAL',
-    'REVIEWED',
-    'APPROVED',
-    `Letter approved. Document number: ${docNumber}`
-  );
 
   return updatedLetter;
 }
@@ -432,28 +458,33 @@ export async function rejectLetter(letterId: string, userId: string, notes?: str
     throw new Error('Letter is not ready for rejection');
   }
 
-  // Find the approver's tracking
-  const { data: tracking } = await supabase
-    .from('letter_workflow_trackings')
+  // Find the approver's pending approval entry (to_status is null for pending)
+  const { data: pendingApprovals } = await supabase
+    .from('letter_histories')
     .select('*')
     .eq('letter_id', letterId)
     .eq('assigned_to_id', userId)
     .eq('stage_type', 'APPROVAL')
-    .single();
+    .is('to_status', null)
+    .order('created_at', { ascending: false });
 
-  if (!tracking) {
+  if (!pendingApprovals || pendingApprovals.length === 0) {
     throw new Error('You are not assigned to approve this letter');
   }
 
-  // Update tracking
-  await supabase
-    .from('letter_workflow_trackings')
-    .update({
-      status: 'REJECTED',
-      notes: notes || null,
-      action_at: new Date().toISOString(),
-    })
-    .eq('id', tracking.id);
+  const approvalEntry = pendingApprovals[0];
+
+  // Update history entry
+  await insertLetterHistory({
+    letter_id: letterId,
+    action_by_id: userId,
+    action_type: 'REJECTED',
+    from_status: 'REVIEWED',
+    to_status: 'REJECTED',
+    stage_type: 'APPROVAL',
+    sequence: approvalEntry.sequence,
+    notes: notes || 'Letter rejected'
+  });
 
   // Update letter
   const updatedLetter = await updateLetter(letterId, {
@@ -461,36 +492,20 @@ export async function rejectLetter(letterId: string, userId: string, notes?: str
     rejected_at: new Date().toISOString(),
   });
 
-  // Create history
-  await insertLetterHistory(
-    letterId,
-    userId,
-    'REJECTED',
-    'REVIEWED',
-    'REJECTED',
-    notes || 'Letter rejected'
-  );
-
   return updatedLetter;
 }
 
 /**
  * Creator revises and resubmits a letter
- * - Resets workflow trackings
+ * - Creates new history entries
  * - Returns to DRAFT status
  */
 export async function reviseAndResubmit(letterId: string, userId: string) {
   const letter = await getLetter(letterId);
   
-  if (letter.status !== 'NEEDS_REVISION') {
+  if (letter.status !== 'REVISION_REQUESTED') {
     throw new Error('Letter is not in revision state');
   }
-
-  // Delete existing workflow trackings
-  await supabase
-    .from('letter_workflow_trackings')
-    .delete()
-    .eq('letter_id', letterId);
 
   // Update letter back to draft
   const updatedLetter = await updateLetter(letterId, {
@@ -498,14 +513,14 @@ export async function reviseAndResubmit(letterId: string, userId: string) {
   });
 
   // Create history
-  await insertLetterHistory(
-    letterId,
-    userId,
-    'REVISED',
-    'NEEDS_REVISION',
-    'DRAFT',
-    'Letter revised and returned to draft'
-  );
+  await insertLetterHistory({
+    letter_id: letterId,
+    action_by_id: userId,
+    action_type: 'REVISED',
+    from_status: 'REVISION_REQUESTED',
+    to_status: 'DRAFT',
+    notes: 'Letter revised and returned to draft'
+  });
 
   return updatedLetter;
 }
@@ -517,62 +532,80 @@ export async function reviseAndResubmit(letterId: string, userId: string) {
 /**
  * Insert a history record
  */
-async function insertLetterHistory(
-  letterId: string,
-  actionBy: string,
-  actionType: string,
-  fromStatus: string | null,
-  toStatus: string | null,
-  notes?: string
-) {
-  await supabase.from('letter_histories').insert({
-    letter_id: letterId,
-    action_by_id: actionBy,
-    action_type: actionType,
-    from_status: fromStatus,
-    to_status: toStatus,
-    notes: notes || null,
+async function insertLetterHistory(data: {
+  letter_id: string;
+  action_by_id: string;
+  action_type: string;
+  from_status?: string | null;
+  to_status?: string | null;
+  stage_type?: StageType;
+  sequence?: number;
+  assigned_to_id?: string;
+  notes?: string;
+}) {
+  const { data: result, error } = await supabase.from('letter_histories').insert({
+    letter_id: data.letter_id,
+    action_by_id: data.action_by_id,
+    action_type: data.action_type,
+    from_status: data.from_status || null,
+    to_status: data.to_status || null,
+    stage_type: data.stage_type || null,
+    sequence: data.sequence || null,
+    assigned_to_id: data.assigned_to_id || null,
+    notes: data.notes || null,
     created_at: new Date().toISOString(),
-  });
+  }).select();
+
+  if (error) {
+    console.error('Error inserting letter history:', error);
+    throw error;
+  }
+
+  console.log('Letter history inserted:', result);
+  return result;
 }
 
 /**
- * Create approval stage trackings
+ * Create approval stage entries
  */
-async function createApprovalStageTrackings(letterId: string, documentTypeId: number) {
-  console.log('[createApprovalStageTrackings] Starting - letterId:', letterId, 'documentTypeId:', documentTypeId);
+async function createApprovalStageEntries(letterId: string, documentTypeId: number, userId: string) {
+  console.log('[createApprovalStageEntries] Starting - letterId:', letterId, 'documentTypeId:', documentTypeId);
   
-  const { data: configs, error: configError } = await supabase
-    .from('document_workflow_configs')
+  const { data: stages, error: stageError } = await supabase
+    .from('document_workflow_stages')
     .select('*')
     .eq('document_type_id', documentTypeId)
     .eq('stage_type', 'APPROVAL')
-    .eq('is_active', true);
+    .eq('is_active', true)
+    .order('sequence', { ascending: true });
 
-  console.log('[createApprovalStageTrackings] Configs found:', configs?.length || 0);
-  if (configError) {
-    console.error('[createApprovalStageTrackings] Config error:', configError);
+  console.log('[createApprovalStageEntries] Stages found:', stages?.length || 0);
+  if (stageError) {
+    console.error('[createApprovalStageEntries] Stage error:', stageError);
   }
 
-  for (const config of configs || []) {
-    console.log('[createApprovalStageTrackings] Inserting tracking for user:', config.user_id);
+  for (const stage of stages || []) {
+    const assignees = stage.assignees || [];
+    console.log('[createApprovalStageEntries] Processing stage:', stage.stage_name, 'assignees:', assignees.length);
     
-    const { error: insertError } = await supabase.from('letter_workflow_trackings').insert({
-      letter_id: letterId,
-      assigned_to_id: config.user_id,
-      stage_type: 'APPROVAL',
-      sequence: config.sequence,
-      status: 'PENDING',
-      created_at: new Date().toISOString(),
-    });
-    
-    if (insertError) {
-      console.error('[createApprovalStageTrackings] Insert error:', insertError);
-      throw insertError;
+    for (const assignee of assignees) {
+      console.log('[createApprovalStageEntries] Inserting history for approver:', assignee.user_id);
+      
+      await insertLetterHistory({
+        letter_id: letterId,
+        action_by_id: userId,
+        assigned_to_id: assignee.user_id,
+        action_type: 'SUBMITTED',
+        from_status: 'REVIEWED',
+        to_status: null, // Pending action - no status yet
+        stage_type: 'APPROVAL',
+        sequence: stage.sequence,
+        notes: `Submitted for approval - Stage: ${stage.stage_name}`
+      });
     }
   }
   
-  console.log('[createApprovalStageTrackings] Completed successfully');
+  console.log('[createApprovalStageEntries] Completed successfully');
 }
 
 // ============================================
@@ -581,47 +614,75 @@ async function createApprovalStageTrackings(letterId: string, documentTypeId: nu
 
 /**
  * Get letters pending review for a user
+ * Uses letter_histories instead of letter_workflow_trackings
  */
 export async function getPendingReviews(userId: string) {
+  // Use view or query letter_histories directly
+  // Pending items have to_status = null (reviewer hasn't acted yet)
+  // AND letter status must be SUBMITTED_TO_REVIEW (exclude REVISION_REQUESTED, REJECTED, APPROVED, REVIEWED)
   const { data, error } = await supabase
-    .from('letter_workflow_trackings')
+    .from('letter_histories')
     .select(`
       *,
-      letter:outgoing_letters(
+      letter:outgoing_letters!letter_id(
         *,
         document_type:document_types(*),
         created_by:users!outgoing_letters_created_by_id_fkey(id, nama, email)
-      )
+      ),
+      action_by:users!letter_histories_action_by_id_fkey(id, nama, email)
     `)
     .eq('assigned_to_id', userId)
-    .eq('status', 'PENDING')
-    .eq('stage_type', 'REVIEW');
+    .is('to_status', null)
+    .eq('stage_type', 'REVIEW')
+    .not('letter.status', 'in', '(REVISION_REQUESTED,REJECTED,APPROVED,REVIEWED)')
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  
+  // Filter out items where letter data is incomplete (null subject)
+  return data?.filter(item => 
+    item.letter?.subject && 
+    item.letter?.letter_date &&
+    item.letter.id
+  ) || [];
+}
+
+/**
+ * Get letters pending approval for a user
+ * Uses letter_histories instead of letter_workflow_trackings
+ */
+export async function getPendingApprovals(userId: string) {
+  // Pending items have to_status = null (approver hasn't acted yet)
+  const { data, error } = await supabase
+    .from('letter_histories')
+    .select(`
+      *,
+      letter:outgoing_letters!letter_id(
+        *,
+        document_type:document_types(*),
+        created_by:users!outgoing_letters_created_by_id_fkey(id, nama, email)
+      ),
+      action_by:users!letter_histories_action_by_id_fkey(id, nama, email)
+    `)
+    .eq('assigned_to_id', userId)
+    .is('to_status', null)
+    .eq('stage_type', 'APPROVAL')
+    .order('created_at', { ascending: false });
 
   if (error) throw error;
   return data;
 }
 
 /**
- * Get letters pending approval for a user
+ * Get workflow stages for a document type
  */
-export async function getPendingApprovals(userId: string) {
+export async function getWorkflowStages(documentTypeId: number) {
   const { data, error } = await supabase
-    .from('letter_workflow_trackings')
-    .select(`
-      *,
-      letter:outgoing_letters(
-        *,
-        document_type:document_types(*),
-        created_by:users!outgoing_letters_created_by_id_fkey(id, nama, email),
-        workflow_trackings:letter_workflow_trackings(
-          *,
-          assigned_to:users(id, nama, email)
-        )
-      )
-    `)
-    .eq('assigned_to_id', userId)
-    .eq('status', 'PENDING')
-    .eq('stage_type', 'APPROVAL');
+    .from('document_workflow_stages')
+    .select('*')
+    .eq('document_type_id', documentTypeId)
+    .eq('is_active', true)
+    .order('sequence', { ascending: true });
 
   if (error) throw error;
   return data;
