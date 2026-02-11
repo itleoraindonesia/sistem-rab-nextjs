@@ -4,13 +4,13 @@ import * as React from "react"
 import { createPortal } from "react-dom"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { LayoutDashboard, FileText, Package, Home, LogOut, User, ClipboardCheck, CheckSquare, Users, Truck, ChevronDown, ChevronRight, Calendar, Lock, Settings, Eye, EyeOff, AlertCircle, Folder } from "lucide-react"
+import { LayoutDashboard, FileText, Package, Home, LogOut, User, ClipboardCheck, CheckSquare, Users, Truck, ChevronDown, ChevronRight, Calendar, Lock, Settings, Eye, EyeOff, AlertCircle, Folder, GitBranch } from "lucide-react"
 import { supabase } from "../../lib/supabase/client"
 import type { Tables } from "../../types/database"
 import { usePermissions } from "../../hooks/usePermissions"
 import { canAccessMenu } from "../../lib/permissions"
 import { CompactRoleBadge } from "../../components/ui/RoleBadge"
-import { usePendingReviews, usePendingApprovals } from "../../hooks/useLetters"
+import { usePendingReviews, usePendingApprovals, useLetters } from "../../hooks/useLetters"
 import {
   Sidebar,
   SidebarContent,
@@ -39,6 +39,7 @@ const navItems = [
       "/documents/dashboard",
       "/documents/outgoing-letter",
       "/documents/memo",
+      "/documents/revisi",
       "/documents/review",
       "/documents/approval",
     ],
@@ -83,6 +84,12 @@ const navItems = [
     icon: Folder,
     children: [],
   },
+  {
+    name: "Setting",
+    path: "/setting",
+    icon: Settings,
+    children: ["/setting/workflow"],
+  },
   // Hidden temporarily - Master Data
   // {
   //   name: "Master Data",
@@ -114,6 +121,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   // Hooks for badges
   const { data: pendingReviews } = usePendingReviews(user?.id)
   const { data: pendingApprovals } = usePendingApprovals(user?.id)
+  const { data: revisionMemos } = useLetters({ status: 'REVISION_REQUESTED', created_by_id: user?.id })
 
   const isCollapsed = isMobile ? false : sidebarState === "collapsed"
 
@@ -148,31 +156,44 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     setIsLoggingOut(true)
 
     try {
-      // Increase timeout to 5 seconds for more reliable logout
-      const timeoutPromise = new Promise<never>((_, reject) => 
-        setTimeout(() => reject(new Error('Logout timeout')), 5000)
-      )
-
-      // Race between logout and timeout
-      await Promise.race([
-        supabase.auth.signOut(),
-        timeoutPromise
-      ])
+      // Logout dari Supabase
+      await supabase.auth.signOut()
     } catch (error) {
-      // Log all errors for debugging
+      // Log error untuk debugging, tapi tetap lanjut ke login
       console.error('Logout error:', error)
-      // Continue to login page even if logout fails or times out
     } finally {
-      // Clear user state
+      // Cleanup state
       setUser(null)
       
-      // Clear auth cache cookie to force middleware to re-check auth
+      // Clear ALL auth cookies sebelum redirect
       if (typeof document !== 'undefined') {
+        // Clear auth-cache cookie
         document.cookie = 'auth-cache=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;'
+        
+        // Clear all Supabase auth cookies (sb-*)
+        // Supabase SSR menyimpan session di cookies dengan prefix sb-
+        const cookies = document.cookie.split(';')
+        cookies.forEach(cookie => {
+          const [name] = cookie.split('=')
+          const trimmedName = name.trim()
+          if (trimmedName.startsWith('sb-')) {
+            // Clear dengan domain yang sama
+            document.cookie = `${trimmedName}=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT; domain=${window.location.hostname};`
+            // Clear tanpa domain juga (fallback)
+            document.cookie = `${trimmedName}=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;`
+          }
+        })
+        
+        // Clear session storage untuk menghindari cache issues
+        sessionStorage.removeItem('session_id')
       }
       
-      // Always redirect to login
-      router.push('/login')
+      // Force redirect ke /login dengan window.location.href
+      // Menggunakan href (bukan replace) agar browser melakukan full page load
+      // dan middleware membaca cookies yang sudah di-clear
+      if (typeof window !== 'undefined') {
+        window.location.href = '/login?logged_out=true'
+      }
       setIsLoggingOut(false)
     }
   }
@@ -442,7 +463,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                           childLabel = "Dashboard";
                         } else if (childPath === "/documents/review") {
                           childLabel = "Review";
-                          badge = pendingReviewsCount > 0 ? <Badge count={pendingReviewsCount} /> : null;
+                          badge = pendingReviews?.length ? <Badge count={pendingReviews.length} /> : null;
+                        } else if (childPath === "/documents/revisi") {
+                          childLabel = "Revisi";
+                          badge = revisionMemos?.length ? <Badge count={revisionMemos.length} /> : null;
                         } else if (childPath === "/documents/approval") {
                           childLabel = "Approval";
                           badge = pendingApprovalsCount > 0 ? <Badge count={pendingApprovalsCount} /> : null;
@@ -462,10 +486,15 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                           childLabel = "List Material"
                         } else if (childPath === "/documents/memo") {
                           childLabel = "Internal Memo"
+                        } else if (childPath === "/documents/revisi") {
+                          childLabel = "Revisi";
+                        } else if (childPath === "/documents/review") {
                         } else if (childPath === "/meeting") {
                           childLabel = "List Meeting"
                         } else if (childPath === "/meeting/baru") {
                           childLabel = "Buat Meeting"
+                        } else if (childPath === "/setting/workflow") {
+                          childLabel = "Workflow Approval"
                         }
 
                         return (
@@ -521,17 +550,16 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
           <SidebarMenuItem>
             <SidebarMenuButton
-              asChild
+              onClick={handleLogout}
+              disabled={isLoggingOut}
               title={isCollapsed ? "Keluar" : undefined}
             >
-              <button onClick={handleLogout} disabled={isLoggingOut}>
-                {isLoggingOut ? (
-                  <div className="size-4 shrink-0 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                ) : (
-                  <LogOut className="size-4 shrink-0" />
-                )}
-                {!isCollapsed && <span>{isLoggingOut ? "Keluar..." : "Keluar"}</span>}
-              </button>
+              {isLoggingOut ? (
+                <div className="size-4 shrink-0 animate-spin rounded-full border-2 border-current border-t-transparent" />
+              ) : (
+                <LogOut className="size-4 shrink-0" />
+              )}
+              {!isCollapsed && <span>{isLoggingOut ? "Keluar..." : "Keluar"}</span>}
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
