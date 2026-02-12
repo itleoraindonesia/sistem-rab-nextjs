@@ -39,7 +39,7 @@ const navItems = [
       "/documents/dashboard",
       "/documents/outgoing-letter",
       "/documents/memo",
-      "/documents/revisi",
+      "/documents/revision",
       "/documents/review",
       "/documents/approval",
     ],
@@ -121,7 +121,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   // Hooks for badges
   const { data: pendingReviews } = usePendingReviews(user?.id)
   const { data: pendingApprovals } = usePendingApprovals(user?.id)
-  const { data: revisionMemos } = useLetters({ status: 'REVISION_REQUESTED', created_by_id: user?.id })
+  const { data: revisionMemos } = useLetters(
+    { status: 'REVISION_REQUESTED', created_by_id: user?.id },
+    { enabled: !!user?.id }
+  )
 
   const isCollapsed = isMobile ? false : sidebarState === "collapsed"
 
@@ -149,6 +152,27 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   React.useEffect(() => {
     setMounted(true)
   }, [])
+
+  // Update document title with notification count
+  React.useEffect(() => {
+    const totalCount = (pendingReviews?.length || 0) + (pendingApprovals?.length || 0) + (revisionMemos?.length || 0)
+    
+    // Helper to clean title
+    const cleanTitle = (title: string) => title.replace(/^\(\d+\)\s/, "")
+    
+    // We using a small timeout to ensure we run after Next.js updates the title on navigation
+    const timeoutId = setTimeout(() => {
+      const currentTitle = cleanTitle(document.title)
+      
+      if (totalCount > 0) {
+        document.title = `(${totalCount}) ${currentTitle}`
+      } else {
+        document.title = currentTitle
+      }
+    }, 100)
+
+    return () => clearTimeout(timeoutId)
+  }, [pendingReviews, pendingApprovals, revisionMemos, pathname])
 
   // Logout function
   const handleLogout = async () => {
@@ -383,7 +407,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               // Calculate badge for Administrasi parent menu
               let totalAdminBadge = 0
               if (item.name === "Administrasi") {
-                totalAdminBadge = (pendingReviews?.length || 0) + (pendingApprovals?.length || 0)
+                totalAdminBadge = (pendingReviews?.length || 0) + (pendingApprovals?.length || 0) + (revisionMemos?.length || 0)
               }
 
               return (
@@ -464,7 +488,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                         } else if (childPath === "/documents/review") {
                           childLabel = "Review";
                           badge = pendingReviews?.length ? <Badge count={pendingReviews.length} /> : null;
-                        } else if (childPath === "/documents/revisi") {
+                        } else if (childPath === "/documents/revision") {
                           childLabel = "Revisi";
                           badge = revisionMemos?.length ? <Badge count={revisionMemos.length} /> : null;
                         } else if (childPath === "/documents/approval") {
@@ -486,7 +510,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                           childLabel = "List Material"
                         } else if (childPath === "/documents/memo") {
                           childLabel = "Internal Memo"
-                        } else if (childPath === "/documents/revisi") {
+                        } else if (childPath === "/documents/revision") {
                           childLabel = "Revisi";
                         } else if (childPath === "/documents/review") {
                         } else if (childPath === "/meeting") {

@@ -22,10 +22,11 @@ export function useLetters(filters?: {
   created_by_id?: string;
   limit?: number;
   offset?: number;
-}) {
+}, options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: ['letters', filters],
     queryFn: () => letterService.getLetters(filters),
+    enabled: options?.enabled !== undefined ? options.enabled : true,
   });
 }
 
@@ -314,6 +315,23 @@ export function useReviseAndResubmit() {
   return useMutation({
     mutationFn: (letterId: string) =>
       letterService.reviseAndResubmit(letterId, user?.id || ''),
+    onSuccess: (_, letterId) => {
+      queryClient.invalidateQueries({ queryKey: ['letter', letterId] });
+      queryClient.invalidateQueries({ queryKey: ['letters'] });
+    },
+  });
+}
+
+/**
+ * Resubmit revision mutation
+ */
+export function useResubmitRevision() {
+  const queryClient = useQueryClient();
+  const user = useUser();
+
+  return useMutation({
+    mutationFn: (letterId: string) =>
+      letterService.resubmitRevision(letterId, user?.id || ''),
     onSuccess: (_, letterId) => {
       queryClient.invalidateQueries({ queryKey: ['letter', letterId] });
       queryClient.invalidateQueries({ queryKey: ['letters'] });

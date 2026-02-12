@@ -36,6 +36,51 @@ DRAFT → SUBMITTED_TO_REVIEW → REVIEWED → APPROVED
 
 ---
 
+## Database Schema Updates
+
+### New Enums
+```sql
+-- Status surat
+letter_status: 
+  'DRAFT' | 'SUBMITTED_TO_REVIEW' | 'REVIEWED' | 'APPROVED' | 'REJECTED' | 'REVISION_REQUESTED'
+
+-- Action types untuk history
+letter_action_type:
+  'CREATED' | 'SUBMITTED' | 'APPROVED_REVIEW' | 'APPROVED_FINAL' | 'REJECTED' | 'REVISION_REQUESTED' | 'REVISED'
+```
+
+### New Database Functions
+
+#### 1. submit_letter_for_review(letter_id, user_id)
+**Purpose:** Submit draft letter ke workflow pertama
+**Logic:**
+- Validasi status = DRAFT
+- Get first workflow stage dari document_workflow_stages
+- Update status → SUBMITTED_TO_REVIEW
+- Set current_stage_id
+- Insert history
+
+**Returns:** 
+```json
+{ "success": boolean, "message": string }
+```
+
+#### 2. review_letter(action, letter_id, user_id, notes?)
+**Purpose:** Review/approve/reject surat
+**Logic:**
+- Check user ada di assignees current stage
+- Validate action (APPROVED_REVIEW | APPROVED_FINAL | REJECTED | REVISION_REQUESTED)
+- Kalau APPROVED_REVIEW → move ke next stage atau final approve
+- Update status & current_stage_id
+- Insert history dengan notes
+
+**Returns:**
+```json
+{ "success": boolean, "message": string, "new_status": letter_status }
+```
+
+---
+
 ## Workflow Logic (Parallel Review)
 
 ### Review Stage (completion_rule = 'ALL')
@@ -99,6 +144,8 @@ YYYY = Year
 5. **Document number hanya generated saat approved** (not before)
 6. **Recipient data standalone** - tidak link ke clients table
 7. **All IDs use UUID** - match existing users table
+8. **Gunakan RPC functions** - jangan manual update database
+9. **Import enums** dari generated types, jangan hardcode strings
 
 ---
 
@@ -160,3 +207,6 @@ LEFT JOIN letter_histories
 - **Reset workflow_trackings** on resubmit after revision
 - **Reviewer ≠ Approver** - different permissions
 - Use **existing users, instansi tables** - already have UUIDs
+- **Use RPC calls** - panggil function via `.rpc()`, bukan manual update
+- **Handle responses** - backend return success/error, tampilkan ke user
+- **Import enums** dari generated types, jangan hardcode strings

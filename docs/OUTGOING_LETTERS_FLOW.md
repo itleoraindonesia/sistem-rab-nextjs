@@ -1,7 +1,7 @@
 # Flow Surat Keluar - Halaman & Relasi
 
 ## 📋 Overview
-Dokumen ini menjelaskan semua halaman yang memiliki relasi/keterkaitan dengan fitur **Surat Keluar** (Outgoing Letters), termasuk flow workflow, komponen, hooks, dan database yang digunakan.
+Dokumen ini menjelaskan semua halaman yang memiliki relasi/keterkaitan dengan fitur **Surat Keluar** (Outgoing Letters), termasuk flow workflow, komponen, hooks, dan database yang digunakan. Dokumentasi ini mencakup implementasi terbaru dengan database enum-based dan RPC functions.
 
 ---
 
@@ -651,6 +651,12 @@ Invalidate queries: ['letter', letterId], ['letters'], ['pending-approvals']
 - Approval queue: Hanya approver yang assigned
 - Edit: Hanya creator dan status DRAFT
 
+### **6. Frontend Integration**
+- **Generate types** - `npx supabase gen types typescript` untuk dapat enum types
+- **Import enums** dari generated types, jangan hardcode strings
+- **Use RPC calls** - panggil function via `.rpc()`, bukan manual update
+- **Handle responses** - backend return success/error, tampilkan ke user
+
 ---
 
 ## 🔍 Troubleshooting
@@ -666,6 +672,12 @@ Invalidate queries: ['letter', letterId], ['letters'], ['pending-approvals']
 
 ### **Issue: User tidak bisa review/approve**
 **Solution:** Check `assignees` di workflow stages
+
+### **Issue: Enum validation errors**
+**Solution:** Import enums dari generated types, jangan hardcode strings
+
+### **Issue: RPC function not found**
+**Solution:** Check bahwa function sudah di-declare di Supabase dan RPC call menggunakan format yang benar
 
 ---
 
@@ -687,11 +699,13 @@ Invalidate queries: ['letter', letterId], ['letters'], ['pending-approvals']
 ## 📚 Related Documentation
 
 - [OUTGOING_LETTERS_SETUP.md](./OUTGOING_LETTERS_SETUP.md) - Database migration context
+- [LETTERS_IMPLEMENTATION.md](./LETTERS_IMPLEMENTATION.md) - Complete implementation guide
+- [LETTERS.md](./LETTERS.md) - AI documentation
 - [Database Schema](../src/types/database.ts) - Generated types
 - [Letter Types](../src/types/letter.ts) - TypeScript types
 - [Workflow Hooks](../src/hooks/useWorkflow.ts) - Workflow management
 
 ---
 
-**Last Updated:** 2026-02-11  
+**Last Updated:** 2026-02-12  
 **Maintainer:** Development Team

@@ -1,7 +1,7 @@
 # CRM Client Input Module
 
 ## Overview
-Sistem input data client dengan format CSV paste yang terintegrasi dengan Next.js Semi-ERP existing. Fitur ini memungkinkan CS input data client secara bulk dengan validasi real-time.
+Sistem input data client dengan format CSV paste yang terintegrasi dengan Next.js Semi-ERP existing. Fitur ini memungkinkan CS input data client secara bulk dengan validasi real-time dan tracking source (Instagram/WhatsApp).
 
 ## Features
 
@@ -14,6 +14,9 @@ Sistem input data client dengan format CSV paste yang terintegrasi dengan Next.j
    - Validasi 5 field: nama, WA, kebutuhan, lokasi, luasan
    - Visual indicators (✅❌⚠️)
    - Save valid data ke Supabase
+   - **NEW**: Tracking source selection (Instagram Only / WhatsApp Only)
+   - **NEW**: Auto-detect format berdasarkan jumlah kolom
+   - **NEW**: Duplicate WhatsApp handling (update existing data)
 
 2. **Clients Table** (`/crm/clients`)
    - List semua clients
@@ -50,6 +53,12 @@ CREATE TABLE clients (
   )),
   lokasi VARCHAR(200) NOT NULL,
   luasan DECIMAL(10,2),
+  produk TEXT,                                    -- NEW: Product interest
+  tracking_source TEXT CHECK (tracking_source IN ('instagram_only', 'whatsapp_only')), -- NEW
+  instagram_username TEXT,                        -- NEW: Username Instagram
+  status sales_stage,                             -- NEW: Pipeline status
+  created_by uuid REFERENCES auth.users(id),      -- NEW: Audit logs
+  updated_by uuid REFERENCES auth.users(id),      -- NEW: Audit logs
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
 );
@@ -81,8 +90,28 @@ src/
 
 Execute the SQL migration in Supabase SQL Editor:
 
-```bash
-# File: supabase/migrations/create_clients_table.sql
+```sql
+-- Add produk column
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS produk TEXT;
+
+-- Add tracking source columns
+ALTER TABLE clients 
+ADD COLUMN IF NOT EXISTS tracking_source TEXT CHECK (tracking_source IN ('instagram_only', 'whatsapp_only')),
+ADD COLUMN IF NOT EXISTS instagram_username TEXT;
+
+-- Add pipeline status
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS status sales_stage;
+
+-- Add audit logs
+ALTER TABLE clients 
+ADD COLUMN IF NOT EXISTS created_by uuid REFERENCES auth.users(id),
+ADD COLUMN IF NOT EXISTS updated_by uuid REFERENCES auth.users(id);
+
+-- Create indexes
+CREATE INDEX IF NOT EXISTS idx_clients_tracking_source ON clients(tracking_source);
+CREATE INDEX IF NOT EXISTS idx_clients_instagram_username ON clients(instagram_username);
+CREATE INDEX IF NOT EXISTS idx_clients_status ON clients(status);
+CREATE INDEX IF NOT EXISTS idx_clients_created_by ON clients(created_by);
 ```
 
 Or run via Supabase CLI:
@@ -107,10 +136,16 @@ npm install recharts
 
 ### Bulk Input CSV Format
 
+#### Instagram Only (7 Kolom)
 ```csv
-Nama, WA, Kebutuhan, Lokasi, Luasan
-Budi Santoso, 08123456789, Rumah, Depok - Jawa Barat, 200
-Ani Wijaya, 628124567890, Pagar, Bandung - Jawa Barat, 50
+Username Instagram, Nama, WhatsApp, Kebutuhan, Produk, Kabupaten, Luasan
+@budisantoso, Budi Santoso, 08123456789, Rumah, Pagar Beton, Kota Depok, 200
+```
+
+#### WhatsApp Only (6 Kolom)
+```csv
+Nama, WhatsApp, Kebutuhan, Produk, Kabupaten, Luasan
+Budi Santoso, 08123456789, Rumah, Panel Lantai, Kota Depok, 200
 ```
 
 **Supported Formats:**
@@ -118,14 +153,26 @@ Ani Wijaya, 628124567890, Pagar, Bandung - Jawa Barat, 50
 - **WhatsApp**: `08xxx`, `628xxx`, or `+628xxx`
 - **Kebutuhan**: Case-insensitive, flexible matching
 - **Luasan**: Optional, numeric only
+- **Produk**: Optional, free text (e.g., "Pagar Beton", "Panel Lantai")
 
 ### Validation Rules
 
-1. **Nama**: 2-100 characters
-2. **WhatsApp**: Valid Indonesian phone format
-3. **Kebutuhan**: Must be one of 9 valid options
-4. **Lokasi**: Min 3 characters
-5. **Luasan**: Optional, must be positive number
+#### Instagram Source
+- ✅ Username Instagram wajib diisi
+- ✅ Nama wajib diisi
+- ✅ WhatsApp wajib diisi dan valid
+- ✅ Kebutuhan wajib diisi
+- ✅ Kabupaten wajib diisi dan valid
+- ⚪ Luasan opsional
+- ⚪ Produk opsional
+
+#### WhatsApp Source
+- ✅ Nama wajib diisi
+- ✅ WhatsApp wajib diisi dan valid
+- ✅ Kebutuhan wajib diisi
+- ✅ Kabupaten wajib diisi dan valid
+- ⚪ Luasan opsional
+- ⚪ Produk opsional
 
 ### Valid Kebutuhan Options
 
@@ -138,6 +185,11 @@ Ani Wijaya, 628124567890, Pagar, Bandung - Jawa Barat, 50
 - Hotel
 - Rumah Sakit
 - Panel Saja
+
+### Pipeline Status Logic
+
+- **Instagram Only** ➝ `IG_Lead`
+- **WhatsApp Only** ➝ `WA_Negotiation` (Default awal untuk WA)
 
 ## API Usage (Supabase Client)
 
@@ -156,8 +208,21 @@ const { data, error } = await supabase
 const { data, error } = await supabase
   .from('clients')
   .insert([
-    { nama: 'Budi', whatsapp: '628123456789', ... },
-    { nama: 'Ani', whatsapp: '628124567890', ... },
+    { 
+      nama: 'Budi', 
+      whatsapp: '628123456789', 
+      tracking_source: 'instagram_only',
+      instagram_username: '@budisantoso',
+      produk: 'Pagar Beton',
+      status: 'IG_Lead'
+    },
+    { 
+      nama: 'Ani', 
+      whatsapp: '628124567890',
+      tracking_source: 'whatsapp_only',
+      produk: 'Panel Lantai',
+      status: 'WA_Negotiation'
+    },
   ]);
 ```
 
@@ -170,9 +235,27 @@ const { data, error } = await supabase
   .eq('kebutuhan', 'Rumah');
 ```
 
+### Filter by Tracking Source
+
+```typescript
+const { data, error } = await supabase
+  .from('clients')
+  .select('*')
+  .eq('tracking_source', 'instagram_only');
+```
+
+### Filter by Pipeline Status
+
+```typescript
+const { data, error } = await supabase
+  .from('clients')
+  .select('*')
+  .eq('status', 'IG_Lead');
+```
+
 ## Performance Considerations
 
-- **Indexes**: Created on `lokasi`, `kebutuhan`, `created_at`, `nama`
+- **Indexes**: Created on `lokasi`, `kebutuhan`, `created_at`, `nama`, `tracking_source`, `status`
 - **No Pagination**: For MVP, showing all data (will add later)
 - **Client-side Filtering**: Fast for <1000 records
 - **Chart Caching**: Consider adding React Query for caching
@@ -183,6 +266,7 @@ const { data, error } = await supabase
 - **Future**: Add Row Level Security policies
 - **Validation**: Both client-side and database constraints
 - **Sanitization**: Data trimmed and normalized before insert
+- **Audit Logs**: Track created_by and updated_by for compliance
 
 ## Troubleshooting
 
@@ -200,6 +284,15 @@ const { data, error } = await supabase
 - Use format: `08123456789` or `628123456789`
 - Remove spaces, dashes, parentheses
 - Auto-normalization will convert to `628xxx` format
+
+### Tracking source validation errors?
+- Pastikan memilih sumber data (Instagram Only atau WhatsApp Only)
+- Untuk Instagram source, pastikan kolom username tidak kosong
+
+### Duplicate handling not working?
+- Pastikan nomor WA sama persis (sistem auto-normalize 08xxx → 628xxx)
+- Data existing harus memiliki tracking_source = 'whatsapp_only'
+- Data baru harus memiliki tracking_source = 'instagram_only'
 
 ## Development
 

@@ -21,7 +21,7 @@ export type LetterStatus = 'DRAFT' | 'SUBMITTED_TO_REVIEW' | 'REVIEWED' | 'APPRO
 export type StageType = 'REVIEW' | 'APPROVAL';
 export type ReviewMode = 'SEQUENTIAL' | 'PARALLEL';
 export type CompletionRule = 'ALL' | 'ANY_ONE' | 'MAJORITY';
-export type ActionType = 'CREATED' | 'SUBMITTED' | 'APPROVED_REVIEW' | 'REVISION_REQUESTED' | 'REVISED' | 'APPROVED_FINAL' | 'REJECTED';
+export type ActionType = 'CREATED' | 'SUBMITTED' | 'APPROVED_REVIEW' | 'REVISION_REQUESTED' | 'REVISED' | 'APPROVED_FINAL' | 'REJECTED' | 'RESUBMITTED';
 
 // Extended types (dengan relasi)
 export type OutgoingLetterWithRelations = OutgoingLetter & {

@@ -33,7 +33,6 @@ export default function SuratDetailPage() {
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-brand-primary mb-4"></div>
           <p>Memuat data surat...</p>
-          <p className="text-sm text-gray-500 mt-2">Letter ID: {id}</p>
         </div>
       </div>
     )
@@ -122,6 +121,63 @@ export default function SuratDetailPage() {
             </Button>
           </div>
         </div>
+
+        {/* Document Metadata */}
+        <Card>
+          <CardContent className="p-6">
+            <h3 className="font-semibold mb-4">📋 Informasi Dokumen</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+              <div>
+                <p className="text-gray-600">Status:</p>
+                <p className="font-medium">
+                  <span className={`px-2 py-1 rounded text-xs ${
+                     letter.status === 'APPROVED' ? 'bg-green-100 text-green-800' :
+                     letter.status === 'REJECTED' ? 'bg-red-100 text-red-800' :
+                     'bg-blue-100 text-blue-800'
+                  }`}>
+                    {letter.status}
+                  </span>
+                </p>
+              </div>
+              <div>
+                <p className="text-gray-600">Nomor Surat:</p>
+                <p className="font-medium font-mono">{letter.document_number || "-"}</p>
+              </div>
+              <div>
+                <p className="text-gray-600">Dibuat oleh:</p>
+                <p className="font-medium">{letter.created_by?.nama}</p>
+              </div>
+              <div>
+                <p className="text-gray-600">Tanggal Dibuat:</p>
+                <p className="font-medium">
+                  {new Date(letter.created_at).toLocaleDateString("id-ID", {
+                    day: "2-digit",
+                    month: "long",
+                    year: "numeric"
+                  })}
+                </p>
+              </div>
+              {approverName !== '-' && (
+                 <>
+                  <div>
+                     <p className="text-gray-600">Disetujui oleh:</p>
+                     <p className="font-medium">{approverName}</p>
+                  </div>
+                  <div>
+                     <p className="text-gray-600">Tanggal Approval:</p>
+                     <p className="font-medium">
+                        {approvalHistory?.created_at ? new Date(approvalHistory.created_at).toLocaleDateString("id-ID", {
+                           day: "2-digit",
+                           month: "long",
+                           year: "numeric"
+                        }) : '-'}
+                     </p>
+                  </div>
+                 </>
+              )}
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Letter Preview - A4 Format */}
         <Card className="shadow-lg">
@@ -304,67 +360,10 @@ export default function SuratDetailPage() {
               </div>
 
             </div>
-          </CardContent>
-        </Card>
+           </CardContent>
+         </Card>
 
-        {/* Document Metadata */}
-        <Card>
-          <CardContent className="p-6">
-            <h3 className="font-semibold mb-4">📋 Informasi Dokumen</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-              <div>
-                <p className="text-gray-600">Status:</p>
-                <p className="font-medium">
-                  <span className={`px-2 py-1 rounded text-xs ${
-                     letter.status === 'APPROVED' ? 'bg-green-100 text-green-800' :
-                     letter.status === 'REJECTED' ? 'bg-red-100 text-red-800' :
-                     'bg-blue-100 text-blue-800'
-                  }`}>
-                    {letter.status}
-                  </span>
-                </p>
-              </div>
-              <div>
-                <p className="text-gray-600">Nomor Surat:</p>
-                <p className="font-medium font-mono">{letter.document_number || "-"}</p>
-              </div>
-              <div>
-                <p className="text-gray-600">Dibuat oleh:</p>
-                <p className="font-medium">{letter.created_by?.nama}</p>
-              </div>
-              <div>
-                <p className="text-gray-600">Tanggal Dibuat:</p>
-                <p className="font-medium">
-                  {new Date(letter.created_at).toLocaleDateString("id-ID", {
-                    day: "2-digit",
-                    month: "long",
-                    year: "numeric"
-                  })}
-                </p>
-              </div>
-              {approverName !== '-' && (
-                 <>
-                  <div>
-                     <p className="text-gray-600">Disetujui oleh:</p>
-                     <p className="font-medium">{approverName}</p>
-                  </div>
-                  <div>
-                     <p className="text-gray-600">Tanggal Approval:</p>
-                     <p className="font-medium">
-                        {approvalHistory?.created_at ? new Date(approvalHistory.created_at).toLocaleDateString("id-ID", {
-                           day: "2-digit",
-                           month: "long",
-                           year: "numeric"
-                        }) : '-'}
-                     </p>
-                  </div>
-                 </>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Attachments */}
+         {/* Attachments */}
         {Array.isArray(letter.attachments) && letter.attachments.length > 0 && (
           <Card>
             <CardContent className="p-6">
@@ -389,20 +388,6 @@ export default function SuratDetailPage() {
             </CardContent>
           </Card>
         )}
-
-        {/* Template Info - KEEP AS INFO */}
-        <Card className="bg-blue-50 border-blue-200">
-          <CardContent className="p-6">
-            <h3 className="font-semibold mb-4">💡 Template Information</h3>
-            <div className="space-y-2 text-sm">
-              <p><strong>Header Template:</strong> Company letterhead dengan logo, nama perusahaan, dan kontak</p>
-              <p><strong>Body Format:</strong> Nomor surat, tanggal, penerima, isi surat, tanda tangan</p>
-              <p><strong>Footer Template:</strong> Copyright dan nomor halaman</p>
-              <p><strong>Font:</strong> Professional sans-serif untuk readability</p>
-              <p><strong>Paper Size:</strong> A4 (210mm x 297mm)</p>
-            </div>
-          </CardContent>
-        </Card>
       </div>
     </div>
   )

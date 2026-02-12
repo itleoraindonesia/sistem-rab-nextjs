@@ -136,7 +136,7 @@ export default function ApprovalQueuePage() {
                       <div>
                         <p className="text-gray-500 text-sm mb-1">Ringkasan Isi</p>
                         <p className="text-sm text-gray-700 line-clamp-2">
-                          {tracking.letter.body}
+                          {tracking.letter.body?.replace(/<[^>]*>/g, '') || '-'}
                         </p>
                       </div>
 

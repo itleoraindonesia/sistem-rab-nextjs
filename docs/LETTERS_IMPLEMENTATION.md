@@ -1,7 +1,7 @@
 # Outgoing Letters Implementation Summary
 
 ## Overview
-Complete implementation of Outgoing Letters (Surat Keluar) feature with parallel review workflow using Supabase and React Query.
+Complete implementation of Outgoing Letters (Surat Keluar) feature with parallel review workflow using Supabase and React Query. Dokumentasi ini mencakup implementasi terbaru dengan database enum-based dan RPC functions.
 
 ## What Was Built
 
@@ -129,6 +129,49 @@ DRAFT (reset workflow)
 REJECTED (permanent)
 ```
 
+## Database Schema Updates
+
+### New Enums
+```sql
+-- Status surat
+letter_status: 
+  'DRAFT' | 'SUBMITTED_TO_REVIEW' | 'REVIEWED' | 'APPROVED' | 'REJECTED' | 'REVISION_REQUESTED'
+
+-- Action types untuk history
+letter_action_type:
+  'CREATED' | 'SUBMITTED' | 'APPROVED_REVIEW' | 'APPROVED_FINAL' | 'REJECTED' | 'REVISION_REQUESTED' | 'REVISED'
+```
+
+### New Database Functions
+
+#### 1. submit_letter_for_review(letter_id, user_id)
+**Purpose:** Submit draft letter ke workflow pertama
+**Logic:**
+- Validasi status = DRAFT
+- Get first workflow stage dari document_workflow_stages
+- Update status → SUBMITTED_TO_REVIEW
+- Set current_stage_id
+- Insert history
+
+**Returns:** 
+```json
+{ "success": boolean, "message": string }
+```
+
+#### 2. review_letter(action, letter_id, user_id, notes?)
+**Purpose:** Review/approve/reject surat
+**Logic:**
+- Check user ada di assignees current stage
+- Validate action (APPROVED_REVIEW | APPROVED_FINAL | REJECTED | REVISION_REQUESTED)
+- Kalau APPROVED_REVIEW → move ke next stage atau final approve
+- Update status & current_stage_id
+- Insert history dengan notes
+
+**Returns:**
+```json
+{ "success": boolean, "message": string, "new_status": letter_status }
+```
+
 ## Testing Instructions
 
 ### 1. Run Migrations
@@ -207,6 +250,12 @@ Uses existing permissions:
 - `dokumen.submit` - Submit for review
 - `dokumen.review` - Review letters
 - `dokumen.approve` - Approve/reject letters
+
+### Frontend Integration
+- **Generate types** - `npx supabase gen types typescript` untuk dapat enum types
+- **Import enums** dari generated types, jangan hardcode strings
+- **Use RPC calls** - panggil function via `.rpc()`, bukan manual update
+- **Handle responses** - backend return success/error, tampilkan ke user
 
 ## File Structure
 

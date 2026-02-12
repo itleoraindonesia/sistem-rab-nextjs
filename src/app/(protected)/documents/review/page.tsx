@@ -23,10 +23,15 @@ export default function ReviewQueuePage() {
 
   const handleReview = async (letterId: string, action: 'APPROVE' | 'REQUEST_REVISION') => {
     if (action === 'REQUEST_REVISION' && !notes.trim()) {
+      toast({
+        variant: "destructive",
+        title: "Catatan Diperlukan",
+        description: "Mohon isi catatan untuk permintaan revisi"
+      })
       setError('Mohon isi catatan untuk permintaan revisi')
       return
     }
-
+    
     setLoading(action)
     setError(null)
     
@@ -53,6 +58,7 @@ export default function ReviewQueuePage() {
     } catch (err: any) {
       setError(err.message || 'Gagal melakukan review')
       setLoading(null)
+      setSelectedLetter(null)
       toast({
         variant: "destructive",
         title: "Error",
@@ -149,7 +155,7 @@ export default function ReviewQueuePage() {
                       <div>
                         <p className="text-gray-500 text-sm mb-1">Ringkasan Isi</p>
                         <p className="text-sm text-gray-700 line-clamp-2">
-                          {item.letter?.body}
+                          {item.letter?.body?.replace(/<[^>]*>/g, '') || '-'}
                         </p>
                       </div>
                     </div>
@@ -286,11 +292,13 @@ export default function ReviewQueuePage() {
                     <h3 className="font-semibold text-gray-900">Review Surat</h3>
                     
                     <div>
-                      <label className="text-sm font-medium text-gray-700">Catatan (Opsional)</label>
+                      <label className="text-sm font-medium text-gray-700">
+                        Catatan {loading === 'REQUEST_REVISION' && <span className="text-red-500">*</span>}
+                      </label>
                       <textarea
                         value={notes}
                         onChange={(e) => setNotes(e.target.value)}
-                        placeholder="Tuliskan catatan review di sini..."
+                        placeholder={loading === 'REQUEST_REVISION' ? "Tuliskan alasan permintaan revisi..." : "Tuliskan catatan review di sini..."}
                         className="w-full mt-1 p-3 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         rows={3}
                       />
@@ -303,7 +311,6 @@ export default function ReviewQueuePage() {
                         onClick={() => handleReview(selectedLetter.letter.id, 'REQUEST_REVISION')}
                         disabled={loading !== null}
                       >
-                        <AlertCircle className="h-4 w-4 mr-2" />
                         {loading === 'REQUEST_REVISION' ? (
                           <div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-400 border-t-blue-600 mr-2" />
                         ) : (
@@ -316,7 +323,6 @@ export default function ReviewQueuePage() {
                         onClick={() => handleReview(selectedLetter.letter.id, 'APPROVE')}
                         disabled={loading !== null}
                       >
-                        <CheckCircle2 className="h-4 w-4 mr-2" />
                         {loading === 'APPROVE' ? (
                           <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-green-300 mr-2" />
                         ) : (

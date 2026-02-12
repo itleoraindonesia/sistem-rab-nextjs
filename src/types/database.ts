@@ -702,6 +702,10 @@ export type Database = {
       get_generated_meeting_number_preview: { Args: never; Returns: string }
       get_next_meeting_number_preview: { Args: never; Returns: string }
       get_roman_month: { Args: { month_int: number }; Returns: string }
+      resubmit_revision: {
+        Args: { p_letter_id: string; p_user_id: string }
+        Returns: Json
+      }
       review_letter: {
         Args: {
           p_action: string
