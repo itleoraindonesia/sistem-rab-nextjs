@@ -9,6 +9,7 @@ import { Label } from "../../../../../components/ui/label"
 import { Alert, AlertDescription, AlertTitle } from "../../../../../components/ui/alert"
 import { useLetterWorkflow, useReviewLetter } from "../../../../../hooks/useLetters"
 import { useUser } from "../../../../../hooks/useUser"
+import { useToast } from "@/components/ui/use-toast"
 
 export default function ReviewDetailPage() {
   const router = useRouter()
@@ -19,6 +20,7 @@ export default function ReviewDetailPage() {
   // Hooks
   const { letter, histories, canReview } = useLetterWorkflow(id, user?.id)
   const reviewLetter = useReviewLetter()
+  const { toast } = useToast()
   
   const [notes, setNotes] = React.useState("")
   const [loading, setLoading] = React.useState(false)
@@ -35,10 +37,17 @@ export default function ReviewDetailPage() {
         action: 'APPROVE',
         notes: notes || undefined
       })
-      alert("✅ Dokumen berhasil di-approve!")
+      toast({
+        title: "Disetujui",
+        description: "Dokumen berhasil di-approve"
+      })
       router.push("/documents/review")
     } catch (error: any) {
-      alert("Gagal melakukan approve: " + error.message)
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Gagal melakukan approve: " + error.message
+      })
     } finally {
       setLoading(false)
     }
@@ -46,7 +55,11 @@ export default function ReviewDetailPage() {
 
   const handleReject = async () => {
     if (!notes.trim()) {
-      alert("⚠️ Mohon isi catatan revisi terlebih dahulu!")
+      toast({
+        variant: "destructive",
+        title: "Catatan Diperlukan",
+        description: "Mohon isi catatan untuk permintaan revisi"
+      })
       return
     }
 
@@ -61,10 +74,17 @@ export default function ReviewDetailPage() {
         action: 'REQUEST_REVISION',
         notes: notes
       })
-      alert("📝 Request Revision berhasil!")
+      toast({
+        title: "Revisi Diminta",
+        description: "Request Revision berhasil"
+      })
       router.push("/documents/review")
     } catch (error: any) {
-      alert("Gagal mengirim request revisi: " + error.message)
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Gagal mengirim request revisi: " + error.message
+      })
     } finally {
       setLoading(false)
     }

@@ -15,8 +15,12 @@ import {
   useUsersList, 
   useLetter, 
   useUpdateLetter, 
-  useSubmitForReview 
+  useSubmitForReview,
+  useResubmitRevision
 } from "../../../../../../hooks/useLetters"
+import { useQuery } from "@tanstack/react-query"
+import { supabase } from "@/lib/supabase/client"
+import { LetterHistory } from "@/types/letter"
 
 interface Signature {
   id: string
@@ -43,9 +47,36 @@ export default function EditSuratKeluarPage() {
   const { data: instansiList, isLoading: loadingInstansi } = useInstansiList()
   const { data: usersList, isLoading: loadingUsers } = useUsersList()
   
+  // Fetch revision notes if status is REVISION_REQUESTED
+  const { data: revisionNote } = useQuery<LetterHistory | null>({
+    queryKey: ['revision-note', id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('letter_histories')
+        .select(`
+          *,
+          action_by:users!letter_histories_action_by_id_fkey(id, nama, email)
+        `)
+        .eq('letter_id', id)
+        .eq('action_type', 'REVISION_REQUESTED')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single()
+      
+      if (error) {
+        console.error('[useRevisionNote] Failed to fetch:', error)
+        return null
+      }
+      
+      return data
+    },
+    enabled: !!id && letter?.status === 'REVISION_REQUESTED'
+  })
+  
   // Mutations
   const updateLetter = useUpdateLetter()
   const submitForReview = useSubmitForReview()
+  const resubmitRevision = useResubmitRevision()
   
   // Form state
   const [attachments, setAttachments] = React.useState<Attachment[]>([])
@@ -240,7 +271,15 @@ export default function EditSuratKeluarPage() {
       }
       
       await updateLetter.mutateAsync({ letterId: id, updates: letterData })
-      await submitForReview.mutateAsync(id)
+      
+      // Handle different submission flows based on current status
+      if (letter?.status === 'REVISION_REQUESTED') {
+        // Resubmit revision directly to SUBMITTED_TO_REVIEW
+        await resubmitRevision.mutateAsync(id)
+      } else {
+        // Normal submission from DRAFT
+        await submitForReview.mutateAsync(id)
+      }
       
       // setSuccess('Surat berhasil dikirim untuk review!')
       // setTimeout(() => router.push('/documents/outgoing-letter'), 1500)
@@ -290,6 +329,35 @@ export default function EditSuratKeluarPage() {
             <CheckCircle2 className="h-4 w-4 text-green-600" />
             <AlertTitle className="text-green-900">Berhasil</AlertTitle>
             <AlertDescription className="text-green-800">{success}</AlertDescription>
+          </Alert>
+        )}
+
+        {/* Revision Alert - Only show if status is REVISION_REQUESTED */}
+        {letter?.status === 'REVISION_REQUESTED' && revisionNote && (
+          <Alert className="border-orange-200 bg-orange-50">
+            <AlertCircle className="h-5 w-5 text-orange-600" />
+            <AlertTitle className="text-orange-900 font-semibold">
+              Surat Perlu Direvisi
+            </AlertTitle>
+            <AlertDescription className="text-orange-800">
+              <div className="space-y-2 mt-2">
+                <p className="font-medium">
+                  Catatan dari {revisionNote.action_by?.nama}:
+                </p>
+                <p className="italic">
+                  "{revisionNote.notes || 'Tidak ada catatan spesifik'}"
+                </p>
+                <p className="text-sm text-orange-600">
+                  Diminta pada: {revisionNote.created_at ? new Date(revisionNote.created_at).toLocaleDateString('id-ID', {
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  }) : '-'}
+                </p>
+              </div>
+            </AlertDescription>
           </Alert>
         )}
 
@@ -708,14 +776,56 @@ export default function EditSuratKeluarPage() {
                 <Button type="button" variant="outline" onClick={() => router.back()} disabled={loading}>
                   Batal
                 </Button>
-                <Button type="button" variant="outline" onClick={handleSaveDraft} disabled={loading}>
-                  <Save className="mr-2 h-4 w-4" />
-                  Simpan Draft
-                </Button>
-                <Button type="button" onClick={handleSubmit} disabled={loading}>
-                  <Send className="mr-2 h-4 w-4" />
-                  Update & Submit
-                </Button>
+                
+                {/* Conditional buttons based on letter status */}
+                {letter?.status === 'REVISION_REQUESTED' ? (
+                  <>
+                    {/* For revision: Save Changes (without changing status) */}
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      onClick={handleSaveDraft} 
+                      disabled={loading}
+                    >
+                      <Save className="mr-2 h-4 w-4" />
+                      Simpan Perubahan
+                    </Button>
+                    
+                    {/* Resubmit for review */}
+                    <Button 
+                      type="button" 
+                      onClick={handleSubmit} 
+                      disabled={loading}
+                      className="bg-orange-600 hover:bg-orange-700"
+                    >
+                      <Send className="mr-2 h-4 w-4" />
+                      Kirim Ulang untuk Review
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    {/* For draft: Save as draft */}
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      onClick={handleSaveDraft} 
+                      disabled={loading}
+                    >
+                      <Save className="mr-2 h-4 w-4" />
+                      Simpan Draft
+                    </Button>
+                    
+                    {/* Submit for review */}
+                    <Button 
+                      type="button" 
+                      onClick={handleSubmit} 
+                      disabled={loading}
+                    >
+                      <Send className="mr-2 h-4 w-4" />
+                      Submit untuk Review
+                    </Button>
+                  </>
+                )}
               </div>
             </form>
           </CardContent>

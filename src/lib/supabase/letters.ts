@@ -244,6 +244,104 @@ export async function submitForReview(letterId: string, userId: string) {
 }
 
 /**
+ * Resubmit revision for review
+ * - For letters in REVISION_REQUESTED status
+ * - Creates new workflow stages in letter_histories
+ * - Updates status to SUBMITTED_TO_REVIEW
+ */
+export async function resubmitRevision(letterId: string, userId: string) {
+  try {
+    // 1. Try to use the optimized RPC first (Server-side transaction)
+    console.log('Calling RPC resubmit_revision with:', { letterId, userId });
+    const { data, error } = await supabase.rpc('resubmit_revision', {
+      p_letter_id: letterId, 
+      p_user_id: userId
+    });
+
+    console.log('RPC Response:', { data, error });
+
+    if (error) {
+      console.error('RPC Network/System Error:', error);
+      throw error;
+    }
+
+    // Check application level error from RPC (V3)
+    if (data && data.success === false) {
+      console.error('RPC Application Error Data:', JSON.stringify(data));
+      throw new Error(data.error || 'Unknown RPC error');
+    }
+
+    return { id: letterId, status: 'SUBMITTED_TO_REVIEW' };
+
+  } catch (rpcError: any) {
+    console.warn('RPC failed, falling back to client-side resubmit (slower):', rpcError);
+
+    // --- FALLBACK: CLIENT-SIDE LOGIC ---
+    // 1. Get current letter status
+    const letter = await getLetter(letterId);
+    if (letter.status !== 'REVISION_REQUESTED') {
+      throw new Error('Only letters in revision can be resubmitted for review');
+    }
+
+    // 2. Get workflow stages from document_workflow_stages
+    const { data: stages } = await supabase
+      .from('document_workflow_stages')
+      .select('*')
+      .eq('document_type_id', letter.document_type_id)
+      .eq('is_active', true)
+      .eq('stage_type', 'REVIEW')
+      .order('sequence', { ascending: true });
+
+    if (!stages || stages.length === 0) {
+      throw new Error('No workflow stages found for this document type');
+    }
+
+    // 3. Delete old pending review entries (to_status is null)
+    await supabase
+      .from('letter_histories')
+      .delete()
+      .eq('letter_id', letterId)
+      .eq('stage_type', 'REVIEW')
+      .is('to_status', null);
+
+    // 4. Create history entries for each reviewer
+    for (const stage of stages) {
+      const assignees = stage.assignees || [];
+      for (const assignee of assignees) {
+        await insertLetterHistory({
+          letter_id: letterId,
+          action_by_id: userId, // submitted by
+          assigned_to_id: assignee.user_id,
+          action_type: 'SUBMITTED',
+          from_status: 'REVISION_REQUESTED',
+          to_status: null, // Pending action - no status yet
+          stage_type: 'REVIEW',
+          sequence: stage.sequence,
+          notes: `Resubmitted for review - Stage: ${stage.stage_name}`
+        });
+      }
+    }
+
+    // 5. Update letter status
+    const updatedLetter = await updateLetter(letterId, {
+      status: 'SUBMITTED_TO_REVIEW',
+    });
+
+    // 6. Create history for status change
+    await insertLetterHistory({
+      letter_id: letterId,
+      action_by_id: userId,
+      action_type: 'SUBMITTED',
+      from_status: 'REVISION_REQUESTED',
+      to_status: 'SUBMITTED_TO_REVIEW',
+      notes: 'Resubmitted for review after revision'
+    });
+
+    return updatedLetter;
+  }
+}
+
+/**
  * Reviewer reviews a letter
  * - Can APPROVE or REQUEST_REVISION
  * - If all reviewers approve, move to REVIEWED status
@@ -543,7 +641,7 @@ async function insertLetterHistory(data: {
   assigned_to_id?: string;
   notes?: string;
 }) {
-  const { data: result, error } = await supabase.from('letter_histories').insert({
+  const insertData = {
     letter_id: data.letter_id,
     action_by_id: data.action_by_id,
     action_type: data.action_type,
@@ -554,14 +652,23 @@ async function insertLetterHistory(data: {
     assigned_to_id: data.assigned_to_id || null,
     notes: data.notes || null,
     created_at: new Date().toISOString(),
-  }).select();
+  };
+
+  console.log('Inserting letter history:', insertData);
+  
+  const { data: result, error } = await supabase.from('letter_histories').insert(insertData).select();
 
   if (error) {
-    console.error('Error inserting letter history:', error);
-    throw error;
+    console.error('Error inserting letter history:', {
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+      code: error.code
+    });
+    throw new Error(`Failed to insert letter history: ${error.message}`);
   }
 
-  console.log('Letter history inserted:', result);
+  console.log('Letter history inserted successfully:', result);
   return result;
 }
 
