@@ -4,7 +4,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 // Define protected routes
 const protectedRoutes = [
   '/',
-  '/produk-rab',
+  '/products',
   '/documents',
   '/crm',
   '/master',

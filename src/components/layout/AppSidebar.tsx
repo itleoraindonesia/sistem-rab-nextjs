@@ -46,9 +46,9 @@ const navItems = [
   },
   {
     name: "Produk & RAB",
-    path: "/produk-rab",
+    path: "/products",
     icon: Package,
-    children: ["/produk-rab/dashboard", "/produk-rab/kalkulator-harga", "/produk-rab/panel-lantai-dinding", "/produk-rab/pagar-beton"],
+    children: ["/products/dashboard", "/products/kalkulator-harga", "/products/panel-lantai-dinding", "/products/pagar-beton"],
     activeColor: "green", // Warna untuk child routes
   },
   {
@@ -304,10 +304,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const isChildRoute = (item: (typeof navItems)[0]) => {
     if (!item.children || item.children.length === 0) return false
 
-    // Special handling for RAB routes - simplified logic
-    if (item.path === "/produk-rab") {
-      // If path starts with /rab/ but is not exactly /rab, it's a child route
-      if (pathname.startsWith("/produk-rab/") && pathname !== "/produk-rab") {
+    // Special handling for products routes - simplified logic
+    if (item.path === "/products") {
+      // If path starts with /products/ but is not exactly /products, it's a child route
+      if (pathname.startsWith("/products/") && pathname !== "/products") {
         return true
       }
     }
@@ -469,13 +469,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                         const pendingReviewsCount = pendingReviews?.length || 0;
                         const pendingApprovalsCount = pendingApprovals?.length || 0;
 
-                        if (childPath === "/produk-rab/dashboard") {
+                        if (childPath === "/products/dashboard") {
                           childLabel = "Dashboard Produk & RAB"
-                        } else if (childPath === "/produk-rab/kalkulator-harga") {
+                        } else if (childPath === "/products/kalkulator-harga") {
                           childLabel = "Kalkulator Harga"
-                        } else if (childPath === "/produk-rab/panel-lantai-dinding") {
+                        } else if (childPath === "/products/panel-lantai-dinding") {
                           childLabel = "Panel Lantai & Dinding"
-                        } else if (childPath === "/produk-rab/pagar-beton") {
+                        } else if (childPath === "/products/pagar-beton") {
                           childLabel = "Pagar Beton (soon)"
                         } else if (childPath === "/crm/dashboard") {
                           childLabel = "CRM Dashboard"

@@ -12,11 +12,11 @@ export const PERMISSIONS = {
   'dokumen.review': 'Review Documents',
   'dokumen.approve': 'Approve Documents',
 
-  // Produk & RAB permissions
-  'produk-rab.view': 'View RAB',
-  'produk-rab.create': 'Create RAB',
-  'produk-rab.edit': 'Edit RAB',
-  'produk-rab.delete': 'Delete RAB',
+  // Products permissions
+  'products.view': 'View Products',
+  'products.create': 'Create Products',
+  'products.edit': 'Edit Products',
+  'products.delete': 'Delete Products',
 
   // CRM permissions
   'crm.view': 'View CRM',
@@ -63,7 +63,7 @@ export const PERMISSION_MATRIX = {
     ],
     'Finance': [
       'dashboard.view',
-      'dokumen.create', 'produk-rab.view', 'produk-rab.create', 'produk-rab.edit',
+      'dokumen.create', 'products.view', 'products.create', 'products.edit',
       'master.view', 'master.manage',
       'meeting.view', 'meeting.manage',
       'files.view'
@@ -77,7 +77,7 @@ export const PERMISSION_MATRIX = {
     'Konstruksi': [
       'dashboard.view',
       'dokumen.create', 'dokumen.submit', 'dokumen.review', 'dokumen.approve',
-      'produk-rab.view', 'produk-rab.create', 'produk-rab.edit', 'produk-rab.delete',
+      'products.view', 'products.create', 'products.edit', 'products.delete',
       'crm.view', 'crm.manage', 'crm.create', 'crm.edit',
       'master.view', 'master.manage',
       'meeting.view', 'meeting.manage',
@@ -111,7 +111,7 @@ export const PERMISSION_MATRIX = {
   user: [
     'dashboard.view',
     'dokumen.create.own', 'dokumen.submit',
-    'produk-rab.view',
+    'products.view',
     'crm.view'
   ]
 } as const
@@ -181,7 +181,7 @@ export function canAccess(user: User | null, permissions: string[], requireAll =
 export const MENU_PERMISSIONS = {
   '/': ['dashboard.view'],
   '/documents': ['dokumen.create', 'dokumen.review', 'dokumen.approve'],
-  '/produk-rab': ['produk-rab.view', 'produk-rab.create'],
+  '/products': ['products.view', 'products.create'],
   '/crm': ['crm.view', 'crm.manage'],
   '/master': ['master.view', 'master.manage'],
   '/meeting': ['meeting.view', 'meeting.manage'],

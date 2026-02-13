@@ -14,7 +14,7 @@ import {
 
 // Map segment paths to readable names
 const BREADCRUMB_MAP: Record<string, string> = {
-  "produk-rab": "Dokumen RAB",
+  "products": "Produk & RAB",
   "dokumen": "Administrasi",
   "documents": "Administrasi",
   "crm": "Marketing (CRM)",

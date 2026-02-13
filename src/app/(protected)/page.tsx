@@ -15,7 +15,7 @@ export default function Dashboard() {
 
         {/* Quick Links */}
         <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
-          <Link href='/produk-rab/panel-lantai-dinding' className='bg-white rounded-lg shadow p-6 hover:shadow-lg transition'>
+          <Link href='/products/panel-lantai-dinding' className='bg-white rounded-lg shadow p-6 hover:shadow-lg transition'>
             <h3 className='font-semibold text-lg mb-2'>Panel Lantai & Dinding</h3>
             <p className='text-sm text-gray-600'>Kelola dokumen RAB panel lantai dan dinding</p>
           </Link>

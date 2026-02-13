@@ -394,13 +394,13 @@ export default function FormRAB({
 
       if (isMobile) {
         // Mobile: redirect to list page
-        router.push("/produk-rab");
+        router.push("/products");
       } else {
         // Desktop: redirect to detail page of the newly created RAB
         if (result?.id) {
-          router.push(`/produk-rab/${result.id}`);
+          router.push(`/products/${result.id}`);
         } else {
-          router.push("/produk-rab");
+          router.push("/products");
         }
       }
 

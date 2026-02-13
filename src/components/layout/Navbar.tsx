@@ -10,10 +10,10 @@ import { supabase } from "../../lib/supabase/client";
 const navItems = [
   { name: "Dashboard", path: "/", icon: LayoutDashboard, children: [] },
   {
-    name: "Dokumen RAB",
-    path: "/produk-rab",
+    name: "Products",
+    path: "/products",
     icon: FileText,
-    children: ["/produk-rab/baru", "/produk-rab/edit", "/produk-rab/print"], // Child route patterns
+    children: ["/products/baru", "/products/edit", "/products/print"], // Child route patterns
     activeColor: "green", // Warna untuk child routes
   },
   { name: "Master Data", path: "/master", icon: Package, children: [] },
@@ -88,10 +88,10 @@ export default function Navbar({
   const isChildRoute = (item: (typeof navItems)[0]) => {
     if (!item.children || item.children.length === 0) return false;
 
-    // Special handling for RAB routes - simplified logic
-    if (item.path === "/produk-rab") {
-      // If path starts with /produk-rab/ but is not exactly /produk-rab, it's a child route
-      if (pathname.startsWith("/produk-rab/") && pathname !== "/produk-rab") {
+    // Special handling for products routes - simplified logic
+    if (item.path === "/products") {
+      // If path starts with /products/ but is not exactly /products, it's a child route
+      if (pathname.startsWith("/products/") && pathname !== "/products") {
         return true;
       }
     }

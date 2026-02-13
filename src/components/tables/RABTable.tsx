@@ -157,8 +157,8 @@ export default function RABTable({
       render: (value, item) => (
         <TableActions
           item={item}
-          onView={() => router?.push(`/produk-rab/${item.id}`)}
-          onEdit={() => router?.push(`/produk-rab/edit/${item.id}`)}
+          onView={() => router?.push(`/products/${item.id}`)}
+          onEdit={() => router?.push(`/products/edit/${item.id}`)}
         />
       ),
     },
@@ -167,7 +167,7 @@ export default function RABTable({
   const mobileCardRender = (item: RABDocument, index: number) => (
     <Link
       key={item.id}
-      href={`/produk-rab/${item.id}`}
+      href={`/products/${item.id}`}
       className='bg-white hover:bg-blue-50/50 border border-gray-200 rounded-lg p-3 mb-2 block transition-all duration-200 relative'
     >
       {/* Status Badge - Top Right */}
