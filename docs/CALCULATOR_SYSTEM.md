@@ -10,6 +10,7 @@ Sistem kalkulator terintegrasi untuk Leora ERP yang mendukung multiple calculato
 2. **Reusable**: Components dapat digunakan di ERP, website, dan embed
 3. **Extensible**: Mudah menambah kalkulator baru
 4. **Multi-Platform**: ERP internal, website publik, WordPress embed
+5. **Config-Driven**: 1 file = 1 kalkulator (fields + calculation)
 
 ## 🏗️ Arsitektur
 
@@ -19,13 +20,15 @@ Sistem kalkulator terintegrasi untuk Leora ERP yang mendukung multiple calculato
 ├─────────────────────────────────────────────────────────────┤
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐       │
 │  │   Panel     │  │ Konstruksi  │  │ Jasa Tukang │       │
-│  │  Calculator │  │ Calculator  │  │ Calculator  │       │
+│  │ Calculator  │  │ Calculator  │  │ Calculator  │       │
 │  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘       │
 │         │                │                │                │
 │         └────────────────┼────────────────┘                │
 │                          ▼                                 │
 │  ┌─────────────────────────────────────────────────────┐   │
-│  │              CORE CALCULATION ENGINE                 │   │
+│  │              CALCULATION ENGINE (FE)                  │   │
+│  │  - Instant calculations (luas, qty, subtotal)        │   │
+│  │  - Config-driven field rendering                     │   │
 │  └─────────────────────────────────────────────────────┘   │
 │                          │                                 │
 │         ┌────────────────┼────────────────┐                │
@@ -39,6 +42,22 @@ Sistem kalkulator terintegrasi untuk Leora ERP yang mendukung multiple calculato
 
 ## 📁 Struktur Folder
 
+### Calculator Library (Core)
+```
+src/lib/calculators/
+├── types.ts              # Shared types (CalculatorConfig, CalculationResult, etc.)
+├── panel.ts              # ✅ Panel calculator config + calculation (1 file)
+├── index.ts              # Calculator registry + exports
+└── [kalkulator].ts       # Tambahkan kalkulator baru di sini
+```
+
+### Calculator Components
+```
+src/components/calculators/
+├── CalculatorForm.tsx     # Generic form builder (render from config)
+└── CalculatorResults.tsx  # Generic results display
+```
+
 ### Kalkulator Routes
 ```
 src/app/(protected)/products/
@@ -46,50 +65,72 @@ src/app/(protected)/products/
     ├── page.tsx              # Menu utama 6 kalkulator
     ├── layout.tsx            # Layout dengan navigation
     ├── panel/
-    │   ├── page.tsx          # Redirect ke /panel-lantai-dinding
+    │   ├── page.tsx          # ✅ Kalkulator Panel (modular)
     │   └── embed/
-    │       └── page.tsx      # Versi embed
+    │       └── page.tsx     # Versi embed
     ├── konstruksi/
-    │   ├── page.tsx         # Skeleton
-    │   └── embed/
-    │       └── page.tsx
     ├── jasa-tukang/
     ├── interior/
     ├── keramik/
     └── dinding/
 ```
 
-### Shared Components
-```
-src/components/calculators/
-├── layout/
-│   ├── CalculatorMenu.tsx
-│   └── CalculatorCard.tsx
-├── base/
-│   ├── CalculatorForm.tsx
-│   └── CalculatorResults.tsx
-└── hooks/
-    └── useEmbedResize.ts
+## 🔧 Technical Implementation
+
+### Calculation Logic
+- **Frontend (FE)**: Instant calculations (luas, qty, subtotal, grand total)
+- **Backend (BE/Supabase)**: Price lookups (harga panel, ongkir rates)
+
+### Calculator Registry
+```typescript
+// src/lib/calculators/index.ts
+import { panelConfig, panelCalculate } from './panel';
+// import { konstruksiConfig, konstruksiCalculate } from './konstruksi';
+
+export const calculators = {
+  panel: panelConfig,
+  // konstruksi: konstruksiConfig,  // Coming soon
+};
+
+export const calculateFunctions = {
+  panel: panelCalculate,
+};
+
+// Helper function
+export function calculate(calculatorId, values, masterData) {
+  return calculateFunctions[calculatorId](values, masterData);
+}
 ```
 
-### Core Library
-```
-src/lib/calculators/
-├── types.ts              # Shared types
-├── utils.ts              # Math utilities
-└── constants.ts          # Waste factor, etc
+### 1 File per Kalkulator
+Setiap kalkulator adalah 1 file yang berisi:
+```typescript
+// src/lib/calculators/panel.ts
+export const panelConfig: CalculatorConfig = {
+  id: 'panel',
+  name: 'Panel Lantai & Dinding',
+  fields: [
+    // Field definitions
+  ],
+  // Config lainnya
+};
+
+export function panelCalculate(values, masterData) {
+  // Calculation logic
+  return result;
+}
 ```
 
 ## 🧮 List Kalkulator
 
-| Kalkulator | Lokasi | Status |
-|------------|--------|--------|
-| Panel Lantai & Dinding | `/products/panel-lantai-dinding` | ✅ Active |
-| Konstruksi | `/products/kalkulator-harga/konstruksi` | 🚧 Coming Soon |
-| Jasa Tukang | `/products/kalkulator-harga/jasa-tukang` | 🚧 Coming Soon |
-| Interior | `/products/kalkulator-harga/interior` | 🚧 Coming Soon |
-| Keramik | `/products/kalkulator-harga/keramik` | 🚧 Coming Soon |
-| Dinding | `/products/kalkulator-harga/dinding` | 🚧 Coming Soon |
+| Kalkulator | File | Status |
+|------------|------|--------|
+| Panel Lantai & Dinding | `panel.ts` | ✅ Active |
+| Konstruksi | `konstruksi.ts` | 🚧 Coming Soon |
+| Jasa Tukang | `jasa-tukang.ts` | 🚧 Coming Soon |
+| Interior | `interior.ts` | 🚧 Coming Soon |
+| Keramik | `keramik.ts` | 🚧 Coming Soon |
+| Dinding | `dinding.ts` | 🚧 Coming Soon |
 
 ## 🔌 Embed System
 
@@ -112,7 +153,28 @@ window.parent.postMessage({ type: 'resize', height: 850 }, '*');
 window.parent.postMessage({ type: 'submit', data: {...} }, '*');
 ```
 
+## ➕ Menambah Kalkulator Baru
+
+1. **Buat file** `src/lib/calculators/[nama].ts`
+2. **Define config** dengan fields + calculation
+3. **Register** di `index.ts`
+4. **Buat route** `/products/kalkulator-harga/[nama]/page.tsx`
+
+Contoh:
+```typescript
+// src/lib/calculators/konstruksi.ts
+export const konstruksiConfig: CalculatorConfig = {
+  id: 'konstruksi',
+  name: 'Konstruksi',
+  fields: [...],
+};
+
+export function konstruksiCalculate(values, masterData) {
+  // logic
+}
+```
+
 ---
 
-**Last Updated**: 2026-02-13
-**Status**: 🚧 In Development
+**Last Updated**: 2026-02-14
+**Status**: ✅ Panel Calculator Active - Modular System Ready
