@@ -1104,11 +1104,18 @@ export default function FormRAB({
           <div className='lg:col-span-2'>
             {/* Hasil Hitung */}
             <div className='bg-surface rounded-xl shadow overflow-hidden'>
-              <div className='p-4 border-b bg-gray-50'>
+              <div className='p-4 border-b bg-gray-50 flex items-center justify-between'>
                 <h2 className='text-lg font-semibold flex items-center gap-2'>
                   <Calculator size={20} className='text-brand-accent' />
                   Hasil Perhitungan
                 </h2>
+                <button
+                  type='button'
+                  onClick={() => router.push('/products/kalkulator-harga/panel')}
+                  className='text-sm text-brand-primary hover:text-brand-secondary font-medium underline'
+                >
+                  Gunakan Kalkulator
+                </button>
               </div>
 
               <div className='p-4 space-y-4'>

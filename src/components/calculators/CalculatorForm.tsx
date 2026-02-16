@@ -93,10 +93,22 @@ export function CalculatorForm({ config, masterData, onCalculate, onBack }: Calc
     const calcResult = calculate(config.id, calcValues, masterData);
     
     if (calcResult) {
-      setResult(calcResult);
-      onCalculate?.(calcResult);
+      setResult((prev) => {
+        // Only update if result is different to prevent infinite loops
+        if (JSON.stringify(prev) !== JSON.stringify(calcResult)) {
+          return calcResult;
+        }
+        return prev;
+      });
     }
-  }, [watchedValues, masterData, config.id, onCalculate]);
+  }, [JSON.stringify(watchedValues), masterData, config.id]);
+
+  // Notify parent when result changes
+  useEffect(() => {
+    if (result) {
+      onCalculate?.(result);
+    }
+  }, [result, onCalculate]);
 
   // Reset form when config changes
   useEffect(() => {

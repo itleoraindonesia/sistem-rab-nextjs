@@ -9,7 +9,7 @@ import {
 } from "@react-pdf/renderer";
 
 // Create styles
-/* eslint-disable no-undef */
+ 
 const styles = StyleSheet.create({
   page: {
     flexDirection: "column",
@@ -184,7 +184,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
 });
-/* eslint-enable no-undef */
+ 
 
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat("id-ID", {

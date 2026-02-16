@@ -10,7 +10,8 @@ import {
   Grid3X3, 
   Building2,
   ChevronRight,
-  ArrowRight
+  ArrowRight,
+  Calculator
 } from "lucide-react";
 
 interface Calculator {
@@ -26,8 +27,8 @@ interface Calculator {
 const calculators: Calculator[] = [
   {
     id: "panel",
-    name: "Panel Lantai & Dinding",
-    description: "Hitung kebutuhan panel lantai dan dinding dengan akurat",
+    name: "Kalkulator Panel",
+    description: "Hitung kebutuhan panel lantai & dinding secara cepat (alat kalkulasi)",
     href: "/products/kalkulator-harga/panel",
     icon: <Boxes className="w-8 h-8" />,
     status: "active",
@@ -89,49 +90,12 @@ export default function KalkulatorHargaPage() {
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-12 h-12 bg-brand-primary rounded-xl flex items-center justify-center">
+            <div className="w-12 h-12 bg-brand-primary rounded-xl flex items-center justify-center shadow-lg shadow-brand-primary/20">
               <LayoutGrid className="w-6 h-6 text-white" />
             </div>
             <div>
               <h1 className="text-3xl font-bold text-primary">Kalkulator Sistem</h1>
               <p className="text-muted">Pilih kalkulator untuk menghitung biaya proyek Anda</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          <div className="bg-surface rounded-xl p-4 shadow-sm border border-gray-100">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                <Boxes className="w-5 h-5 text-green-600" />
-              </div>
-              <div>
-                <p className="text-sm text-muted">Active Calculator</p>
-                <p className="text-2xl font-bold text-primary">1</p>
-              </div>
-            </div>
-          </div>
-          <div className="bg-surface rounded-xl p-4 shadow-sm border border-gray-100">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
-                <Hammer className="w-5 h-5 text-yellow-600" />
-              </div>
-              <div>
-                <p className="text-sm text-muted">Coming Soon</p>
-                <p className="text-2xl font-bold text-primary">5</p>
-              </div>
-            </div>
-          </div>
-          <div className="bg-surface rounded-xl p-4 shadow-sm border border-gray-100">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                <LayoutGrid className="w-5 h-5 text-blue-600" />
-              </div>
-              <div>
-                <p className="text-sm text-muted">Total Kalkulator</p>
-                <p className="text-2xl font-bold text-primary">6</p>
-              </div>
             </div>
           </div>
         </div>
@@ -145,23 +109,25 @@ export default function KalkulatorHargaPage() {
             return (
               <Link
                 key={calc.id}
-                href={calc.href}
+                href={isActive ? calc.href : "#"}
+                aria-disabled={!isActive}
                 className={`
-                  group relative bg-surface rounded-2xl p-6 shadow-sm border-2 transition-all duration-300
+                  group relative bg-white rounded-2xl p-8 shadow-sm border transition-all duration-300
                   ${isActive 
-                    ? "border-green-200 hover:border-green-400 hover:shadow-lg hover:-translate-y-1" 
-                    : "border-gray-100 hover:border-gray-200 cursor-not-allowed opacity-75"
+                    ? "border-gray-200 hover:border-brand-primary/30 hover:shadow-xl hover:-translate-y-1 hover:bg-gray-50/50" 
+                    : "border-gray-100 bg-gray-50/50 cursor-not-allowed opacity-80 grayscale-[0.5]"
                   }
                   ${isCurrentPage ? "border-brand-primary ring-2 ring-brand-primary/20" : ""}
                 `}
+                onClick={(e) => !isActive && e.preventDefault()}
               >
                 {/* Badge */}
-                <div className="absolute top-4 right-4">
+                <div className="absolute top-6 right-6">
                   <span className={`
-                    px-3 py-1 rounded-full text-xs font-medium
+                    px-3 py-1 rounded-full text-xs font-bold tracking-wide
                     ${isActive 
-                      ? "bg-green-100 text-green-700" 
-                      : "bg-yellow-100 text-yellow-700"
+                      ? "bg-brand-primary/10 text-brand-primary" 
+                      : "bg-gray-200 text-gray-500"
                     }
                   `}>
                     {calc.badge}
@@ -170,9 +136,9 @@ export default function KalkulatorHargaPage() {
 
                 {/* Icon */}
                 <div className={`
-                  w-16 h-16 rounded-2xl flex items-center justify-center mb-4
+                  w-14 h-14 rounded-2xl flex items-center justify-center mb-6 transition-colors
                   ${isActive 
-                    ? "bg-green-50 text-green-600" 
+                    ? "bg-brand-primary/5 text-brand-primary group-hover:bg-brand-primary/10" 
                     : "bg-gray-100 text-gray-400"
                   }
                 `}>
@@ -180,53 +146,37 @@ export default function KalkulatorHargaPage() {
                 </div>
 
                 {/* Content */}
-                <h3 className={`text-xl font-semibold mb-2 ${isActive ? "text-primary" : "text-gray-500"}`}>
-                  {calc.name}
-                </h3>
-                <p className={`text-sm mb-4 ${isActive ? "text-muted" : "text-gray-400"}`}>
-                  {calc.description}
-                </p>
+                <div className="space-y-2 mb-6">
+                  <h3 className={`text-xl font-bold ${isActive ? "text-gray-900" : "text-gray-500"}`}>
+                    {calc.name}
+                  </h3>
+                  <p className={`text-sm leading-relaxed ${isActive ? "text-gray-600" : "text-gray-400"}`}>
+                    {calc.description}
+                  </p>
+                </div>
 
                 {/* Action */}
                 <div className={`
-                  flex items-center gap-2 text-sm font-medium
-                  ${isActive ? "text-brand-primary group-hover:gap-3 transition-all" : "text-gray-400"}
+                  flex items-center gap-2 text-sm font-bold
+                  ${isActive ? "text-brand-primary" : "text-gray-400"}
                 `}>
                   {isActive ? (
-                    <>
-                      <span>Buka Kalkulator</span>
+                    <span className="flex items-center gap-2 group-hover:gap-3 transition-all">
+                      Buka Kalkulator
                       <ArrowRight className="w-4 h-4" />
-                    </>
+                    </span>
                   ) : (
                     <span>Segera Hadir</span>
                   )}
                 </div>
 
-                {/* Active Indicator */}
+                {/* Active Hover Line */}
                 {isActive && (
-                  <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-green-400 to-brand-primary rounded-b-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <div className="absolute bottom-0 left-6 right-6 h-0.5 bg-brand-primary scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
                 )}
               </Link>
             );
           })}
-        </div>
-
-        {/* Info Section */}
-        <div className="mt-8 p-6 bg-blue-50 rounded-xl border border-blue-100">
-          <div className="flex items-start gap-4">
-            <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center shrink-0">
-              <LayoutGrid className="w-5 h-5 text-blue-600" />
-            </div>
-            <div>
-              <h3 className="font-semibold text-blue-900 mb-1">Tentang Kalkulator Sistem</h3>
-              <p className="text-sm text-blue-700">
-                Kalkulator sistem membantu Anda menghitung estimasi biaya proyek secara akurat. 
-                Saat ini tersedia kalkulator Panel Lantai & Dinding yang dapat digunakan langsung. 
-                Kalkulator lainnya akan segera hadir. Gunakan kalkulator ini untuk perencanaan 
-                budget dan pembuatan RAB (Rencana Anggaran Biaya).
-              </p>
-            </div>
-          </div>
         </div>
       </div>
     </div>
