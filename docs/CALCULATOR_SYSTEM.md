@@ -134,24 +134,117 @@ export function panelCalculate(values, masterData) {
 
 ## 🔌 Embed System
 
+Embed system memungkinkan kalkulator di-embed ke website eksternal (WordPress/Elementor) via iframe.
+
 ### URL Pattern
 ```
-/products/kalkulator-harga/[type]/embed?theme=light&compact=true
+/embed/kalkulator-harga/[type]
 ```
 
-### Query Parameters
-- `theme`: `light` | `dark`
-- `compact`: `true` | `false`
-- `callback`: URL untuk redirect setelah submit
+Contoh:
+```
+/embed/kalkulator-harga/panel
+```
+
+### Production Features
+
+#### 1. Error Handling
+- **ErrorState component**: Menampilkan UI error dengan tombol retry
+- **EmptyState component**: Menampilkan UI saat data tidak tersedia
+- **Retry mechanism**: Tombol "Coba Lagi" untuk refresh data
+
+#### 2. Performance Optimization
+- **Debounced resize**: PostMessage resize dengan debounce 100ms
+- **Height threshold**: Hanya kirim update jika height berubah >10px
+- **Last height tracking**: Mencegah redundant updates
+
+#### 3. Security
+- **Configurable origins**: Environment variable `NEXT_PUBLIC_EMBED_ALLOWED_ORIGINS`
+- **Development**: `*` (allow all)
+- **Production**: List specific domains
+- **CORS headers**: `X-Frame-Options: ALLOWALL`, `CSP: frame-ancestors *`
+
+#### 4. Environment Variables
+```env
+# Development
+NEXT_PUBLIC_EMBED_ALLOWED_ORIGINS=*
+
+# Production
+NEXT_PUBLIC_EMBED_ALLOWED_ORIGINS=https://yourdomain.com,https://www.yourdomain.com
+```
+
+### Security Configuration
+
+#### 1. Middleware (src/middleware.ts)
+Route `**/embed/**` bypass auth check namun tetap memperbarui session cookies:
+```typescript
+if (request.nextUrl.pathname.includes("/embed/")) {
+  return await updateSession(request); // No auth enforcement
+}
+```
+
+#### 2. Next.js Headers (next.config.ts)
+Headers untuk mengizinkan iframe embedding:
+```typescript
+headers: async () => [
+  {
+    source: "/products/kalkulator-harga/:path*/embed",
+    headers: [
+      { key: "X-Frame-Options", value: "ALLOWALL" },
+      { key: "Content-Security-Policy", value: "frame-ancestors *" },
+    ],
+  },
+],
+```
+
+### Layout Embed
+Embed menggunakan layout terpisah tanpa sidebar/header ERP:
+- **File**: `src/app/(protected)/products/kalkulator-harga/[type]/embed/layout.tsx`
+- **Features**: Minimal layout, tetap menggunakan MasterDataContext
+- **No Auth Required**: Data panel dan ongkir di-fetch secara publik dari Supabase
 
 ### PostMessage API
-```javascript
-// Resize event
-window.parent.postMessage({ type: 'resize', height: 850 }, '*');
+Calculator embed mengirim height updates ke parent window untuk auto-resize iframe:
 
-// Submit event
-window.parent.postMessage({ type: 'submit', data: {...} }, '*');
+```javascript
+// Resize event (auto-send saat content berubah)
+window.parent.postMessage({ 
+  type: 'resize', 
+  height: document.body.scrollHeight 
+}, '*');
 ```
+
+### Cara Embed di Elementor
+
+```html
+<iframe 
+  src="https://your-domain.com/products/kalkulator-harga/panel/embed"
+  width="100%" 
+  frameborder="0"
+  id="panel-calculator"
+  style="min-height: 800px;"
+></iframe>
+
+<script>
+window.addEventListener('message', (e) => {
+  if (e.data.type === 'resize') {
+    document.getElementById('panel-calculator').style.height = 
+      e.data.height + 'px';
+  }
+});
+</script>
+```
+
+### Perbedaan Embed vs ERP Version
+
+| Feature | ERP Version | Embed Version |
+|---------|-------------|---------------|
+| URL | `/products/kalkulator-harga/panel` | `/products/kalkulator-harga/panel/embed` |
+| Layout | Dengan sidebar & header | Minimal, tanpa navigation |
+| Auth | Required | Bypassed |
+| Mobile Header | Ada (back button) | Tidak ada |
+| PostMessage | Tidak | Resize events |
+| Query Params | Tidak digunakan | Tidak digunakan |
 
 ## ➕ Menambah Kalkulator Baru
 
@@ -159,6 +252,8 @@ window.parent.postMessage({ type: 'submit', data: {...} }, '*');
 2. **Define config** dengan fields + calculation
 3. **Register** di `index.ts`
 4. **Buat route** `/products/kalkulator-harga/[nama]/page.tsx`
+5. **Buat embed route** `/products/kalkulator-harga/[nama]/embed/page.tsx`
+6. **(Optional) Buat embed layout** `/products/kalkulator-harga/[nama]/embed/layout.tsx`
 
 Contoh:
 ```typescript
@@ -174,7 +269,37 @@ export function konstruksiCalculate(values, masterData) {
 }
 ```
 
+### Embed Route Template
+```typescript
+// src/app/(protected)/products/kalkulator-harga/[nama]/embed/page.tsx
+"use client";
+
+import { useEffect, useRef } from "react";
+// ... import components
+
+export default function EmbeddedCalculator() {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    // PostMessage resize observer
+    const sendHeight = () => {
+      window.parent.postMessage({
+        type: "resize",
+        height: document.body.scrollHeight,
+      }, "*");
+    };
+    // ... resize observer setup
+  }, []);
+
+  return (
+    <div ref={containerRef}>
+      {/* Calculator UI */}
+    </div>
+  );
+}
+```
+
 ---
 
-**Last Updated**: 2026-02-14
-**Status**: ✅ Panel Calculator Active - Modular System Ready
+**Last Updated**: 2026-02-18
+**Status**: ✅ Production Ready - Full Error Handling & Security
