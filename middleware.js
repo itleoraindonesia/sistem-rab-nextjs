@@ -1,14 +1,41 @@
-const { NextResponse } = require("next/server");
+const { createServerClient } = require('@supabase/ssr');
+const { NextResponse } = require('next/server');
 
-// Dynamic import for ESM modules
-let updateSession;
+async function updateSession(request) {
+  let response = NextResponse.next({
+    request: {
+      headers: request.headers,
+    },
+  });
 
-async function loadUpdateSession() {
-  if (!updateSession) {
-    const supabaseMiddleware = await import("./src/lib/supabase/middleware.js");
-    updateSession = supabaseMiddleware.updateSession;
-  }
-  return updateSession;
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            request.cookies.set({ name, value, ...options });
+          });
+          response = NextResponse.next({
+            request: {
+              headers: request.headers,
+            },
+          });
+          cookiesToSet.forEach(({ name, value, options }) => {
+            response.cookies.set({ name, value, ...options });
+          });
+        },
+      },
+    }
+  );
+
+  await supabase.auth.getUser();
+
+  return response;
 }
 
 async function middleware(request) {
@@ -23,13 +50,11 @@ async function middleware(request) {
   
   if (isPublicCalculator) {
     // For embed routes, still update session but don't enforce auth
-    const updateSessionFn = await loadUpdateSession();
-    return await updateSessionFn(request);
+    return await updateSession(request);
   }
 
   // For protected routes, check auth
-  const updateSessionFn = await loadUpdateSession();
-  return await updateSessionFn(request);
+  return await updateSession(request);
 }
 
 const config = {
