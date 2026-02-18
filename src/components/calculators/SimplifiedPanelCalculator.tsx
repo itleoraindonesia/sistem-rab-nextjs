@@ -1,7 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import { Controller, useFieldArray } from "react-hook-form";
-import { ChevronLeft, Calculator, Plus, Trash2, Truck, Boxes } from "lucide-react";
+import { ChevronLeft, Calculator, Plus, Trash2, Truck, Boxes, Code, Copy, X, ExternalLink } from "lucide-react";
 import { usePanelCalculator } from "@/hooks/usePanelCalculator";
 import { useMasterData } from "@/context/MasterDataContext";
 import LoadingState from "@/components/form/LoadingState";
@@ -16,6 +17,9 @@ const formatRupiah = (angka: number) =>
 
 export default function SimplifiedPanelCalculator() {
   const router = useRouter();
+  const [isEmbedModalOpen, setIsEmbedModalOpen] = useState(false);
+  const [copiedUrl, setCopiedUrl] = useState(false);
+  const [copiedCode, setCopiedCode] = useState(false);
   const { panels, ongkir, loading: masterLoading } = useMasterData();
   const {
     control,
@@ -35,6 +39,42 @@ export default function SimplifiedPanelCalculator() {
     control,
     name: "bidang",
   });
+
+  const embedUrl = typeof window !== 'undefined' 
+    ? `${window.location.origin}/embed/kalkulator-harga/panel`
+    : '/embed/kalkulator-harga/panel';
+
+  const elementorCode = `<iframe 
+  src="${embedUrl}"
+  width="100%" 
+  frameborder="0"
+  id="panel-calculator"
+  style="min-height: 800px;"
+></iframe>
+
+<script>
+window.addEventListener('message', (e) => {
+  if (e.data.type === 'resize') {
+    document.getElementById('panel-calculator').style.height = 
+      e.data.height + 'px';
+  }
+});
+<\/script>`;
+
+  const copyToClipboard = async (text: string, type: 'url' | 'code') => {
+    try {
+      await navigator.clipboard.writeText(text);
+      if (type === 'url') {
+        setCopiedUrl(true);
+        setTimeout(() => setCopiedUrl(false), 2000);
+      } else {
+        setCopiedCode(true);
+        setTimeout(() => setCopiedCode(false), 2000);
+      }
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  };
 
   if (masterLoading) {
     return <LoadingState />;
@@ -66,8 +106,19 @@ export default function SimplifiedPanelCalculator() {
 
       {/* Page Title */}
       <div className="px-4 py-6 border-b border-gray-200 bg-surface">
-        <h1 className="text-2xl font-bold text-primary">Kalkulator Panel Lantai & Dinding</h1>
-        <p className="text-sm text-green-600 mt-1 font-medium">Hitung kebutuhan panel untuk proyek Anda</p>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-primary">Kalkulator Panel Lantai & Dinding</h1>
+            <p className="text-sm text-green-600 mt-1 font-medium">Hitung kebutuhan panel untuk proyek Anda</p>
+          </div>
+          <button
+            onClick={() => setIsEmbedModalOpen(true)}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-brand-primary text-white rounded-lg font-medium hover:bg-brand-primary-dark transition-colors shadow-sm"
+          >
+            <Code size={18} />
+            <span>Embed</span>
+          </button>
+        </div>
       </div>
 
       <form>
@@ -88,21 +139,21 @@ export default function SimplifiedPanelCalculator() {
                   name="hitung_dinding"
                   control={control}
                   render={({ field }) => (
-                    <label className="flex items-center gap-2 p-2 bg-info-surface rounded-lg border border-info cursor-pointer">
+                    <label className="flex items-center gap-2 p-2 bg-blue-50 rounded-lg border border-blue-200 cursor-pointer hover:bg-blue-100 transition-colors">
                       <input
                         type="checkbox"
                         checked={field.value || false}
                         onChange={(e) => field.onChange(e.target.checked)}
-                        className="h-5 w-5 rounded text-brand-primary"
+                        className="h-5 w-5 rounded text-blue-600"
                       />
-                      <span className="font-medium text-info-darker">Hitung Dinding</span>
+                      <span className="font-medium text-blue-800">Hitung Dinding</span>
                     </label>
                   )}
                 />
 
                 {/* Hitung Dinding Inputs */}
                 {watchedHitungDinding && (
-                  <div className="space-y-3 pl-6 border-l-2 border-info ml-2">
+                  <div className="space-y-3 pl-6 border-l-2 border-blue-300 ml-2">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <Controller
                         name="perimeter"
@@ -180,21 +231,21 @@ export default function SimplifiedPanelCalculator() {
                   name="hitung_lantai"
                   control={control}
                   render={({ field }) => (
-                    <label className="flex items-center gap-2 p-2 bg-info-surface rounded-lg border border-info cursor-pointer">
+                    <label className="flex items-center gap-2 p-2 bg-green-50 rounded-lg border border-green-200 cursor-pointer hover:bg-green-100 transition-colors">
                       <input
                         type="checkbox"
                         checked={field.value || false}
                         onChange={(e) => field.onChange(e.target.checked)}
-                        className="h-5 w-5 rounded text-brand-primary"
+                        className="h-5 w-5 rounded text-green-600"
                       />
-                      <span className="font-medium text-info-darker">Hitung Lantai</span>
+                      <span className="font-medium text-green-800">Hitung Lantai</span>
                     </label>
                   )}
                 />
 
                 {/* Hitung Lantai Inputs */}
                 {watchedHitungLantai && (
-                  <div className="space-y-3 pl-6 border-l-2 border-info ml-2">
+                  <div className="space-y-3 pl-6 border-l-2 border-green-300 ml-2">
                     <div>
                       <label className="block text-xs font-medium text-green-700 mb-2">
                         Bidang
@@ -503,6 +554,153 @@ export default function SimplifiedPanelCalculator() {
           </div>
         </div>
       </form>
+
+      {/* Embed Modal */}
+      {isEmbedModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">Embed Kalkulator</h2>
+                <p className="text-sm text-gray-600 mt-1">
+                  Salin kode berikut untuk menampilkan kalkulator di website Anda
+                </p>
+              </div>
+              <button
+                onClick={() => setIsEmbedModalOpen(false)}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X size={20} className="text-gray-500" />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6 space-y-6">
+              {/* Embed URL Section */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  URL Embed
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={embedUrl}
+                    readOnly
+                    className="flex-1 p-3 bg-gray-50 border border-gray-300 rounded-lg text-sm font-mono text-gray-700"
+                  />
+                  <button
+                    onClick={() => copyToClipboard(embedUrl, 'url')}
+                    className={`px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 ${
+                      copiedUrl
+                        ? 'bg-green-600 text-white'
+                        : 'bg-brand-primary text-white hover:bg-brand-primary-dark'
+                    }`}
+                  >
+                    {copiedUrl ? (
+                      <>
+                        <span>✓</span>
+                        <span>Copied!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy size={18} />
+                        <span>Copy</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* Elementor Code Section */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Kode HTML untuk Elementor / WordPress
+                </label>
+                <div className="relative">
+                  <pre className="p-4 bg-gray-900 text-gray-100 rounded-lg text-sm font-mono overflow-x-auto whitespace-pre-wrap break-all">
+                    {elementorCode}
+                  </pre>
+                  <button
+                    onClick={() => copyToClipboard(elementorCode, 'code')}
+                    className={`absolute top-2 right-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${
+                      copiedCode
+                        ? 'bg-green-600 text-white'
+                        : 'bg-white/10 text-white hover:bg-white/20'
+                    }`}
+                  >
+                    {copiedCode ? (
+                      <>
+                        <span>✓</span>
+                        <span>Copied!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy size={14} />
+                        <span>Copy Code</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* Instructions */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h3 className="font-medium text-blue-900 mb-2 flex items-center gap-2">
+                  <ExternalLink size={18} />
+                  Petunjuk Penggunaan
+                </h3>
+                <ol className="text-sm text-blue-800 space-y-1.5 list-decimal list-inside">
+                  <li>Copy kode HTML di atas</li>
+                  <li>Buka halaman Elementor / WordPress Anda</li>
+                  <li>Tambahkan widget "HTML" atau "Custom HTML"</li>
+                  <li>Paste kode tersebut</li>
+                  <li>Simpan dan publish halaman</li>
+                </ol>
+              </div>
+
+              {/* Features */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                <div className="flex items-center gap-2 text-gray-600">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span>Responsive & mobile-friendly</span>
+                </div>
+                <div className="flex items-center gap-2 text-gray-600">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span>Auto-resize iframe</span>
+                </div>
+                <div className="flex items-center gap-2 text-gray-600">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span>Tanpa login / public access</span>
+                </div>
+                <div className="flex items-center gap-2 text-gray-600">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span>Data real-time dari database</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200 bg-gray-50">
+              <button
+                onClick={() => setIsEmbedModalOpen(false)}
+                className="px-4 py-2 text-gray-700 font-medium hover:bg-gray-200 rounded-lg transition-colors"
+              >
+                Tutup
+              </button>
+              <a
+                href={embedUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-4 py-2 bg-brand-primary text-white font-medium rounded-lg hover:bg-brand-primary-dark transition-colors flex items-center gap-2"
+              >
+                <ExternalLink size={18} />
+                Lihat Preview
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
