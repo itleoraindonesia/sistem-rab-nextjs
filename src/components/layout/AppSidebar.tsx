@@ -180,41 +180,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     setIsLoggingOut(true)
 
     try {
-      // Logout dari Supabase
+      // Logout dari Supabase (auto-clear cookies)
       await supabase.auth.signOut()
     } catch (error) {
-      // Log error untuk debugging, tapi tetap lanjut ke login
       console.error('Logout error:', error)
     } finally {
-      // Cleanup state
       setUser(null)
       
-      // Clear ALL auth cookies sebelum redirect
-      if (typeof document !== 'undefined') {
-        // Clear auth-cache cookie
-        document.cookie = 'auth-cache=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;'
-        
-        // Clear all Supabase auth cookies (sb-*)
-        // Supabase SSR menyimpan session di cookies dengan prefix sb-
-        const cookies = document.cookie.split(';')
-        cookies.forEach(cookie => {
-          const [name] = cookie.split('=')
-          const trimmedName = name.trim()
-          if (trimmedName.startsWith('sb-')) {
-            // Clear dengan domain yang sama
-            document.cookie = `${trimmedName}=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT; domain=${window.location.hostname};`
-            // Clear tanpa domain juga (fallback)
-            document.cookie = `${trimmedName}=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;`
-          }
-        })
-        
-        // Clear session storage untuk menghindari cache issues
-        sessionStorage.removeItem('session_id')
-      }
-      
-      // Force redirect ke /login dengan window.location.href
-      // Menggunakan href (bukan replace) agar browser melakukan full page load
-      // dan middleware membaca cookies yang sudah di-clear
+      // Redirect ke login
       if (typeof window !== 'undefined') {
         window.location.href = '/login?logged_out=true'
       }
