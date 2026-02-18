@@ -85,17 +85,17 @@ export default function KalkulatorHargaPage() {
   const pathname = usePathname();
 
   return (
-    <div className="min-h-screen bg-surface-secondary">
-      <div className="max-w-7xl mx-auto p-6">
+    <div className="container mx-auto">
+      <div className="space-y-6">
         {/* Header */}
-        <div className="mb-8">
+        <div>
           <div className="flex items-center gap-3 mb-2">
             <div className="w-12 h-12 bg-brand-primary rounded-xl flex items-center justify-center shadow-lg shadow-brand-primary/20">
               <LayoutGrid className="w-6 h-6 text-white" />
             </div>
             <div>
               <h1 className="text-3xl font-bold text-primary">Kalkulator Sistem</h1>
-              <p className="text-muted">Pilih kalkulator untuk menghitung biaya proyek Anda</p>
+              <p className="text-green-600">Pilih kalkulator untuk menghitung biaya proyek Anda</p>
             </div>
           </div>
         </div>
@@ -150,7 +150,7 @@ export default function KalkulatorHargaPage() {
                   <h3 className={`text-xl font-bold ${isActive ? "text-gray-900" : "text-gray-500"}`}>
                     {calc.name}
                   </h3>
-                  <p className={`text-sm leading-relaxed ${isActive ? "text-gray-600" : "text-gray-400"}`}>
+                  <p className={`text-sm leading-relaxed ${isActive ? "text-green-600" : "text-gray-400"}`}>
                     {calc.description}
                   </p>
                 </div>
