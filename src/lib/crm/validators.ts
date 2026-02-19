@@ -25,6 +25,8 @@ export const VALID_KEBUTUHAN = [
   'Hotel',
   'Rumah Sakit',
   'Panel Saja',
+  'U-Ditch',
+  'Plastik Board',
 ] as const;
 
 // Valid products (Hardcoded)
@@ -38,6 +40,7 @@ export const VALID_PRODUCTS = [
   'Jasa Konstruksi',
   'Jasa Renovasi',
   'Jasa RAB/Gambar',
+  'U-Ditch',
 ] as const;
 
 // Flexible matching for kebutuhan

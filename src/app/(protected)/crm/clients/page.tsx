@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import ClientsTable from '@/components/crm/ClientsTable';
 import EditClientModal from '@/components/crm/EditClientModal';
 import ConnectionStatus from '@/components/crm/ConnectionStatus';
@@ -8,14 +8,18 @@ import Link from 'next/link';
 import { Client } from '@/hooks/useClients';
 import { useQueryClient } from '@tanstack/react-query';
 import { VALID_KEBUTUHAN } from '@/lib/crm/validators';
-import { supabase } from "@/lib/supabase/client";
+import { useAllClients } from '@/hooks/useAllClients';
+import { FileDown } from 'lucide-react';
+import * as XLSX from 'xlsx';
 
 export default function ClientsPage() {
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const queryClient = useQueryClient();
   
-  // Filter states - di parent component
+  const { refetch: fetchAllClients } = useAllClients();
+  
   const [searchTerm, setSearchTerm] = useState('');
   const [filterKebutuhan, setFilterKebutuhan] = useState<string>('');
 
@@ -29,6 +33,50 @@ export default function ClientsPage() {
     queryClient.invalidateQueries({ queryKey: ['clients', 'stats'] });
   };
 
+  const exportToExcel = async () => {
+    setIsExporting(true);
+    try {
+      const result = await fetchAllClients();
+      const clients = result.data || [];
+
+      const exportData = clients.map((client: Client) => ({
+        'Nama': client.nama || '-',
+        'WhatsApp': client.whatsapp || '-',
+        'Instagram': client.instagram_username || '-',
+        'Kebutuhan': client.kebutuhan || '-',
+        'Produk': client.produk || '-',
+        'Kabupaten': client.kabupaten || '-',
+        'Provinsi': client.provinsi || '-',
+        'Luasan': client.luasan || '-',
+        'Status': client.status || '-',
+        'Tracking Source': client.tracking_source || '-',
+        'Tanggal Input': client.created_at ? new Date(client.created_at).toLocaleDateString('id-ID') : '-',
+        'Tanggal Update': client.updated_at ? new Date(client.updated_at).toLocaleDateString('id-ID') : '-',
+      }));
+
+      const worksheet = XLSX.utils.json_to_sheet(exportData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Clients');
+
+      const colWidths = [
+        { wch: 25 }, { wch: 18 }, { wch: 20 }, { wch: 20 },
+        { wch: 20 }, { wch: 18 }, { wch: 18 }, { wch: 15 },
+        { wch: 18 }, { wch: 18 }, { wch: 15 }, { wch: 15 }
+      ];
+      worksheet['!cols'] = colWidths;
+
+      XLSX.writeFile(
+        workbook,
+        `clients_export_${new Date().toISOString().split('T')[0]}.xlsx`
+      );
+    } catch (error) {
+      console.error('Export error:', error);
+      alert('Gagal mengekspor data. Silakan coba lagi.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-white">
       <ConnectionStatus />
@@ -39,12 +87,23 @@ export default function ClientsPage() {
             <h1 className="text-3xl font-bold">Daftar Client</h1>
           </div>
 
-          <Link
-            href="/crm/input"
-            className="w-full sm:w-auto text-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 font-medium shadow-sm hover:shadow transition-all"
-          >
-            + Input Data Baru
-          </Link>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <button
+              onClick={exportToExcel}
+              disabled={isExporting}
+              className="w-full sm:w-auto px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium shadow-sm hover:shadow transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <FileDown className="w-4 h-4" />
+              {isExporting ? 'Mengexport...' : 'Export Excel'}
+            </button>
+
+            <Link
+              href="/crm/input"
+              className="w-full sm:w-auto text-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 font-medium shadow-sm hover:shadow transition-all"
+            >
+              + Input Data Baru
+            </Link>
+          </div>
         </div>
 
         {/* Filters - Di parent, tidak akan re-render saat table loading */}
