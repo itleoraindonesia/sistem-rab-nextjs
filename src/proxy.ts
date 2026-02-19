@@ -12,7 +12,7 @@ const protectedRoutes = [
   '/meeting'
 ];
 const authRoutes = ['/login'];
-const publicRoutes = ['/auth/callback'];
+const publicRoutes = ['/auth/callback', '/embed/kalkulator-harga'];
 
 export async function proxy(request: NextRequest) {
   // Initialize Response
@@ -56,7 +56,7 @@ export async function proxy(request: NextRequest) {
 
   // Check if current route is public
   const isPublicRoute = publicRoutes.some(route =>
-    pathname === route || pathname.startsWith('/auth/')
+    pathname === route || pathname.startsWith('/auth/') || pathname.startsWith(route)
   );
 
   // Check if current route is protected
