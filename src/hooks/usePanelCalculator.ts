@@ -6,8 +6,30 @@ import { panelCalculate } from "@/lib/calculators/panel";
 import { useMasterData } from "@/context/MasterDataContext";
 import { CalculatorValues, CalculationResult } from "@/lib/calculators";
 
-export function usePanelCalculator() {
-  const { panels, ongkir, loading } = useMasterData();
+export interface usePanelCalculatorProps {
+  initialPanels?: any[];
+  initialOngkir?: any[];
+  initialProvinsiList?: string[];
+}
+
+export function usePanelCalculator(props?: usePanelCalculatorProps) {
+  const masterDataContext = useMasterData();
+
+  const panels = props?.initialPanels && props.initialPanels.length > 0
+    ? props.initialPanels
+    : masterDataContext.panels;
+
+  const ongkir = props?.initialOngkir && props.initialOngkir.length > 0
+    ? props.initialOngkir
+    : masterDataContext.ongkir;
+
+  const loading = !props?.initialPanels || props.initialPanels.length === 0
+    ? masterDataContext.loading
+    : false;
+
+  const error = !props?.initialPanels || props.initialPanels.length === 0
+    ? masterDataContext.error
+    : null;
 
   const masterData = useMemo(() => ({
     panels,
@@ -77,6 +99,7 @@ export function usePanelCalculator() {
     panels,
     ongkir,
     loading,
+    error,
     fields,
     append,
     remove,
