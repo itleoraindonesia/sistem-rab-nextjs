@@ -13,7 +13,7 @@ export default function EmbedRootLayout({
 }) {
   return (
     <html lang="id" suppressHydrationWarning>
-      <body className="antialiased bg-white min-h-screen">
+      <body className="antialiased bg-white min-h-screen" suppressHydrationWarning>
         <Providers>{children}</Providers>
       </body>
     </html>

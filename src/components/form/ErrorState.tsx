@@ -1,3 +1,5 @@
+"use client";
+
 interface ErrorStateProps {
   error: string;
   loadExistingData?: (id: string) => void;
