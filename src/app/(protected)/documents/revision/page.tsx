@@ -148,7 +148,7 @@ function RevisionLetterCard({ letter }: { letter: OutgoingLetterWithRelations })
 
 export default function RevisiPage() {
   const router = useRouter()
-  const user = useUser()
+  const { data: user } = useUser()
   const { data: revisionLetters, isLoading } = useLetters({
     status: 'REVISION_REQUESTED',
     created_by_id: user?.id

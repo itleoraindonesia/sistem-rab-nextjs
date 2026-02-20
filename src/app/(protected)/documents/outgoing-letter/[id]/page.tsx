@@ -14,7 +14,7 @@ export default function SuratDetailPage() {
   const router = useRouter()
   const params = useParams()
   const id = params?.id as string
-  const user = useUser()
+  const { data: user } = useUser()
 
   const { data: letter, isLoading, error } = useLetter(id)
   const submitMutation = useSubmitForReview()

@@ -15,6 +15,15 @@ export async function createClient() {
         getAll() {
           return cookieStore.getAll()
         },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            )
+          } catch {
+            // Called from Server Component - cookies can only be modified in Server Actions/Route Handlers
+          }
+        },
       },
     }
   )

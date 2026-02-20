@@ -3,37 +3,32 @@ import { useUser } from './useUser'
 import { hasPermission, getUserPermissions, canAccess, canAccessMenu } from '@/lib/permissions'
 
 export function usePermissions() {
-  const user = useUser()
+  const { data: user, isLoading, error } = useUser()
 
   return useMemo(() => ({
-    // Check single permission
-    hasPermission: (permission: string) => hasPermission(user, permission),
+    hasPermission: (permission: string) => hasPermission(user ?? null, permission),
 
-    // Get all user permissions
-    permissions: getUserPermissions(user),
+    permissions: getUserPermissions(user ?? null),
 
-    // Check if user can access any/all of the permissions
     canAccess: (permissions: string[], requireAll = false) =>
-      canAccess(user, permissions, requireAll),
+      canAccess(user ?? null, permissions, requireAll),
 
-    // Check if user can access a specific menu
-    canAccessMenu: (menuPath: string) => canAccessMenu(user, menuPath),
+    canAccessMenu: (menuPath: string) => canAccessMenu(user ?? null, menuPath),
 
-    // User data
-    user,
+    user: user ?? null,
+    isLoading,
+    error,
 
-    // Role helpers
     isAdmin: user?.role === 'admin',
     isManager: user?.role === 'manager',
     isReviewer: user?.role === 'reviewer',
     isApprover: user?.role === 'approver',
     isUser: user?.role === 'user',
 
-    // Department helpers
     department: user?.departemen,
     isIT: user?.departemen === 'IT',
     isHR: user?.departemen === 'HR',
     isFinance: user?.departemen === 'Finance',
     isMarketing: user?.departemen === 'Marketing'
-  }), [user])
+  }), [user, isLoading, error])
 }

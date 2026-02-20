@@ -159,7 +159,7 @@ export function useCreateDocumentType() {
  */
 export function useCreateLetter() {
   const queryClient = useQueryClient();
-  const user = useUser();
+  const { data: user } = useUser();
 
   return useMutation({
     mutationFn: (data: Omit<Parameters<typeof letterService.createLetter>[0], 'created_by_id'>) => {
@@ -215,7 +215,7 @@ export function useDeleteLetter() {
  */
 export function useSubmitForReview() {
   const queryClient = useQueryClient();
-  const user = useUser();
+  const { data: user } = useUser();
 
   return useMutation({
     mutationFn: (letterId: string) => {
@@ -235,7 +235,7 @@ export function useSubmitForReview() {
  */
 export function useReviewLetter() {
   const queryClient = useQueryClient();
-  const user = useUser();
+  const { data: user } = useUser();
 
   return useMutation({
     mutationFn: ({
@@ -269,7 +269,7 @@ export function useReviewLetter() {
  */
 export function useApproveLetter() {
   const queryClient = useQueryClient();
-  const user = useUser();
+  const { data: user } = useUser();
 
   return useMutation({
     mutationFn: (letterId: string) =>
@@ -287,7 +287,7 @@ export function useApproveLetter() {
  */
 export function useRejectLetter() {
   const queryClient = useQueryClient();
-  const user = useUser();
+  const { data: user } = useUser();
 
   return useMutation({
     mutationFn: ({
@@ -310,7 +310,7 @@ export function useRejectLetter() {
  */
 export function useReviseAndResubmit() {
   const queryClient = useQueryClient();
-  const user = useUser();
+  const { data: user } = useUser();
 
   return useMutation({
     mutationFn: (letterId: string) =>
@@ -327,7 +327,7 @@ export function useReviseAndResubmit() {
  */
 export function useResubmitRevision() {
   const queryClient = useQueryClient();
-  const user = useUser();
+  const { data: user } = useUser();
 
   return useMutation({
     mutationFn: (letterId: string) =>

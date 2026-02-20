@@ -11,7 +11,7 @@ import { useToast } from "@/components/ui/use-toast"
 
 export default function ReviewQueuePage() {
   const router = useRouter()
-  const user = useUser()
+  const { data: user } = useUser()
   const { data: pendingReviews, isLoading } = usePendingReviews(user?.id)
   const reviewLetter = useReviewLetter()
   const { toast } = useToast()

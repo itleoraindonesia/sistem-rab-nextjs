@@ -10,7 +10,7 @@ import { useUser } from "../../../../hooks/useUser"
 
 export default function ApprovalQueuePage() {
   const router = useRouter()
-  const user = useUser()
+  const { data: user } = useUser()
   const { data: pendingApprovals, isLoading } = usePendingApprovals(user?.id)
   const approveLetter = useApproveLetter()
   const rejectLetter = useRejectLetter()

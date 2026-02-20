@@ -2,7 +2,7 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function updateSession(request: NextRequest) {
-  let response = NextResponse.next({
+  let supabaseResponse = NextResponse.next({
     request: {
       headers: request.headers,
     },
@@ -17,23 +17,36 @@ export async function updateSession(request: NextRequest) {
           return request.cookies.getAll()
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => {
-            request.cookies.set({ name, value, ...options })
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
+          supabaseResponse = NextResponse.next({
+            request,
           })
-          response = NextResponse.next({
-            request: {
-              headers: request.headers,
-            },
-          })
-          cookiesToSet.forEach(({ name, value, options }) => {
-            response.cookies.set({ name, value, ...options })
-          })
+          cookiesToSet.forEach(({ name, value, options }) =>
+            supabaseResponse.cookies.set(name, value, options)
+          )
         },
       },
     }
   )
 
-  await supabase.auth.getUser()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
-  return response
+  // Protected routes check
+  const isProtectedRoute = request.nextUrl.pathname.startsWith('/(protected)') ||
+    !request.nextUrl.pathname.startsWith('/login') &&
+    !request.nextUrl.pathname.startsWith('/auth') &&
+    !request.nextUrl.pathname.startsWith('/_next') &&
+    !request.nextUrl.pathname.startsWith('/api') &&
+    !request.nextUrl.pathname.includes('.') // static files
+
+  if (!user && isProtectedRoute && !request.nextUrl.pathname.startsWith('/login')) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/login'
+    url.searchParams.set('redirect', request.nextUrl.pathname)
+    return NextResponse.redirect(url)
+  }
+
+  return supabaseResponse
 }

@@ -14,7 +14,7 @@ export default function ApprovalDetailPage() {
   const router = useRouter()
   const params = useParams()
   const id = params?.id as string
-  const user = useUser()
+  const { data: user } = useUser()
   
   // Hooks
   const { letter, histories, canApprove } = useLetterWorkflow(id, user?.id)
