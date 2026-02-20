@@ -1,3 +1,5 @@
+import { Constants } from '@/types/database';
+
 // Validation types
 export interface ValidationError {
   field: string;
@@ -14,34 +16,11 @@ export interface ClientData {
   luasan: string | number | null;
 }
 
-// Valid kebutuhan options
-export const VALID_KEBUTUHAN = [
-  'Pagar',
-  'Gudang',
-  'Kos/Kontrakan',
-  'Toko/Ruko',
-  'Rumah',
-  'Villa',
-  'Hotel',
-  'Rumah Sakit',
-  'Panel Saja',
-  'U-Ditch',
-  'Plastik Board',
-] as const;
+// Valid kebutuhan options (from database enum)
+export const VALID_KEBUTUHAN = Constants.public.Enums.kebutuhan_type as readonly string[];
 
-// Valid products (Hardcoded)
-export const VALID_PRODUCTS = [
-  'Panel Beton',
-  'Pagar Beton',
-  'Sandwich Panel',
-  'Panel Surya',
-  'Plastik Board',
-  'Ponton Terapung',
-  'Jasa Konstruksi',
-  'Jasa Renovasi',
-  'Jasa RAB/Gambar',
-  'U-Ditch',
-] as const;
+// Valid products (from database enum)
+export const VALID_PRODUCTS = Constants.public.Enums.produk_type as readonly string[];
 
 // Flexible matching for kebutuhan
 const KEBUTUHAN_ALIASES: Record<string, string> = {

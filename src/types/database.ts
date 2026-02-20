@@ -21,10 +21,10 @@ export type Database = {
           id: number
           instagram_username: string | null
           kabupaten: string
-          kebutuhan: string
+          kebutuhan: Database["public"]["Enums"]["kebutuhan_type"]
           luasan: number | null
           nama: string
-          produk: string | null
+          produk: Database["public"]["Enums"]["produk_type"] | null
           provinsi: string | null
           status: Database["public"]["Enums"]["sales_stage"] | null
           tracking_source: string | null
@@ -38,10 +38,10 @@ export type Database = {
           id?: number
           instagram_username?: string | null
           kabupaten: string
-          kebutuhan: string
+          kebutuhan: Database["public"]["Enums"]["kebutuhan_type"]
           luasan?: number | null
           nama: string
-          produk?: string | null
+          produk?: Database["public"]["Enums"]["produk_type"] | null
           provinsi?: string | null
           status?: Database["public"]["Enums"]["sales_stage"] | null
           tracking_source?: string | null
@@ -55,10 +55,10 @@ export type Database = {
           id?: number
           instagram_username?: string | null
           kabupaten?: string
-          kebutuhan?: string
+          kebutuhan?: Database["public"]["Enums"]["kebutuhan_type"]
           luasan?: number | null
           nama?: string
-          produk?: string | null
+          produk?: Database["public"]["Enums"]["produk_type"] | null
           provinsi?: string | null
           status?: Database["public"]["Enums"]["sales_stage"] | null
           tracking_source?: string | null
@@ -721,6 +721,18 @@ export type Database = {
       }
     }
     Enums: {
+      kebutuhan_type:
+        | "Pagar"
+        | "Gudang"
+        | "Kos/Kontrakan"
+        | "Toko/Ruko"
+        | "Rumah"
+        | "Villa"
+        | "Hotel"
+        | "Rumah Sakit"
+        | "Panel Saja"
+        | "U-Ditch"
+        | "Plastik Board"
       letter_action_type:
         | "CREATED"
         | "SUBMITTED"
@@ -738,6 +750,17 @@ export type Database = {
         | "REVISION_REQUESTED"
       meeting_status_enum: "draft" | "published"
       meeting_type_enum: "internal" | "external"
+      produk_type:
+        | "Panel Beton"
+        | "Pagar Beton"
+        | "Sandwich Panel"
+        | "Panel Surya"
+        | "Plastik Board"
+        | "Ponton Terapung"
+        | "Jasa Konstruksi"
+        | "Jasa Renovasi"
+        | "Jasa RAB/Gambar"
+        | "U-Ditch"
       sales_stage:
         | "IG_Lead"
         | "WA_Negotiation"
@@ -875,6 +898,19 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      kebutuhan_type: [
+        "Pagar",
+        "Gudang",
+        "Kos/Kontrakan",
+        "Toko/Ruko",
+        "Rumah",
+        "Villa",
+        "Hotel",
+        "Rumah Sakit",
+        "Panel Saja",
+        "U-Ditch",
+        "Plastik Board",
+      ],
       letter_action_type: [
         "CREATED",
         "SUBMITTED",
@@ -894,6 +930,18 @@ export const Constants = {
       ],
       meeting_status_enum: ["draft", "published"],
       meeting_type_enum: ["internal", "external"],
+      produk_type: [
+        "Panel Beton",
+        "Pagar Beton",
+        "Sandwich Panel",
+        "Panel Surya",
+        "Plastik Board",
+        "Ponton Terapung",
+        "Jasa Konstruksi",
+        "Jasa Renovasi",
+        "Jasa RAB/Gambar",
+        "U-Ditch",
+      ],
       sales_stage: [
         "IG_Lead",
         "WA_Negotiation",
