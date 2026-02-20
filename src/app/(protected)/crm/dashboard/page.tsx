@@ -7,7 +7,7 @@ export default function CRMDashboardPage() {
   return (
     <div className="min-h-screen bg-white">
       <ConnectionStatus />
-      <div className="max-w-7xl mx-auto lg:p-6">
+      <div className="max-w-7xl mx-auto p-4 lg:p-6">
         {/* Header & Actions */}
         <div className="mb-4 flex flex-col md:flex-row md:items-center justify-between gap-2">
           <div>

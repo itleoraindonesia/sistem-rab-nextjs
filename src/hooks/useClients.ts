@@ -34,6 +34,8 @@ export interface DashboardStats {
   closing: number
   byKabupaten: { name: string; value: number }[]
   byStatus: { name: string; value: number }[]
+  byProduk: { name: string; value: number }[]
+  byKebutuhan: { name: string; value: number }[]
   byWeek: { day: string; date: string; count: number }[]
 }
 
@@ -183,7 +185,7 @@ export function useClientStats() {
       try {
         const { data: clients, error } = await supabase
           .from('clients')
-          .select('id, created_at, status, kabupaten, kebutuhan')
+          .select('id, created_at, status, kabupaten, kebutuhan, produk')
           .order('created_at', { ascending: false })
 
         if (error) {
@@ -196,6 +198,8 @@ export function useClientStats() {
               closing: 0,
               byKabupaten: [],
               byStatus: [],
+              byProduk: [],
+              byKebutuhan: [],
               byWeek: [],
             }
           }
@@ -218,6 +222,8 @@ export function useClientStats() {
           closing: 0,
           byKabupaten: [],
           byStatus: [],
+          byProduk: [],
+          byKebutuhan: [],
           byWeek: [],
         }
       }
@@ -232,7 +238,7 @@ export function useClientStats() {
       // 2. By Kabupaten
       const kabupatenMap = new Map<string, number>()
       typedClients.forEach(c => {
-        if (c.kabupaten) {
+        if (c.kabupaten && c.kabupaten.trim() !== '' && c.kabupaten !== '-') {
           kabupatenMap.set(c.kabupaten, (kabupatenMap.get(c.kabupaten) || 0) + 1)
         }
       })
@@ -260,7 +266,31 @@ export function useClientStats() {
         }
       })
 
-      // 4. By Week
+      // 4. By Produk
+      const produkMap = new Map<string, number>()
+      typedClients.forEach(c => {
+        if (c.produk && c.produk.trim() !== '' && c.produk !== '-') {
+          produkMap.set(c.produk, (produkMap.get(c.produk) || 0) + 1)
+        }
+      })
+      const byProduk = Array.from(produkMap.entries())
+        .map(([name, value]) => ({ name, value }))
+        .sort((a, b) => b.value - a.value)
+        .slice(0, 10)
+
+      // 5. By Kebutuhan
+      const kebutuhanMap = new Map<string, number>()
+      typedClients.forEach(c => {
+        if (c.kebutuhan && c.kebutuhan.trim() !== '' && c.kebutuhan !== '-') {
+          kebutuhanMap.set(c.kebutuhan, (kebutuhanMap.get(c.kebutuhan) || 0) + 1)
+        }
+      })
+      const byKebutuhan = Array.from(kebutuhanMap.entries())
+        .map(([name, value]) => ({ name, value }))
+        .sort((a, b) => b.value - a.value)
+        .slice(0, 10)
+
+      // 6. By Week
       const weekMap = new Map<string, number>()
       const today = new Date()
       
@@ -301,6 +331,8 @@ export function useClientStats() {
         closing: closingCount,
         byKabupaten,
         byStatus,
+        byProduk,
+        byKebutuhan,
         byWeek,
       }
       } catch (err: any) {
@@ -313,6 +345,8 @@ export function useClientStats() {
             closing: 0,
             byKabupaten: [],
             byStatus: [],
+            byProduk: [],
+            byKebutuhan: [],
             byWeek: [],
           }
         }

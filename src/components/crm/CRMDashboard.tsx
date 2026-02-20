@@ -1,7 +1,8 @@
 'use client';
 
 import { useClientStats } from '@/hooks/useClients';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Cell, LabelList } from 'recharts';
+import { BarChart3, MapPin, Package, Target, TrendingUp } from 'lucide-react';
 
 const COLORS = [
   'hsl(var(--chart-1))', 
@@ -73,10 +74,13 @@ export default function CRMDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* By Status Pipeline */}
         <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
-          <h3 className="text-lg font-semibold mb-4">📊 Pipeline Status</h3>
+          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+            <BarChart3 className="w-5 h-5 text-primary" />
+            Pipeline Status
+          </h3>
           {stats.byStatus.length > 0 ? (
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={stats.byStatus} layout="vertical">
+              <BarChart data={stats.byStatus} layout="vertical" margin={{ left: 10, right: 30, top: 10, bottom: 10 }}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis type="number" />
                 <YAxis dataKey="name" type="category" width={110} fontSize={11} />
@@ -85,6 +89,7 @@ export default function CRMDashboard() {
                   {stats.byStatus.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
+                  <LabelList dataKey="value" position="right" fontSize={11} fill="hsl(var(--foreground))" />
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
@@ -95,10 +100,13 @@ export default function CRMDashboard() {
 
         {/* By Kabupaten */}
         <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
-          <h3 className="text-lg font-semibold mb-4">📍 Sebaran Wilayah (Top 10)</h3>
+          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+            <MapPin className="w-5 h-5 text-primary" />
+            Top Sebaran Wilayah
+          </h3>
           {stats.byKabupaten.length > 0 ? (
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={stats.byKabupaten}>
+              <BarChart data={stats.byKabupaten} margin={{ left: 10, right: 10, top: 20, bottom: 10 }}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" angle={-45} textAnchor="end" height={80} fontSize={11} />
                 <YAxis
@@ -107,7 +115,66 @@ export default function CRMDashboard() {
                   allowDecimals={false}
                 />
                 <Tooltip />
-                <Bar dataKey="value" fill="hsl(var(--primary))" />
+                <Bar dataKey="value" fill="hsl(var(--primary))">
+                  <LabelList dataKey="value" position="top" fontSize={11} fill="hsl(var(--foreground))" />
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="h-[300px] flex items-center justify-center text-gray-400">No data available</div>
+          )}
+        </div>
+      </div>
+
+      {/* Distribusi Produk & Kebutuhan */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* By Produk */}
+        <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
+          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+            <Package className="w-5 h-5 text-primary" />
+            Top Distribusi Produk
+          </h3>
+          {stats.byProduk.length > 0 ? (
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={stats.byProduk} margin={{ left: 10, right: 10, top: 20, bottom: 10 }}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" angle={-45} textAnchor="end" height={80} fontSize={11} />
+                <YAxis
+                  interval={0}
+                  domain={[0, 'dataMax']}
+                  allowDecimals={false}
+                />
+                <Tooltip />
+                <Bar dataKey="value" fill="hsl(var(--chart-1))">
+                  <LabelList dataKey="value" position="top" fontSize={11} fill="hsl(var(--foreground))" />
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="h-[300px] flex items-center justify-center text-gray-400">No data available</div>
+          )}
+        </div>
+
+        {/* By Kebutuhan */}
+        <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
+          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+            <Target className="w-5 h-5 text-primary" />
+            Top Distribusi Kebutuhan
+          </h3>
+          {stats.byKebutuhan.length > 0 ? (
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={stats.byKebutuhan} margin={{ left: 10, right: 10, top: 20, bottom: 10 }}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" angle={-45} textAnchor="end" height={80} fontSize={11} />
+                <YAxis
+                  interval={0}
+                  domain={[0, 'dataMax']}
+                  allowDecimals={false}
+                />
+                <Tooltip itemStyle={{ color: 'hsl(163 81% 18%)' }} />
+                <Bar dataKey="value" fill="hsl(var(--chart-2))">
+                  <LabelList dataKey="value" position="top" fontSize={11} fill="hsl(var(--foreground))" />
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           ) : (
@@ -118,10 +185,13 @@ export default function CRMDashboard() {
 
       {/* Weekly Trend */}
       <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
-        <h3 className="text-lg font-semibold mb-4">📈 Tren Data Masuk (7 Hari Terakhir)</h3>
+        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <TrendingUp className="w-5 h-5 text-primary" />
+          Tren Data Masuk (7 Hari Terakhir)
+        </h3>
         {stats.byWeek.length > 0 ? (
           <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={stats.byWeek}>
+            <LineChart data={stats.byWeek} margin={{ left: 10, right: 10, top: 10, bottom: 10 }}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="day" />
               <YAxis />
