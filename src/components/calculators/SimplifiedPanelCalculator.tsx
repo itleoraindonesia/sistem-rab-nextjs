@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { Controller, useFieldArray } from "react-hook-form";
-import { ChevronLeft, Calculator, Plus, Trash2, Truck, Boxes, Code, Copy, X, ExternalLink } from "lucide-react";
+import { useState, useRef } from "react";
+import { Controller, useFieldArray, useWatch } from "react-hook-form";
+import { ChevronLeft, Calculator, Plus, Trash2, Truck, Boxes, Code, Copy, X, ExternalLink, FileText, Image, Check, Loader2 } from "lucide-react";
+import html2canvas from "html2canvas";
 import { usePanelCalculator } from "@/hooks/usePanelCalculator";
 import { useMasterData } from "@/context/MasterDataContext";
 import LoadingState from "@/components/form/LoadingState";
@@ -17,9 +18,13 @@ const formatRupiah = (angka: number) =>
 
 export default function SimplifiedPanelCalculator() {
   const router = useRouter();
+  const exportRef = useRef<HTMLDivElement>(null);
   const [isEmbedModalOpen, setIsEmbedModalOpen] = useState(false);
   const [copiedUrl, setCopiedUrl] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
+  const [copiedText, setCopiedText] = useState(false);
+  const [copiedImage, setCopiedImage] = useState(false);
+  const [isCopyingImage, setIsCopyingImage] = useState(false);
   const { panels, ongkir, loading: masterLoading } = useMasterData();
   const {
     control,
@@ -39,6 +44,24 @@ export default function SimplifiedPanelCalculator() {
     control,
     name: "bidang",
   });
+
+  // Watch values for formula display
+  const watchedPerimeter = useWatch({ control, name: 'perimeter' });
+  const watchedTinggi = useWatch({ control, name: 'tinggi_lantai' });
+  const watchedBidang = useWatch({ control, name: 'bidang' });
+
+  // Generate formula text for lantai (sum of all bidang)
+  const getLantaiFormula = () => {
+    if (!watchedBidang || watchedBidang.length === 0) return '';
+    if (watchedBidang.length === 1) {
+      const b = watchedBidang[0];
+      return `${b?.panjang || 0} m × ${b?.lebar || 0} m`;
+    }
+    // Multiple bidang - show each calculation
+    return watchedBidang.map((b: any, i: number) => 
+      `(${b?.panjang || 0} × ${b?.lebar || 0})`
+    ).join(' + ');
+  };
 
   const embedUrl = typeof window !== 'undefined' 
     ? `${window.location.origin}/embed/kalkulator-harga/panel`
@@ -73,6 +96,91 @@ window.addEventListener('message', (e) => {
       }
     } catch (err) {
       console.error('Failed to copy:', err);
+    }
+  };
+
+  // Generate text format for copying
+  const generateTextResult = () => {
+    if (!result || result.grandTotal === 0) return '';
+    
+    const lines: string[] = [];
+    lines.push('=== HASIL PERHITUNGAN PANEL ===');
+    lines.push(`Tanggal: ${new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`);
+    lines.push('');
+    
+    if (watchedHitungDinding && result.luasDinding) {
+      lines.push('--- PANEL DINDING ---');
+      lines.push(`Luas Dinding: ${result.luasDinding.toFixed(2)} m²`);
+      result.items?.filter((item: any) => item.desc.includes('Dinding')).forEach((item: any) => {
+        lines.push(`${item.desc}: ${item.qty} ${item.unit || 'lembar'} @ ${formatRupiah(item.unit_price)} = ${formatRupiah(item.amount)}`);
+      });
+      lines.push(`Subtotal Dinding: ${formatRupiah(result.subtotalDinding || 0)}`);
+      lines.push('');
+    }
+    
+    if (watchedHitungLantai && result.luasLantai) {
+      lines.push('--- PANEL LANTAI ---');
+      lines.push(`Luas Lantai: ${result.luasLantai.toFixed(2)} m²`);
+      result.items?.filter((item: any) => item.desc.includes('Lantai')).forEach((item: any) => {
+        lines.push(`${item.desc}: ${item.qty} ${item.unit || 'lembar'} @ ${formatRupiah(item.unit_price)} = ${formatRupiah(item.amount)}`);
+      });
+      lines.push(`Subtotal Lantai: ${formatRupiah(result.subtotalLantai || 0)}`);
+      lines.push('');
+    }
+    
+    if (result.biayaOngkir && result.biayaOngkir > 0) {
+      lines.push('--- ONGKOS KIRIM ---');
+      result.items?.filter((item: any) => item.desc.includes('Angkutan')).forEach((item: any) => {
+        lines.push(`${item.desc}: ${item.qty} ${item.unit} @ ${formatRupiah(item.unit_price)} = ${formatRupiah(item.amount)}`);
+      });
+      lines.push(`Subtotal Ongkir: ${formatRupiah(result.biayaOngkir)}`);
+      lines.push('');
+    }
+    
+    lines.push('================================');
+    lines.push(`TOTAL: ${formatRupiah(result.grandTotal)}`);
+    
+    return lines.join('\n');
+  };
+
+  const handleCopyAsText = async () => {
+    const text = generateTextResult();
+    if (text) {
+      await navigator.clipboard.writeText(text);
+      setCopiedText(true);
+      setTimeout(() => setCopiedText(false), 2000);
+    }
+  };
+
+  const handleCopyAsImage = async () => {
+    if (!exportRef.current || isCopyingImage) return;
+    
+    setIsCopyingImage(true);
+    
+    try {
+      const canvas = await html2canvas(exportRef.current, {
+        scale: 2,
+        backgroundColor: '#ffffff',
+        useCORS: true,
+      });
+      
+      canvas.toBlob(async (blob) => {
+        if (blob) {
+          try {
+            await navigator.clipboard.write([
+              new ClipboardItem({ 'image/png': blob })
+            ]);
+            setCopiedImage(true);
+            setTimeout(() => setCopiedImage(false), 2000);
+          } catch (err) {
+            console.error('Failed to copy image to clipboard:', err);
+          }
+        }
+        setIsCopyingImage(false);
+      }, 'image/png');
+    } catch (err) {
+      console.error('Failed to capture image:', err);
+      setIsCopyingImage(false);
     }
   };
 
@@ -549,11 +657,187 @@ window.addEventListener('message', (e) => {
                     <span className="text-lg">{formatRupiah(result?.grandTotal || 0)}</span>
                   </div>
                 )}
+
+                {/* Copy Buttons */}
+                {(result?.grandTotal || 0) > 0 && (
+                  <div className="flex gap-2 pt-3 border-t">
+                    <button
+                      type="button"
+                      onClick={handleCopyAsText}
+                      className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-all ${
+                        copiedText
+                          ? 'bg-green-600 text-white'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300'
+                      }`}
+                    >
+                      {copiedText ? (
+                        <>
+                          <Check size={18} />
+                          <span>Tersalin!</span>
+                        </>
+                      ) : (
+                        <>
+                          <FileText size={18} />
+                          <span>Copy as Text</span>
+                        </>
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleCopyAsImage}
+                      disabled={isCopyingImage}
+                      className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-all ${
+                        copiedImage
+                          ? 'bg-green-600 text-white'
+                          : isCopyingImage
+                          ? 'bg-brand-primary/70 text-white cursor-wait'
+                          : 'bg-brand-primary text-white hover:bg-brand-primary-dark'
+                      }`}
+                    >
+                      {copiedImage ? (
+                        <>
+                          <Check size={18} />
+                          <span>Tersalin!</span>
+                        </>
+                      ) : isCopyingImage ? (
+                        <>
+                          <Loader2 size={18} className="animate-spin" />
+                          <span>Copying...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Image size={18} />
+                          <span>Copy as Image</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>
         </div>
       </form>
+
+      {/* Hidden Export Container for Image Capture */}
+      <div
+        ref={exportRef}
+        style={{
+          position: 'absolute',
+          left: '-9999px',
+          top: '0',
+          width: '600px',
+          backgroundColor: '#ffffff',
+          padding: '32px',
+          fontFamily: 'system-ui, -apple-system, sans-serif',
+        }}
+      >
+        {/* Header */}
+        <div style={{ borderBottom: '3px solid #16a34a', paddingBottom: '16px', marginBottom: '24px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <img 
+              src="/Logo-Leora-PNG.png" 
+              alt="LEORA Logo" 
+              crossOrigin="anonymous"
+              style={{ height: '48px', width: 'auto' }}
+            />
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ fontSize: '14px', fontWeight: '600', color: '#333' }}>ESTIMASI PERHITUNGAN BIAYA</div>
+              <div style={{ fontSize: '12px', color: '#666' }}>
+                {new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Content */}
+        {(result?.grandTotal || 0) > 0 && (
+          <>
+            {/* Luas Summary */}
+            <div style={{ display: 'flex', gap: '16px', marginBottom: '24px' }}>
+              {watchedHitungLantai && (result?.luasLantai || 0) > 0 && (
+                <div style={{ flex: 1, backgroundColor: '#f0fdf4', padding: '4px 16px 16px 16px', borderRadius: '8px', border: '1px solid #86efac', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                  <div style={{ fontSize: '12px', color: '#166534' }}>Luas Lantai</div>
+                  <div style={{ fontSize: '11px', color: '#15803d' }}>{getLantaiFormula()}</div>
+                  <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#166534' }}>{result?.luasLantai?.toFixed(2)} m²</div>
+                </div>
+              )}
+              {watchedHitungDinding && (result?.luasDinding || 0) > 0 && (
+                <div style={{ flex: 1, backgroundColor: '#eff6ff', padding: '4px 16px 16px 16px', borderRadius: '8px', border: '1px solid #93c5fd', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                  <div style={{ fontSize: '12px', color: '#1e40af' }}>Luas Dinding</div>
+                  <div style={{ fontSize: '11px', color: '#1d4ed8' }}>{watchedPerimeter || 0} m × {watchedTinggi || 0} m</div>
+                  <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#1e40af' }}>{result?.luasDinding?.toFixed(2)} m²</div>
+                </div>
+              )}
+            </div>
+
+            {/* Dinding Details */}
+            {watchedHitungDinding && (result?.items?.filter((item: any) => item.desc.includes('Dinding'))?.length || 0) > 0 && (
+              <div style={{ marginBottom: '20px' }}>
+                <div style={{ fontSize: '14px', fontWeight: '600', color: '#1e40af', marginBottom: '12px', paddingBottom: '8px', borderBottom: '1px solid #dbeafe' }}>
+                  Panel Dinding
+                </div>
+                {result?.items?.filter((item: any) => item.desc.includes('Dinding')).map((item: any, index: number) => (
+                  <div key={index} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: '#374151', marginBottom: '6px' }}>
+                    <span>{item.desc}</span>
+                    <span>{item.qty} {item.unit || 'lembar'} @ {formatRupiah(item.unit_price)} = <strong>{formatRupiah(item.amount)}</strong></span>
+                  </div>
+                ))}
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: '600', color: '#1e40af', marginTop: '8px', paddingTop: '8px', borderTop: '1px dashed #93c5fd' }}>
+                  <span>Subtotal Dinding</span>
+                  <span>{formatRupiah(result?.subtotalDinding || 0)}</span>
+                </div>
+              </div>
+            )}
+
+            {/* Lantai Details */}
+            {watchedHitungLantai && (result?.items?.filter((item: any) => item.desc.includes('Lantai'))?.length || 0) > 0 && (
+              <div style={{ marginBottom: '20px' }}>
+                <div style={{ fontSize: '14px', fontWeight: '600', color: '#166534', marginBottom: '12px', paddingBottom: '8px', borderBottom: '1px solid #dcfce7' }}>
+                  Panel Lantai
+                </div>
+                {result?.items?.filter((item: any) => item.desc.includes('Lantai')).map((item: any, index: number) => (
+                  <div key={index} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: '#374151', marginBottom: '6px' }}>
+                    <span>{item.desc}</span>
+                    <span>{item.qty} {item.unit || 'lembar'} @ {formatRupiah(item.unit_price)} = <strong>{formatRupiah(item.amount)}</strong></span>
+                  </div>
+                ))}
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: '600', color: '#166534', marginTop: '8px', paddingTop: '8px', borderTop: '1px dashed #86efac' }}>
+                  <span>Subtotal Lantai</span>
+                  <span>{formatRupiah(result?.subtotalLantai || 0)}</span>
+                </div>
+              </div>
+            )}
+
+            {/* Ongkir Details */}
+            {(result?.biayaOngkir || 0) > 0 && (
+              <div style={{ marginBottom: '20px' }}>
+                <div style={{ fontSize: '14px', fontWeight: '600', color: '#92400e', marginBottom: '12px', paddingBottom: '8px', borderBottom: '1px solid #fef3c7' }}>
+                  Ongkos Kirim
+                </div>
+                {result?.items?.filter((item: any) => item.desc.includes('Angkutan')).map((item: any, index: number) => (
+                  <div key={index} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: '#374151', marginBottom: '6px' }}>
+                    <span>{item.desc}</span>
+                    <span>{item.qty} {item.unit} @ {formatRupiah(item.unit_price)} = <strong>{formatRupiah(item.amount)}</strong></span>
+                  </div>
+                ))}
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: '600', color: '#92400e', marginTop: '8px', paddingTop: '8px', borderTop: '1px dashed #fcd34d' }}>
+                  <span>Subtotal Ongkir</span>
+                  <span>{formatRupiah(result?.biayaOngkir || 0)}</span>
+                </div>
+              </div>
+            )}
+
+            {/* Total */}
+            <div style={{ backgroundColor: '#f0fdf4', padding: '4px 16px 16px 16px', borderRadius: '8px', border: '2px solid #16a34a', marginTop: '24px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '16px', fontWeight: '600', color: '#166534' }}>TOTAL</span>
+                <span style={{ fontSize: '24px', fontWeight: 'bold', color: '#16a34a' }}>{formatRupiah(result?.grandTotal || 0)}</span>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
 
       {/* Embed Modal */}
       {isEmbedModalOpen && (
