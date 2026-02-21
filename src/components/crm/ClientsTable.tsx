@@ -1,8 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useClients, type Client } from '@/hooks/useClients';
+import { useQueryClient } from '@tanstack/react-query';
+import { clientKeys } from '@/hooks/useClients';
+import { supabase } from '@/lib/supabase/client';
 import { formatWhatsAppDisplay, formatDate, formatLuasan } from '@/lib/crm/formatters';
 import { getFirstName } from '@/lib/utils/nameUtils';
-import { MessageCircle, MapPin, ChevronRight } from 'lucide-react';
+import { MessageCircle, MapPin, ChevronRight, Loader2 } from 'lucide-react';
 
 interface ClientsTableProps {
   onClientSelect?: (client: Client) => void;
@@ -17,6 +20,10 @@ export default function ClientsTable({ onClientSelect, searchTerm, filterKebutuh
   const [sortBy, setSortBy] = useState<'created_at' | 'nama'>('created_at');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [page, setPage] = useState(1);
+  const queryClient = useQueryClient();
+  
+  // Ref to prevent double-click page jumps
+  const isPageChangingRef = useRef(false);
 
   // Debounce search input
   useEffect(() => {
@@ -44,6 +51,58 @@ export default function ClientsTable({ onClientSelect, searchTerm, filterKebutuh
   const totalCount = data?.totalCount || 0;
   const totalPages = data?.totalPages || 1;
 
+  // Prefetch adjacent pages for instant navigation
+  const prefetchPage = useCallback(async (targetPage: number) => {
+    if (targetPage < 1 || targetPage > totalPages) return;
+    
+    const queryKey = clientKeys.list({
+      page: targetPage,
+      search: debouncedSearch,
+      filterKebutuhan,
+      sortBy,
+      sortOrder
+    });
+
+    // Check if data is already cached
+    const cachedData = queryClient.getQueryData(queryKey);
+    if (cachedData) return;
+
+    // Prefetch the page
+    const from = (targetPage - 1) * ITEMS_PER_PAGE;
+    const to = from + ITEMS_PER_PAGE - 1;
+
+    queryClient.prefetchQuery({
+      queryKey,
+      queryFn: async () => {
+        let query = supabase
+          .from('clients')
+          .select('*', { count: 'exact' });
+
+        if (filterKebutuhan) query = query.eq('kebutuhan', filterKebutuhan);
+        
+        if (debouncedSearch && debouncedSearch.trim() !== '') {
+          const searchTerm = debouncedSearch.trim();
+          query = query.or(`nama.ilike.%${searchTerm}%,whatsapp.ilike.%${searchTerm}%,kabupaten.ilike.%${searchTerm}%`);
+        }
+
+        query = query
+          .order(sortBy, { ascending: sortOrder === 'asc' })
+          .range(from, to);
+
+        const { data: prefetchedData, error, count } = await query;
+
+        if (error) throw new Error(error.message);
+
+        return { 
+          data: (prefetchedData as Client[]) || [], 
+          totalCount: count || 0,
+          page: targetPage,
+          totalPages: Math.ceil((count || 0) / ITEMS_PER_PAGE)
+        };
+      },
+    });
+  }, [queryClient, debouncedSearch, filterKebutuhan, sortBy, sortOrder, totalPages]);
+
   // Debug: Log query state
   console.log('[ClientsTable] Query State:', {
     hasData: !!data,
@@ -65,8 +124,21 @@ export default function ClientsTable({ onClientSelect, searchTerm, filterKebutuh
   };
 
   const handlePageChange = (newPage: number) => {
+    // Prevent double-click/rapid-click from causing multiple page jumps
+    if (isPageChangingRef.current) {
+      console.log('[ClientsTable] Page change already in progress, ignoring click');
+      return;
+    }
+    
     console.log(`[ClientsTable] Changing page from ${page} to ${newPage}`);
+    isPageChangingRef.current = true;
     setPage(newPage);
+    
+    // Reset the flag after a short delay to allow next page change
+    setTimeout(() => {
+      isPageChangingRef.current = false;
+    }, 300);
+    
     // Scroll to top of table
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -110,23 +182,21 @@ export default function ClientsTable({ onClientSelect, searchTerm, filterKebutuh
     <div className="space-y-4">
       {/* Results Count & Pagination Info */}
       <div className="flex justify-between items-center text-sm text-gray-600">
-        <div>
-          Menampilkan {clients.length} dari {totalCount} client
-          {isFetching && !isLoading && <span className="ml-2 text-primary animate-pulse">🔄 Memperbarui data...</span>}
+        <div className="flex items-center gap-2">
+          <span>
+            Menampilkan {clients.length} dari {totalCount} client
+          </span>
+          {isFetching && !isLoading && (
+            <span className="flex items-center gap-1 text-primary">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span className="text-xs">Memperbarui...</span>
+            </span>
+          )}
         </div>
       </div>
 
       {/* Desktop Table */}
-      <div className="hidden md:block bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm relative">
-        {/* Loading Overlay for Pagination */}
-        {isFetching && (
-          <div className="absolute inset-0 bg-white/50 z-10 flex items-center justify-center">
-            <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-lg shadow-lg border">
-              <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
-              <span className="text-sm text-gray-600">Memuat halaman {page}...</span>
-            </div>
-          </div>
-        )}
+      <div className="hidden md:block bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
               <thead className="bg-gray-50 border-b border-gray-200">
@@ -241,17 +311,50 @@ export default function ClientsTable({ onClientSelect, searchTerm, filterKebutuh
         </div>
       </div>
 
-      {/* Mobile Card Layout */}
-      <div className="md:hidden relative">
-        {/* Loading Overlay for Pagination (Mobile) */}
-        {isFetching && (
-          <div className="absolute inset-0 bg-white/50 z-10 flex items-center justify-center">
-            <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-lg shadow-lg border">
-              <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
-              <span className="text-sm text-gray-600">Memuat...</span>
-            </div>
+      {/* Desktop Pagination */}
+      {totalPages > 1 && (
+        <div className="hidden md:flex items-center gap-4">
+          <button
+            onClick={() => handlePageChange(Math.max(1, page - 1))}
+            onMouseEnter={() => prefetchPage(page - 1)}
+            disabled={page === 1}
+            className="px-3 py-1.5 border border-gray-300 rounded-lg text-xs font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1 shrink-0"
+          >
+            {isFetching && page > 1 ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <span>←</span>
+            )}
+            Sebelumnya
+          </button>
+          
+          <div className="flex-1 text-center">
+            <span className="text-xs text-gray-600 font-medium">
+              Halaman {page} dari {totalPages}
+            </span>
+            {isFetching && (
+              <Loader2 className="w-3.5 h-3.5 animate-spin text-primary inline ml-2" />
+            )}
           </div>
-        )}
+
+          <button
+            onClick={() => handlePageChange(Math.min(totalPages, page + 1))}
+            onMouseEnter={() => prefetchPage(page + 1)}
+            disabled={page >= totalPages}
+            className="px-3 py-1.5 border border-gray-300 rounded-lg text-xs font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1 shrink-0"
+          >
+            Selanjutnya
+            {isFetching && page < totalPages ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <span>→</span>
+            )}
+          </button>
+        </div>
+      )}
+
+      {/* Mobile Card Layout */}
+      <div className="md:hidden">
         <div className="space-y-3">
         {clients.length === 0 ? (
           <div className="bg-white p-8 rounded-lg border border-gray-200 text-center text-gray-500">
@@ -320,37 +423,47 @@ export default function ClientsTable({ onClientSelect, searchTerm, filterKebutuh
           ))
         )}
         </div>
-      </div>
+        
+        {/* Mobile Pagination */}
+        {totalPages > 1 && (
+          <div className="flex justify-between items-center mt-3 pt-3 border-t border-gray-200">
+            <button
+              onClick={() => handlePageChange(Math.max(1, page - 1))}
+              disabled={page === 1}
+              className="px-3 py-1.5 border border-gray-300 rounded-lg text-xs font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1"
+            >
+              {isFetching && page > 1 ? (
+                <Loader2 className="w-3 h-3 animate-spin" />
+              ) : (
+                <span>←</span>
+              )}
+              Sebelumnya
+            </button>
+            
+            <div className="flex items-center gap-1.5">
+              {isFetching && (
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />
+              )}
+              <span className="text-xs text-gray-600 font-medium">
+                {page} / {totalPages}
+              </span>
+            </div>
 
-       {/* Pagination Controls */}
-       {totalPages > 1 && (
-        <div className="flex justify-center items-center gap-4 mt-6">
-          <button
-            onClick={() => handlePageChange(Math.max(1, page - 1))}
-            disabled={page === 1 || isFetching}
-            className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            ← Sebelumnya
-          </button>
-          
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-600 font-medium">
-              Halaman {page} dari {totalPages}
-            </span>
-            {isFetching && (
-              <span className="text-xs text-gray-400 animate-pulse">(loading...)</span>
-            )}
+            <button
+              onClick={() => handlePageChange(Math.min(totalPages, page + 1))}
+              disabled={page >= totalPages}
+              className="px-3 py-1.5 border border-gray-300 rounded-lg text-xs font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1"
+            >
+              Selanjutnya
+              {isFetching && page < totalPages ? (
+                <Loader2 className="w-3 h-3 animate-spin" />
+              ) : (
+                <span>→</span>
+              )}
+            </button>
           </div>
-
-          <button
-            onClick={() => handlePageChange(Math.min(totalPages, page + 1))}
-            disabled={page >= totalPages || isFetching}
-            className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            Selanjutnya →
-          </button>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
