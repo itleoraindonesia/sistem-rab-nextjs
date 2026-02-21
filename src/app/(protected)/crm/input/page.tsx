@@ -5,7 +5,7 @@ import { supabase } from "@/lib/supabase/client";
 export default function CRMInputPage() {
   return (
     <div className="min-h-screen bg-white">
-      <div className="max-w-6xl mx-auto md:p-6">
+ <div className=" md:">
 
 
         {/* Main Content */}

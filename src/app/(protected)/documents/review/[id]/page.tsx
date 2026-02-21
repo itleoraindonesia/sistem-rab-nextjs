@@ -95,7 +95,7 @@ export default function ReviewDetailPage() {
   }
 
   return (
-    <div className="container mx-auto max-w-5xl">
+ <div >
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4 mb-4">

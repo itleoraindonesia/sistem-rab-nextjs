@@ -15,7 +15,7 @@ export default function BuatMemoPage() {
   const [isiMemo, setIsiMemo] = React.useState('')
 
   return (
-    <div className="container mx-auto">
+ <div >
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4 mb-4">

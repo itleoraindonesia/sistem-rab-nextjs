@@ -36,7 +36,7 @@ export default function MoMPage() {
 
   if (error && (error as any).name !== 'AbortError') {
     return (
-      <div className="container mx-auto p-6">
+ <div >
         <div className="text-red-500">Error loading meetings: {error.message}</div>
       </div>
     )

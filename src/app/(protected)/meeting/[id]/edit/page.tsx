@@ -93,7 +93,7 @@ export default function EditMoMPage({ params }: { params: Promise<{ id: string }
 
   if (isLoading) {
     return (
-      <div className="container mx-auto flex items-center justify-center p-12">
+ <div className=" flex items-center justify-center p-12">
         <Loader2 className="h-8 w-8 animate-spin text-brand-primary" />
         <span className="ml-2">Memuat data meeting...</span>
       </div>
@@ -102,7 +102,7 @@ export default function EditMoMPage({ params }: { params: Promise<{ id: string }
 
   if (error) {
     return (
-      <div className="container mx-auto p-6">
+ <div >
         <Alert variant="destructive">
           <AlertTitle>Error</AlertTitle>
           <AlertDescription>

@@ -33,7 +33,7 @@ export default function ProtectedLayout({
       <AppSidebar />
       <SidebarInset>
         <Header />
-        <div className="flex flex-1 flex-col gap-4 pt-4 pb-8 p-4">
+        <div className="flex flex-1 flex-col gap-4 p-4 lg:p-6 pt-4 lg:pt-6 pb-8 w-full xl:max-w-7xl mx-auto">
           <FormProvider onSubmittingChange={setIsSubmitting}>
             {children}
           </FormProvider>

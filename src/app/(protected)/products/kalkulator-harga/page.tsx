@@ -85,7 +85,7 @@ export default function KalkulatorHargaPage() {
   const pathname = usePathname();
 
   return (
-    <div className="container mx-auto">
+ <div >
       <div className="space-y-6">
         {/* Header */}
         <div>

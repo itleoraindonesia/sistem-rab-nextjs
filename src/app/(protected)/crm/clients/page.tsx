@@ -80,7 +80,7 @@ export default function ClientsPage() {
   return (
     <div className="min-h-screen bg-white">
       <ConnectionStatus />
-      <div className="max-w-7xl mx-auto md:p-6">
+ <div className=" md:">
         {/* Header */}
         <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>

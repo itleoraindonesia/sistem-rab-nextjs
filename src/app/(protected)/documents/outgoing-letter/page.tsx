@@ -17,7 +17,7 @@ export default function SuratKeluarPage() {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto py-8">
+ <div className=" py-8">
         <div className="text-center">
           <p>Memuat data surat keluar...</p>
         </div>
@@ -27,7 +27,7 @@ export default function SuratKeluarPage() {
 
   if (error) {
     return (
-      <div className="container mx-auto py-8">
+ <div className=" py-8">
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
           <AlertTitle>Error</AlertTitle>
@@ -40,7 +40,7 @@ export default function SuratKeluarPage() {
   }
 
   return (
-    <div className="container mx-auto">
+ <div >
       <div className="space-y-6">
         {/* Header */}
         <div className="mb-4">

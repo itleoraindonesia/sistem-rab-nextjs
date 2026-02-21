@@ -15,7 +15,7 @@ export default function WorkflowAdminPage() {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto py-8">
+ <div className=" py-8">
         <div className="text-center">
           <p>Memuat data workflow...</p>
         </div>
@@ -28,7 +28,7 @@ export default function WorkflowAdminPage() {
   ) || []
 
   return (
-    <div className="container mx-auto py-6">
+ <div className=" py-6">
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">

@@ -45,7 +45,7 @@ const mockMemos = [
 
 export default function InternalMemoPage() {
   return (
-    <div className="container mx-auto">
+ <div >
       <div className="space-y-6">
         {/* Header */}
         <div className="mb-4">

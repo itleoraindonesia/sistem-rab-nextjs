@@ -147,7 +147,7 @@ export default function EditWorkflowPage() {
 
   if (stagesLoading) {
     return (
-      <div className="container mx-auto py-8">
+ <div className=" py-8">
         <div className="flex items-center justify-center">
           <Loader2 className="h-8 w-8 animate-spin" />
           <span className="ml-2">Memuat data workflow...</span>
@@ -158,7 +158,7 @@ export default function EditWorkflowPage() {
 
   if (!documentType) {
     return (
-      <div className="container mx-auto py-8">
+ <div className=" py-8">
         <div className="text-center">
           <p className="text-gray-500">Document type tidak ditemukan.</p>
           <Button 
@@ -175,7 +175,7 @@ export default function EditWorkflowPage() {
   }
 
   return (
-    <div className="container mx-auto py-6">
+ <div className=" py-6">
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">

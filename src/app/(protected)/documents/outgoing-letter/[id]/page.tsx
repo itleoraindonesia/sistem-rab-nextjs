@@ -29,7 +29,7 @@ export default function SuratDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto py-8">
+ <div className=" py-8">
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-brand-primary mb-4"></div>
           <p>Memuat data surat...</p>
@@ -40,7 +40,7 @@ export default function SuratDetailPage() {
 
   if (error || !letter) {
     return (
-      <div className="container mx-auto py-8">
+ <div className=" py-8">
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Error</AlertTitle>
@@ -61,7 +61,7 @@ export default function SuratDetailPage() {
   const approverName = approvalHistory?.action_by?.nama || '-';
 
   return (
-    <div className="container mx-auto max-w-5xl">
+ <div >
       <div className="space-y-6">
         {/* Header Actions */}
         <div className="flex items-center justify-between mb-4">

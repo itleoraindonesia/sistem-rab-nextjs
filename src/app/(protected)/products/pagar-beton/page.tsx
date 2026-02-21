@@ -4,7 +4,7 @@ import { Truck } from "lucide-react";
 
 export default function PagarBetonPage() {
   return (
-    <div className='container mx-auto'>
+ <div className=' '>
       <div className='space-y-6'>
         {/* Header */}
         <div className='mb-4'>

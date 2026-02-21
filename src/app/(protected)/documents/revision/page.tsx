@@ -156,7 +156,7 @@ export default function RevisiPage() {
 
    if (isLoading) {
     return (
-      <div className="container mx-auto py-8">
+ <div className=" py-8">
         <div className="text-center">
           <p>Memuat surat yang perlu direvisi...</p>
         </div>
@@ -165,7 +165,7 @@ export default function RevisiPage() {
   }
 
   return (
-    <div className="container mx-auto py-6">
+ <div className=" py-6">
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4 mb-4">

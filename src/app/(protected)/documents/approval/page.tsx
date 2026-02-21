@@ -50,7 +50,7 @@ export default function ApprovalQueuePage() {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto py-8">
+ <div className=" py-8">
         <div className="text-center">
           <p>Memuat antrian approval...</p>
         </div>
@@ -59,7 +59,7 @@ export default function ApprovalQueuePage() {
   }
 
   return (
-    <div className="container mx-auto py-6">
+ <div className=" py-6">
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4 mb-4">
@@ -185,7 +185,7 @@ export default function ApprovalQueuePage() {
         {/* Approval Modal */}
         {selectedLetter && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <Card className="max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+ <Card className=" max-h-[90vh] overflow-y-auto">
               <CardContent className="p-6">
                 <div className="space-y-6">
                   {/* Header */}

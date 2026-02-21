@@ -20,7 +20,7 @@ export default function PreviewWorkflowPage() {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto py-8">
+ <div className=" py-8">
         <div className="text-center">
           <p>Memuat data workflow...</p>
         </div>
@@ -30,7 +30,7 @@ export default function PreviewWorkflowPage() {
 
   if (!documentType) {
     return (
-      <div className="container mx-auto py-8">
+ <div className=" py-8">
         <div className="text-center">
           <p className="text-gray-500">Document type tidak ditemukan.</p>
           <Button 
@@ -47,7 +47,7 @@ export default function PreviewWorkflowPage() {
   }
 
   return (
-    <div className="container mx-auto py-6">
+ <div className=" py-6">
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">

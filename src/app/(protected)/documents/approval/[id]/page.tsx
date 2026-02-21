@@ -74,7 +74,7 @@ export default function ApprovalDetailPage() {
   const reviewerTrackings = histories?.filter((t: any) => t.stage_type === 'REVIEW' && t.status === 'APPROVED');
 
   return (
-    <div className="container mx-auto max-w-5xl">
+ <div >
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4 mb-4">

@@ -4,7 +4,7 @@ import { ShoppingCart, Clock, AlertTriangle, CheckCircle, TrendingUp, Users } fr
 export default function POPage() {
   return (
     <div className="min-h-screen bg-white">
-      <div className="max-w-7xl mx-auto p-6">
+ <div >
         {/* Header */}
         <div className="mb-6">
           <h1 className="text-3xl font-bold mb-2">Purchase Order (PO)</h1>

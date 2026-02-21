@@ -315,7 +315,7 @@ export default function DetailRAB({ params }: PageProps) {
 
   if (loading) {
     return (
-      <div className="container mx-auto p-10 text-center">
+ <div className=" p-10 text-center">
         <div className="text-gray-600">Memuat data...</div>
       </div>
     );
@@ -323,7 +323,7 @@ export default function DetailRAB({ params }: PageProps) {
 
   if (error && !dokumen) {
     return (
-      <div className="container mx-auto p-10">
+ <div className=" p-10">
         <Alert variant="destructive">
           <AlertTitle>Error Memuat Dokumen</AlertTitle>
           <AlertDescription>{error}</AlertDescription>
@@ -336,7 +336,7 @@ export default function DetailRAB({ params }: PageProps) {
   }
 
   if (!dokumen) {
-    return <div className="container mx-auto p-10 text-center">Memuat...</div>;
+ return <div className=" p-10 text-center">Memuat...</div>;
   }
 
   const total =
@@ -347,7 +347,7 @@ export default function DetailRAB({ params }: PageProps) {
       : dokumen?.total_cost || 0;
 
   return (
-    <div className="container mx-auto">
+ <div >
       <div className="space-y-6">
         {/* Header with actions */}
         <div className="flex items-center justify-between mb-6 no-print">

@@ -6,7 +6,7 @@ import Link from "next/link";
 export default function KalkulatorDindingPage() {
   return (
     <div className="min-h-screen bg-surface-secondary">
-      <div className="max-w-7xl mx-auto p-6">
+ <div >
         <Link 
           href="/products/kalkulator-harga" 
           className="inline-flex items-center gap-2 text-muted hover:text-primary mb-6 transition-colors"

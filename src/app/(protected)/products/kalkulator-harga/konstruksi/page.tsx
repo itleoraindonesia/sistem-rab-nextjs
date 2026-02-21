@@ -6,7 +6,7 @@ import Link from "next/link";
 export default function KalkulatorKonstruksiPage() {
   return (
     <div className="min-h-screen bg-surface-secondary">
-      <div className="max-w-7xl mx-auto p-6">
+ <div >
         {/* Back Button */}
         <Link 
           href="/products/kalkulator-harga" 

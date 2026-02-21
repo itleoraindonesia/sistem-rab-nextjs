@@ -53,7 +53,7 @@ export default function MasterOngkirPage() {
 
   if (!isAdmin) {
     return (
-      <div className='p-4 max-w-7xl mx-auto'>
+ <div className=' '>
         <div className='text-center py-20'>
           <div className='text-6xl mb-4'>🔒</div>
           <h1 className='text-2xl font-bold text-gray-900 mb-2'>
@@ -144,7 +144,7 @@ export default function MasterOngkirPage() {
   };
 
   return (
-    <div className='container mx-auto'>
+ <div className=' '>
       <div className='space-y-6'>
         {/* Header */}
         <div className='mb-4'>

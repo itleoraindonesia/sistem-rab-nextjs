@@ -57,7 +57,7 @@ export default function MemoDetailPage() {
   const router = useRouter()
 
   return (
-    <div className="container mx-auto max-w-5xl">
+ <div >
       <div className="space-y-6">
         {/* Header Actions */}
         <div className="flex items-center justify-between mb-4">
