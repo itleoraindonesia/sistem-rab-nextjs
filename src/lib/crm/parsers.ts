@@ -1,4 +1,4 @@
-import { normalizeWhatsApp, normalizeKebutuhan, normalizeProduk, validateProdukWithSuggestions, capitalizeName, validateClient, ValidationError, VALID_PRODUCTS } from './validators';
+import { normalizeWhatsApp, normalizeKebutuhan, normalizeProduk, validateProdukWithSuggestions, validateKebutuhanWithSuggestions, capitalizeName, validateClient, ValidationError, VALID_PRODUCTS } from './validators';
 
 export interface ParsedRow {
   row: number;
@@ -15,6 +15,7 @@ export interface ParsedRow {
   isValid: boolean;
   suggestions?: Array<{kabupaten: string, provinsi: string}>;
   produkSuggestions?: string[];
+  kebutuhanSuggestions?: string[];
   existingClient?: any;
   isOverride?: boolean;
 }
@@ -108,10 +109,13 @@ export function parseCSV(text: string, trackingSource?: 'instagram_only' | 'what
     // Product validation with suggestions
     const productValidation = validateProdukWithSuggestions(produk);
 
+    // Kebutuhan validation with suggestions
+    const kebutuhanValidation = validateKebutuhanWithSuggestions(kebutuhan);
+
     const clientData = {
       nama: capitalizedNama,
       whatsapp: normalizedWa,
-      kebutuhan: normalizedKebutuhan,
+      kebutuhan: kebutuhanValidation.isValid && kebutuhanValidation.normalized ? kebutuhanValidation.normalized : normalizedKebutuhan,
       produk: productValidation.isValid ? productValidation.normalized : produk.trim(),
       kabupaten: kabupaten.trim(),
       luasan: parsedLuasan,
@@ -130,6 +134,17 @@ export function parseCSV(text: string, trackingSource?: 'instagram_only' | 'what
         });
       }
     }
+
+    // Add kebutuhan logic explicitly if needed
+    if (!kebutuhanValidation.isValid && kebutuhanValidation.suggestions.length > 0) {
+      const hasKebutuhanError = errors.some(e => e.field === 'kebutuhan');
+      if (!hasKebutuhanError) {
+        errors.push({
+          field: 'kebutuhan',
+          message: 'Kebutuhan tidak valid. Lihat saran di bawah.',
+        });
+      }
+    }
     
     // Add Instagram username validation if it's Instagram source
     if (trackingSource === 'instagram_only' && !instagramUsername.trim()) {
@@ -144,6 +159,7 @@ export function parseCSV(text: string, trackingSource?: 'instagram_only' | 'what
       nama: clientData.nama,
       whatsapp: clientData.whatsapp,
       kebutuhan: clientData.kebutuhan,
+      kebutuhanSuggestions: !kebutuhanValidation.isValid ? kebutuhanValidation.suggestions : undefined,
       produk: clientData.produk,
       produkSuggestions: !productValidation.isValid ? productValidation.suggestions : undefined,
       kabupaten: clientData.kabupaten,

@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase/client';
 import { getAllValidKabupaten, validateKabupatenWithSuggestions } from '@/lib/crm/validators';
 import { useToast } from '@/components/ui/use-toast';
 import { getFirstName } from '@/lib/utils/nameUtils';
+import { Loader2, CheckCircle, XCircle, AlertCircle, Home, MapPin, Package } from 'lucide-react';
 
 const EXAMPLE_CSV_WHATSAPP = `Budi Santoso, 08123456789, Rumah, Pagar Beton, Kota Depok, 200
 Ani Wijaya, -, Pagar, Panel Lantai, Kota Bandung, 50
@@ -331,13 +332,13 @@ export default function BulkInputForm() {
             </h3>
             <div className="flex gap-4 mt-1 text-sm">
               {validCount > 0 && (
-                <span className="text-green-600">✅ {validCount} valid</span>
+                <span className="text-green-600 flex items-center gap-1"><CheckCircle className="w-4 h-4" /> {validCount} valid</span>
               )}
               {errorCount > 0 && (
-                <span className="text-red-600">❌ {errorCount} error</span>
+                <span className="text-red-600 flex items-center gap-1"><XCircle className="w-4 h-4" /> {errorCount} error</span>
               )}
               {parsedData.filter(r => r.errors.some(e => e.field === 'duplicate')).length > 0 && (
-                <span className="text-orange-600">⏭️ {parsedData.filter(r => r.errors.some(e => e.field === 'duplicate')).length} duplikat</span>
+                <span className="text-orange-600 flex items-center gap-1"><AlertCircle className="w-4 h-4" /> {parsedData.filter(r => r.errors.some(e => e.field === 'duplicate')).length} duplikat</span>
               )}
             </div>
           </div>
@@ -369,7 +370,9 @@ export default function BulkInputForm() {
                     }`}
                   >
                     <td className="px-3 py-2">
-                      {row.isValid ? '✅' : '❌'} {row.row}
+                       <span className="flex items-center gap-1">
+                         {row.isValid ? <CheckCircle className="w-4 h-4 text-green-600" /> : <XCircle className="w-4 h-4 text-red-600" />} {row.row}
+                       </span>
                     </td>
                     {trackingSource === 'instagram_only' && (
                       <td className="px-3 py-2 font-mono text-xs">
@@ -397,18 +400,30 @@ export default function BulkInputForm() {
                         </div>
                       )}
                       {row.errors.find(e => e.field === 'duplicate') && (
-                        <div className="text-xs text-orange-600 mt-1 font-medium">
-                          ⏭️ Duplikat
-                        </div>
-                      )}
+                         <div className="text-xs text-orange-600 mt-1 font-medium flex items-center gap-1">
+                           <AlertCircle className="w-3 h-3" /> Duplikat
+                         </div>
+                       )}
                     </td>
                     <td className="px-3 py-2">
-                      {row.kebutuhan || <span className="text-gray-400">-</span>}
-                      {row.errors.find(e => e.field === 'kebutuhan') && (
-                        <div className="text-xs text-red-600 mt-1">
-                          {row.errors.find(e => e.field === 'kebutuhan')?.message}
-                        </div>
-                      )}
+                       {row.kebutuhan || <span className="text-gray-400">-</span>}
+                       {row.errors.find(e => e.field === 'kebutuhan') && (
+                         <div className="text-xs text-red-600 mt-1">
+                           {row.errors.find(e => e.field === 'kebutuhan')?.message}
+                         </div>
+                       )}
+                       {row.kebutuhanSuggestions && row.kebutuhanSuggestions.length > 0 && (
+                         <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-xs">
+                           <div className="font-semibold text-blue-800 mb-1">Mungkin maksud Anda:</div>
+                           <ul className="space-y-1">
+                             {row.kebutuhanSuggestions.map((sug, idx) => (
+                               <li key={idx} className="text-blue-700">
+                                 • {sug}
+                               </li>
+                             ))}
+                           </ul>
+                         </div>
+                       )}
                     </td>
                     <td className="px-3 py-2">
                       {row.produk || <span className="text-gray-400">-</span>}
@@ -522,19 +537,22 @@ export default function BulkInputForm() {
                    )}
 
                    {/* Suggestions Section */}
-                   {((row.suggestions?.length ?? 0) > 0 || (row.produkSuggestions?.length ?? 0) > 0) && (
-                     <div className="mt-2 bg-yellow-50 p-2 rounded border border-yellow-100">
-                       <p className="text-xs font-semibold text-yellow-800 mb-1">Saran Sistem:</p>
-                       <ul className="text-xs text-yellow-700 space-y-1">
-                         {row.suggestions?.map((s, i) => (
-                           <li key={`loc-${i}`}>📍 Lokasi: {s.kabupaten}</li>
-                         ))}
-                         {row.produkSuggestions?.map((s, i) => (
-                           <li key={`prod-${i}`}>📦 Produk: {s}</li>
-                         ))}
-                       </ul>
-                     </div>
-                   )}
+                    {((row.suggestions?.length ?? 0) > 0 || (row.produkSuggestions?.length ?? 0) > 0 || (row.kebutuhanSuggestions?.length ?? 0) > 0) && (
+                      <div className="mt-2 bg-yellow-50 p-2 rounded border border-yellow-100">
+                        <p className="text-xs font-semibold text-yellow-800 mb-1">Saran Sistem:</p>
+                        <ul className="text-xs text-yellow-700 space-y-1">
+                          {row.kebutuhanSuggestions?.map((s, i) => (
+                            <li key={`keb-${i}`} className="flex items-center gap-1"><Home className="w-3 h-3" /> Kebutuhan: {s}</li>
+                          ))}
+                          {row.suggestions?.map((s, i) => (
+                            <li key={`loc-${i}`} className="flex items-center gap-1"><MapPin className="w-3 h-3" /> Lokasi: {s.kabupaten}</li>
+                          ))}
+                          {row.produkSuggestions?.map((s, i) => (
+                            <li key={`prod-${i}`} className="flex items-center gap-1"><Package className="w-3 h-3" /> Produk: {s}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                 </div>
               </div>
             ))}
@@ -571,9 +589,14 @@ export default function BulkInputForm() {
           <button
             onClick={handleSave}
             disabled={isSaving || validCount === 0}
-            className="w-full sm:w-auto px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:bg-gray-300 disabled:cursor-not-allowed font-medium shadow-sm active:scale-[0.98] transition-transform"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:bg-gray-300 disabled:cursor-not-allowed font-medium shadow-sm active:scale-[0.98] transition-transform"
           >
-                        {isSaving ? 'Menyimpan...' : `Simpan ${validCount} Data`}
+            {isSaving ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Menyimpan...
+              </>
+            ) : `Simpan ${validCount} Data`}
           </button>
           
           <button

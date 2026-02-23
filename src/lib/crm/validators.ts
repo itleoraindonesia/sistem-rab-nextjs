@@ -106,6 +106,51 @@ export function normalizeKebutuhan(kebutuhan: string): string {
   return kebutuhan.trim();
 }
 
+// Validate kebutuhan and return suggestions
+export function validateKebutuhanWithSuggestions(kebutuhan: string): { isValid: boolean, normalized?: string, suggestions: string[] } {
+  if (!kebutuhan || !kebutuhan.trim()) {
+    return { isValid: false, suggestions: [] };
+  }
+
+  const cleaned = kebutuhan.trim().toLowerCase();
+
+  // Check aliases first
+  if (KEBUTUHAN_ALIASES[cleaned]) {
+    return { isValid: true, normalized: KEBUTUHAN_ALIASES[cleaned], suggestions: [] };
+  }
+
+  // Check exact match (case-insensitive)
+  const exactMatch = VALID_KEBUTUHAN.find(
+    (valid) => valid.toLowerCase() === cleaned
+  );
+
+  if (exactMatch) {
+    return { isValid: true, normalized: exactMatch, suggestions: [] };
+  }
+
+  // Fuzzy match for suggestions
+  const suggestions = VALID_KEBUTUHAN.filter(k => 
+    k.toLowerCase().includes(cleaned) || cleaned.includes(k.toLowerCase())
+  ).slice(0, 5);
+
+  // Also check aliases for suggestions
+  const aliasSuggestions = Object.entries(KEBUTUHAN_ALIASES)
+    .filter(([alias, target]) => 
+      alias.includes(cleaned) || cleaned.includes(alias)
+    )
+    .map(([, target]) => target)
+    .filter((target, idx, arr) => arr.indexOf(target) === idx && !suggestions.includes(target));
+
+  const allSuggestions = [...suggestions, ...aliasSuggestions].slice(0, 5);
+
+  // If exactly one suggestion found, treat it as valid match (Auto-Select)
+  if (allSuggestions.length === 1) {
+    return { isValid: true, normalized: allSuggestions[0], suggestions: [] };
+  }
+
+  return { isValid: false, suggestions: allSuggestions.length > 0 ? allSuggestions : [...VALID_KEBUTUHAN].slice(0, 5) };
+}
+
 // Normalize produk (case-insensitive)
 export function normalizeProduk(produk: string): string {
   if (!produk) return '';

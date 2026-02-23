@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.1"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       clients: {
@@ -733,6 +758,9 @@ export type Database = {
         | "Panel Saja"
         | "U-Ditch"
         | "Plastik Board"
+        | "Lapangan"
+        | "Sekolah"
+        | "Kantor"
       letter_action_type:
         | "CREATED"
         | "SUBMITTED"
@@ -896,6 +924,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       kebutuhan_type: [
@@ -910,6 +941,9 @@ export const Constants = {
         "Panel Saja",
         "U-Ditch",
         "Plastik Board",
+        "Lapangan",
+        "Sekolah",
+        "Kantor",
       ],
       letter_action_type: [
         "CREATED",
