@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { Providers } from "../components/Providers";
-import PWAInstallBanner from "../components/ui/PWAInstallBanner";
 import PWALoadingScreen from "../components/ui/PWALoadingScreen";
 import { Toaster } from "@/components/ui/toaster";
 import ClearPersistCache from "../components/ClearPersistCache";
@@ -49,11 +48,28 @@ export default function RootLayout({
         <link rel='icon' type='image/png' sizes='48x48' href='/favicon-48x48.png' />
         <link rel='icon' type='image/png' sizes='64x64' href='/favicon-64x64.png' />
         <link rel='icon' href='/favicon.ico' />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if ('serviceWorker' in navigator) {
+                window.addEventListener('load', function() {
+                  navigator.serviceWorker.register('/sw.js').then(
+                    function(registration) {
+                      console.log('SW registered: ', registration.scope);
+                    },
+                    function(registrationError) {
+                      console.log('SW registration failed: ', registrationError);
+                    }
+                  );
+                });
+              }
+            `,
+          }}
+        />
       </head>
       <body className={`${inter.variable} font-sans antialiased`}>
         <ClearPersistCache />
         <PWALoadingScreen />
-        <PWAInstallBanner />
         <Providers>{children}</Providers>
         <Toaster />
       </body>

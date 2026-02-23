@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import { RefreshCw } from "lucide-react";
 
 export default function PWALoadingScreen() {
   const [isLoading, setIsLoading] = useState(true);
@@ -50,40 +50,30 @@ export default function PWALoadingScreen() {
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-50 transition-opacity duration-500 ${
+      className={`fixed inset-0 z-50 flex flex-col items-center justify-center bg-white transition-opacity duration-500 ${
         isLoading ? "opacity-100" : "opacity-0 pointer-events-none"
       }`}
     >
-      {/* Background gradient */}
-      <div className='absolute inset-0 bg-gradient-to-br from-slate-100 to-slate-200' />
+      {/* Background */}
+      <div className='absolute inset-0 bg-white' />
 
       {/* Content */}
       <div className='relative z-10 flex flex-col items-center space-y-6'>
         {/* Logo */}
         <div className='relative'>
-          <Link href="/">
-            <img
-              src='/Logo-Leora-PNG.png'
-              alt='Logo Leora'
-              width={120}
-              height={120}
-              className='pointer-events-none select-none object-contain'
-            />
-          </Link>
-        </div>
-
-        {/* Text */}
-        <div className='text-center space-y-2'>
-          <h1 className='text-2xl font-bold text-brand-primary tracking-wide'>
-            Leora ERP
-          </h1>
+          <img
+            src='/Logo-Leora-PNG.png'
+            alt='Logo Leora'
+            width={120}
+            height={120}
+            className='pointer-events-none select-none object-contain'
+          />
         </div>
 
         {/* Loading indicator */}
-        <div className='flex space-x-1'>
-          <div className='w-2 h-2 bg-slate-400 rounded-full animate-bounce [animation-delay:-0.3s]' />
-          <div className='w-2 h-2 bg-slate-400 rounded-full animate-bounce [animation-delay:-0.15s]' />
-          <div className='w-2 h-2 bg-slate-400 rounded-full animate-bounce' />
+        <div className='text-center'>
+          <RefreshCw className='h-10 w-10 animate-spin text-brand-primary mx-auto' />
+          <p className='mt-3 text-sm text-gray-500'>Memuat data...</p>
         </div>
       </div>
     </div>
