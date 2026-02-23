@@ -15,7 +15,8 @@ import { Textarea } from "@/components/ui/textarea"
 import Card from "@/components/ui/Card"
 import { CardContent, CardHeader, CardTitle } from "@/components/ui/Card"
 import { TagsInput } from "@/components/ui/TagsInput"
-import { Loader2 } from "lucide-react"
+import LoadingState from "@/components/form/LoadingState"
+import LoadingState from "@/components/form/LoadingState"
 
 interface EditMeetingFormProps {
   meetingId: string
@@ -80,13 +81,7 @@ export function EditMeetingForm({ meetingId }: EditMeetingFormProps) {
   })
 
   if (isLoading) {
-    return (
-      <Card>
-        <CardContent className="p-6 flex justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-brand-primary" />
-        </CardContent>
-      </Card>
-    )
+    return <LoadingState />
   }
 
   if (error) {
@@ -219,9 +214,10 @@ export function EditMeetingForm({ meetingId }: EditMeetingFormProps) {
             </Button>
             <Button
               type="submit"
-              disabled={updateMutation.isPending}
+              isLoading={updateMutation.isPending}
+              loadingText="Menyimpan..."
             >
-              {updateMutation.isPending ? "Menyimpan..." : "Update Meeting"}
+              Update Meeting
             </Button>
           </div>
         </form>

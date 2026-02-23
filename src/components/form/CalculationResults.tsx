@@ -3,6 +3,7 @@
 import { RABFormData } from '../../schemas/rabSchema';
 import Card, { CardHeader, CardTitle, CardContent } from '../ui/Card';
 import Button from '../ui/Button';
+import { Loader2 } from 'lucide-react';
 
 interface CalculationResultsProps {
   hasil: {
@@ -111,10 +112,15 @@ export default function CalculationResults({
       <div className="space-y-3">
         <Button
           type="submit"
-          className="w-full bg-brand-primary hover:bg-brand-dark"
+          className="w-full inline-flex items-center justify-center gap-2 bg-brand-primary hover:bg-brand-dark"
           disabled={isSubmitting || !isValid}
         >
-          {isSubmitting ? 'Menyimpan...' : 'Simpan RAB'}
+          {isSubmitting ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Menyimpan...
+            </>
+          ) : 'Simpan RAB'}
         </Button>
 
         <div className="grid grid-cols-2 gap-3">

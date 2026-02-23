@@ -205,9 +205,10 @@ export function MeetingForm() {
             </Button>
             <Button
               type="submit"
-              disabled={createMutation.isPending}
+              isLoading={createMutation.isPending}
+              loadingText="Menyimpan..."
             >
-              {createMutation.isPending ? "Menyimpan..." : "Buat Jadwal Meeting"}
+              Buat Jadwal Meeting
             </Button>
           </div>
         </form>

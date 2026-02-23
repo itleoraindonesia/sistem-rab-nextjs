@@ -19,6 +19,7 @@ import {
   Building,
 } from "lucide-react";
 import { RABFormData } from "../../schemas/rabSchema";
+import Button from "../ui/Button";
 import { useState, useEffect, useMemo } from "react";
 import { useMasterData } from "../../context/MasterDataContext";
 import { useFormContext } from "../../context/FormContext";
@@ -1321,26 +1322,30 @@ export default function FormRAB({
 
             {/* Save Button */}
             <div className='mt-4 hidden md:block'>
-              <button
+              <Button
                 type='button'
                 onClick={handleSubmit(handleFormSubmit)}
-                disabled={isSubmitting || !isValid}
-                className='w-full bg-brand-primary hover:bg-brand-primary/90 text-white font-semibold py-3 px-6 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
+                disabled={!isValid}
+                isLoading={isSubmitting}
+                loadingText="Menyimpan..."
+                className="w-full"
               >
-                {isSubmitting ? "Menyimpan..." : "Simpan"}
-              </button>
+                Simpan
+              </Button>
             </div>
 
             {/* Mobile Save Button */}
             <div className='fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-200 md:hidden z-10'>
-              <button
+              <Button
                 type='button'
                 onClick={handleSubmit(handleFormSubmit)}
-                disabled={isSubmitting || !isValid}
-                className='w-full bg-brand-primary hover:bg-brand-primary/90 text-white font-semibold py-3 px-6 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
+                disabled={!isValid}
+                isLoading={isSubmitting}
+                loadingText="Menyimpan..."
+                className="w-full"
               >
-                {isSubmitting ? "Menyimpan..." : "Simpan"}
-              </button>
+                Simpan
+              </Button>
             </div>
           </div>
         </div>

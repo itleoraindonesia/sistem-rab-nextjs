@@ -1,5 +1,6 @@
 import React from "react";
 import { cn } from "../../lib/utils";
+import { Loader2 } from "lucide-react";
 
 const Button = React.forwardRef<
   HTMLButtonElement,
@@ -7,6 +8,8 @@ const Button = React.forwardRef<
     variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link";
     size?: "default" | "sm" | "lg" | "icon";
     asChild?: boolean;
+    isLoading?: boolean;
+    loadingText?: string;
   }
 >(
   (
@@ -15,6 +18,10 @@ const Button = React.forwardRef<
       variant = "default",
       size = "default",
       asChild = false,
+      isLoading = false,
+      loadingText,
+      children,
+      disabled,
       ...props
     },
     ref
@@ -49,7 +56,17 @@ const Button = React.forwardRef<
       className
     );
 
-    return <Comp className={finalClassName} ref={ref} {...props} />;
+    return (
+      <Comp 
+        className={finalClassName} 
+        ref={ref} 
+        disabled={disabled || isLoading} 
+        {...props}
+      >
+        {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
+        {isLoading ? (loadingText || children) : children}
+      </Comp>
+    );
   }
 );
 
