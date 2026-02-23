@@ -150,66 +150,74 @@ export default function ProdukRABDashboardPage() {
               <div className="space-y-3">
                 <a
                   href="/products/baru"
-                  className="flex items-center justify-between p-4 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
+                  className="group flex items-center justify-between p-4 bg-white border border-gray-200 shadow-sm rounded-xl hover:border-blue-300 hover:shadow-md hover:ring-1 hover:ring-blue-100 transition-all duration-200"
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                      <FileText className="w-5 h-5 text-blue-600" />
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-xl flex items-center justify-center border border-blue-100/50 text-blue-600 shadow-sm">
+                      <FileText className="w-6 h-6" />
                     </div>
                     <div>
-                      <p className="font-medium">Buat RAB Baru</p>
-                      <p className="text-sm text-gray-600">Hitung estimasi biaya proyek</p>
+                      <p className="font-semibold text-gray-900 group-hover:text-blue-700 transition-colors">Buat RAB Baru</p>
+                      <p className="text-sm text-gray-500">Hitung estimasi biaya proyek</p>
                     </div>
                   </div>
-                  <span className="text-blue-600">→</span>
+                  <div className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-blue-600 group-hover:text-white transition-all shadow-sm">
+                    <span>→</span>
+                  </div>
                 </a>
 
                 <a
                   href="/products/kalkulator-harga"
-                  className="flex items-center justify-between p-4 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
+                  className="group flex items-center justify-between p-4 bg-white border border-gray-200 shadow-sm rounded-xl hover:border-emerald-300 hover:shadow-md hover:ring-1 hover:ring-emerald-100 transition-all duration-200"
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                      <Calculator className="w-5 h-5 text-blue-600" />
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-gradient-to-br from-emerald-50 to-emerald-100/50 rounded-xl flex items-center justify-center border border-emerald-100/50 text-emerald-600 shadow-sm">
+                      <Calculator className="w-6 h-6" />
                     </div>
                     <div>
-                      <p className="font-medium">Kalkulator Harga</p>
-                      <p className="text-sm text-gray-600">Estimasi biaya proyek</p>
+                      <p className="font-semibold text-gray-900 group-hover:text-emerald-700 transition-colors">Kalkulator Harga</p>
+                      <p className="text-sm text-gray-500">Estimasi biaya proyek</p>
                     </div>
                   </div>
-                  <span className="text-blue-600">→</span>
+                  <div className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-emerald-600 group-hover:text-white transition-all shadow-sm">
+                    <span>→</span>
+                  </div>
                 </a>
 
                 <a
                   href="/products/panel-lantai-dinding"
-                  className="flex items-center justify-between p-4 bg-green-50 hover:bg-green-100 rounded-lg transition-colors"
+                  className="group flex items-center justify-between p-4 bg-white border border-gray-200 shadow-sm rounded-xl hover:border-violet-300 hover:shadow-md hover:ring-1 hover:ring-violet-100 transition-all duration-200"
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                      <Package className="w-5 h-5 text-green-600" />
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-gradient-to-br from-violet-50 to-violet-100/50 rounded-xl flex items-center justify-center border border-violet-100/50 text-violet-600 shadow-sm">
+                      <Package className="w-6 h-6" />
                     </div>
                     <div>
-                      <p className="font-medium">Panel Lantai & Dinding</p>
-                      <p className="text-sm text-gray-600">Kelola dokumen panel</p>
+                      <p className="font-semibold text-gray-900 group-hover:text-violet-700 transition-colors">Panel Lantai & Dinding</p>
+                      <p className="text-sm text-gray-500">Kelola dokumen panel</p>
                     </div>
                   </div>
-                  <span className="text-green-600">→</span>
+                  <div className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-violet-600 group-hover:text-white transition-all shadow-sm">
+                    <span>→</span>
+                  </div>
                 </a>
 
                 <a
                   href="/products/pagar-beton"
-                  className="flex items-center justify-between p-4 bg-orange-50 hover:bg-orange-100 rounded-lg transition-colors"
+                  className="group flex items-center justify-between p-4 bg-white border border-gray-200 shadow-sm rounded-xl hover:border-orange-300 hover:shadow-md hover:ring-1 hover:ring-orange-100 transition-all duration-200"
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
-                      <Package className="w-5 h-5 text-orange-600" />
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-gradient-to-br from-orange-50 to-orange-100/50 rounded-xl flex items-center justify-center border border-orange-100/50 text-orange-600 shadow-sm">
+                      <Package className="w-6 h-6" />
                     </div>
                     <div>
-                      <p className="font-medium">Pagar Beton</p>
-                      <p className="text-sm text-gray-600">Sistem pagar beton (soon)</p>
+                      <p className="font-semibold text-gray-900 group-hover:text-orange-700 transition-colors">Pagar Beton</p>
+                      <p className="text-sm text-gray-500">Sistem pagar beton (soon)</p>
                     </div>
                   </div>
-                  <span className="text-orange-600">→</span>
+                  <div className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-orange-600 group-hover:text-white transition-all shadow-sm">
+                    <span>→</span>
+                  </div>
                 </a>
               </div>
 
@@ -235,39 +243,54 @@ export default function ProdukRABDashboardPage() {
             <CardContent className="p-6">
               <h3 className="text-lg font-semibold mb-4">Kategori Produk</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="p-4 bg-blue-50 rounded-lg">
-                  <div className="flex items-center gap-3 mb-2">
-                    <Package className="w-5 h-5 text-blue-600" />
-                    <span className="font-medium text-blue-900">Panel Lantai & Dinding</span>
+                <div className="relative overflow-hidden p-5 bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 group">
+                  <div className="absolute -top-4 -right-4 p-4 opacity-[0.03] group-hover:scale-110 transition-transform duration-500">
+                    <Package className="w-32 h-32 text-blue-900" />
                   </div>
-                  <p className="text-sm text-blue-700 mb-2">Panel beton prefabrikasi untuk konstruksi</p>
-                  <div className="flex justify-between text-xs">
-                    <span>Dokumen: 45</span>
-                    <span className="text-green-600">Aktif</span>
-                  </div>
-                </div>
-
-                <div className="p-4 bg-orange-50 rounded-lg">
-                  <div className="flex items-center gap-3 mb-2">
-                    <Package className="w-5 h-5 text-orange-600" />
-                    <span className="font-medium text-orange-900">Pagar Beton</span>
-                  </div>
-                  <p className="text-sm text-orange-700 mb-2">Sistem pagar beton prefabrikasi</p>
-                  <div className="flex justify-between text-xs">
-                    <span>Dokumen: 0</span>
-                    <span className="text-gray-600">Coming Soon</span>
+                  <div className="relative z-10">
+                    <div className="w-12 h-12 bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-xl flex items-center justify-center mb-4 border border-blue-100/50">
+                      <Package className="w-6 h-6 text-blue-600" />
+                    </div>
+                    <h4 className="font-semibold text-gray-900 mb-1">Panel Lantai & Dinding</h4>
+                    <p className="text-sm text-gray-500 mb-6 h-10">Panel beton prefabrikasi untuk konstruksi</p>
+                    <div className="flex items-center justify-between text-sm pt-4 border-t border-gray-100">
+                      <span className="font-medium text-gray-700">45 Dokumen</span>
+                      <span className="px-2.5 py-1 bg-green-50 text-green-700 font-medium rounded-full text-xs border border-green-100/50">Aktif</span>
+                    </div>
                   </div>
                 </div>
 
-                <div className="p-4 bg-green-50 rounded-lg">
-                  <div className="flex items-center gap-3 mb-2">
-                    <Calculator className="w-5 h-5 text-green-600" />
-                    <span className="font-medium text-green-900">Kalkulator RAB</span>
+                <div className="relative overflow-hidden p-5 bg-white border border-gray-100 rounded-xl shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 group">
+                  <div className="absolute -top-4 -right-4 p-4 opacity-[0.03] group-hover:scale-110 transition-transform duration-500">
+                    <Package className="w-32 h-32 text-orange-900" />
                   </div>
-                  <p className="text-sm text-green-700 mb-2">Tools perhitungan otomatis biaya</p>
-                  <div className="flex justify-between text-xs">
-                    <span>Penggunaan: 89x</span>
-                    <span className="text-green-600">Aktif</span>
+                  <div className="relative z-10">
+                    <div className="w-12 h-12 bg-gradient-to-br from-orange-50 to-orange-100/50 rounded-xl flex items-center justify-center mb-4 border border-orange-100/50">
+                      <Package className="w-6 h-6 text-orange-600" />
+                    </div>
+                    <h4 className="font-semibold text-gray-900 mb-1">Pagar Beton</h4>
+                    <p className="text-sm text-gray-500 mb-6 h-10">Sistem pagar beton prefabrikasi</p>
+                    <div className="flex items-center justify-between text-sm pt-4 border-t border-gray-100">
+                      <span className="font-medium text-gray-700">0 Dokumen</span>
+                      <span className="px-2.5 py-1 bg-gray-100 text-gray-600 font-medium rounded-full text-xs border border-gray-200">Segera Hadir</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="relative overflow-hidden p-5 bg-white border border-gray-100 rounded-xl shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 group">
+                  <div className="absolute -top-4 -right-4 p-4 opacity-[0.03] group-hover:scale-110 transition-transform duration-500">
+                    <Calculator className="w-32 h-32 text-emerald-900" />
+                  </div>
+                  <div className="relative z-10">
+                    <div className="w-12 h-12 bg-gradient-to-br from-emerald-50 to-emerald-100/50 rounded-xl flex items-center justify-center mb-4 border border-emerald-100/50">
+                      <Calculator className="w-6 h-6 text-emerald-600" />
+                    </div>
+                    <h4 className="font-semibold text-gray-900 mb-1">Kalkulator RAB</h4>
+                    <p className="text-sm text-gray-500 mb-6 h-10">Tools perhitungan otomatis biaya proyek</p>
+                    <div className="flex items-center justify-between text-sm pt-4 border-t border-gray-100">
+                      <span className="font-medium text-gray-700">89x Dipakai</span>
+                      <span className="px-2.5 py-1 bg-green-50 text-green-700 font-medium rounded-full text-xs border border-green-100/50">Aktif</span>
+                    </div>
                   </div>
                 </div>
               </div>

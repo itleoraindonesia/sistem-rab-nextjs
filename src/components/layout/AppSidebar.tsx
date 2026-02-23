@@ -11,6 +11,7 @@ import { usePermissions } from "../../hooks/usePermissions"
 import { canAccessMenu } from "../../lib/permissions"
 import { CompactRoleBadge } from "../../components/ui/RoleBadge"
 import { usePendingReviews, usePendingApprovals, useLetters } from "../../hooks/useLetters"
+import PWAInstallButton from "../../components/ui/PWAInstallButton"
 import {
   Sidebar,
   SidebarContent,
@@ -365,7 +366,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
-      <SidebarContent>
+      <SidebarContent className="flex flex-col justify-between">
         <SidebarGroup>
           <SidebarGroupLabel>Navigasi</SidebarGroupLabel>
           <SidebarMenu>
@@ -516,6 +517,16 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             })}
           </SidebarMenu>
         </SidebarGroup>
+        
+        {/* PWA Install Button - Mobile Only */}
+        {/* forceShow enabled in development for testing */}
+        {isMobile && (
+          <div className="mt-auto">
+            <SidebarMenu>
+              <PWAInstallButton isCollapsed={isCollapsed} forceShow={process.env.NODE_ENV === 'development'} />
+            </SidebarMenu>
+          </div>
+        )}
       </SidebarContent>
       <SidebarSeparator />
       <SidebarFooter>

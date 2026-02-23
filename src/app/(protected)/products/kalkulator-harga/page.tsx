@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -85,99 +86,83 @@ export default function KalkulatorHargaPage() {
   const pathname = usePathname();
 
   return (
- <div >
-      <div className="space-y-6">
-        {/* Header */}
-        <div>
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-12 h-12 bg-brand-primary rounded-xl flex items-center justify-center shadow-lg shadow-brand-primary/20">
-              <LayoutGrid className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <h1 className="text-3xl font-bold text-primary">Kalkulator Sistem</h1>
-              <p className="text-green-600">Pilih kalkulator untuk menghitung biaya proyek Anda</p>
-            </div>
-          </div>
-        </div>
+    <div className="min-h-screen bg-white">
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold mb-2">Kalkulator Sistem</h1>
+        <p className="text-gray-600">Pilih kalkulator untuk menghitung biaya proyek Anda</p>
+      </div>
 
-        {/* Calculator Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {calculators.map((calc) => {
-            const isActive = calc.status === "active";
-            const isCurrentPage = pathname === calc.href;
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {calculators.map((calc) => {
+          const isActive = calc.status === "active";
+          const isCurrentPage = pathname === calc.href;
 
-            return (
-              <Link
-                key={calc.id}
-                href={isActive ? calc.href : "#"}
-                aria-disabled={!isActive}
-                className={`
-                  group relative bg-white rounded-2xl p-8 shadow-sm border transition-all duration-300
-                  ${isActive 
-                    ? "border-gray-200 hover:border-brand-primary/30 hover:shadow-xl hover:-translate-y-1 hover:bg-gray-50/50" 
-                    : "border-gray-100 bg-gray-50/50 cursor-not-allowed opacity-80 grayscale-[0.5]"
-                  }
-                  ${isCurrentPage ? "border-brand-primary ring-2 ring-brand-primary/20" : ""}
-                `}
-                onClick={(e) => !isActive && e.preventDefault()}
-              >
-                {/* Badge */}
-                <div className="absolute top-6 right-6">
-                  <span className={`
-                    px-3 py-1 rounded-full text-xs font-bold tracking-wide
-                    ${isActive 
-                      ? "bg-brand-primary/10 text-brand-primary" 
-                      : "bg-gray-200 text-gray-500"
-                    }
-                  `}>
-                    {calc.badge}
-                  </span>
-                </div>
-
-                {/* Icon */}
+          return (
+            <Link
+              key={calc.id}
+              href={isActive ? calc.href : "#"}
+              aria-disabled={!isActive}
+              className={`
+                flex flex-col p-6 rounded-xl border transition-all duration-200
+                ${isActive 
+                  ? "bg-white border-gray-200 hover:border-gray-300 hover:shadow-sm" 
+                  : "bg-gray-50 border-gray-100 cursor-not-allowed opacity-75"
+                }
+                ${isCurrentPage ? "ring-2 ring-blue-500/20 border-blue-400" : ""}
+              `}
+              onClick={(e) => !isActive && e.preventDefault()}
+            >
+              {/* Top part: Icon & Badge */}
+              <div className="flex items-start justify-between mb-4">
                 <div className={`
-                  w-14 h-14 rounded-2xl flex items-center justify-center mb-6 transition-colors
+                  w-12 h-12 rounded-lg flex items-center justify-center
                   ${isActive 
-                    ? "bg-brand-primary/5 text-brand-primary group-hover:bg-brand-primary/10" 
-                    : "bg-gray-100 text-gray-400"
+                    ? "bg-blue-50 text-blue-600" 
+                    : "bg-gray-200 text-gray-500"
                   }
                 `}>
                   {calc.icon}
                 </div>
-
-                {/* Content */}
-                <div className="space-y-2 mb-6">
-                  <h3 className={`text-xl font-bold ${isActive ? "text-gray-900" : "text-gray-500"}`}>
-                    {calc.name}
-                  </h3>
-                  <p className={`text-sm leading-relaxed ${isActive ? "text-green-600" : "text-gray-400"}`}>
-                    {calc.description}
-                  </p>
-                </div>
-
-                {/* Action */}
-                <div className={`
-                  flex items-center gap-2 text-sm font-bold
-                  ${isActive ? "text-brand-primary" : "text-gray-400"}
-                `}>
-                  {isActive ? (
-                    <span className="flex items-center gap-2 group-hover:gap-3 transition-all">
-                      Buka Kalkulator
-                      <ArrowRight className="w-4 h-4" />
-                    </span>
-                  ) : (
-                    <span>Segera Hadir</span>
-                  )}
-                </div>
-
-                {/* Active Hover Line */}
-                {isActive && (
-                  <div className="absolute bottom-0 left-6 right-6 h-0.5 bg-brand-primary scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
+                {calc.badge && (
+                  <span className={`
+                    px-2.5 py-1 rounded-full text-xs font-medium
+                    ${isActive 
+                      ? "bg-blue-50 text-blue-700" 
+                      : "bg-gray-200 text-gray-600"
+                    }
+                  `}>
+                    {calc.badge}
+                  </span>
                 )}
-              </Link>
-            );
-          })}
-        </div>
+              </div>
+
+              {/* Content */}
+              <div className="flex-1">
+                <h3 className={`text-lg font-semibold mb-1 ${isActive ? "text-gray-900" : "text-gray-700"}`}>
+                  {calc.name}
+                </h3>
+                <p className={`text-sm ${isActive ? "text-gray-500" : "text-gray-400"}`}>
+                  {calc.description}
+                </p>
+              </div>
+
+              {/* Action */}
+              <div className={`
+                mt-4 flex items-center gap-2 text-sm font-medium
+                ${isActive ? "text-blue-600" : "text-gray-400"}
+              `}>
+                {isActive ? (
+                  <>
+                    Buka Kalkulator
+                    <ArrowRight className="w-4 h-4" />
+                  </>
+                ) : (
+                  <span>Segera Hadir</span>
+                )}
+              </div>
+            </Link>
+          );
+        })}
       </div>
     </div>
   );
