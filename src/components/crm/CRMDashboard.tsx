@@ -1,6 +1,6 @@
 'use client';
 
-import { useClientStats } from '@/hooks/useClients';
+import { useClientStats, DateRangeFilter } from '@/hooks/useClients';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Cell, LabelList } from 'recharts';
 import { BarChart3, MapPin, Package, Target, TrendingUp } from 'lucide-react';
 
@@ -12,8 +12,12 @@ const COLORS = [
   'hsl(var(--chart-5))'
 ];
 
-export default function CRMDashboard() {
-  const { data: stats, isLoading, error, refetch, isFetching } = useClientStats();
+interface CRMDashboardProps {
+  dateRange?: DateRangeFilter;
+}
+
+export default function CRMDashboard({ dateRange }: CRMDashboardProps) {
+  const { data: stats, isLoading, error, refetch, isFetching } = useClientStats(dateRange);
 
   // Debug: Log query state
   console.log('[CRMDashboard] Query State:', {

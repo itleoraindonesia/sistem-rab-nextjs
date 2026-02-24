@@ -39,6 +39,11 @@ export interface DashboardStats {
   byWeek: { day: string; date: string; count: number }[]
 }
 
+export interface DateRangeFilter {
+  startDate?: Date | null
+  endDate?: Date | null
+}
+
 const ITEMS_PER_PAGE = 20
 
 // Query Keys
@@ -48,7 +53,7 @@ export const clientKeys = {
   list: (filters: ClientFilters) => [...clientKeys.lists(), filters] as const,
   details: () => [...clientKeys.all, 'detail'] as const,
   detail: (id: string | null) => [...clientKeys.details(), id] as const,
-  stats: () => [...clientKeys.all, 'stats'] as const,
+  stats: (dateRange?: DateRangeFilter) => [...clientKeys.all, 'stats', dateRange] as const,
 }
 
 // Hook: Fetch clients list
@@ -173,9 +178,9 @@ export function useClient(id: string | null) {
 }
 
 // Hook: Fetch client stats
-export function useClientStats() {
+export function useClientStats(dateRange?: DateRangeFilter) {
   return useQuery({
-    queryKey: clientKeys.stats(),
+    queryKey: clientKeys.stats(dateRange),
     queryFn: async (): Promise<DashboardStats> => {
       // Check supabase client availability
       if (!supabase) {
@@ -183,10 +188,25 @@ export function useClientStats() {
       }
 
       try {
-        const { data: clients, error } = await supabase
+        let query = supabase
           .from('clients')
           .select('id, created_at, status, kabupaten, kebutuhan, produk')
           .order('created_at', { ascending: false })
+
+        // Apply date range filter if provided
+        if (dateRange?.startDate) {
+          const startISO = dateRange.startDate.toISOString()
+          query = query.gte('created_at', startISO)
+        }
+        if (dateRange?.endDate) {
+          // Add 1 day to include the end date fully
+          const endDatePlusOne = new Date(dateRange.endDate)
+          endDatePlusOne.setDate(endDatePlusOne.getDate() + 1)
+          const endISO = endDatePlusOne.toISOString()
+          query = query.lt('created_at', endISO)
+        }
+
+        const { data: clients, error } = await query
 
         if (error) {
           // Don't throw for abort errors - they're normal cancellations
