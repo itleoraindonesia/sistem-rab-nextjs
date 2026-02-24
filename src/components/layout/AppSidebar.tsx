@@ -518,12 +518,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           </SidebarMenu>
         </SidebarGroup>
         
-        {/* PWA Install Button - Mobile Only */}
-        {/* forceShow enabled in development for testing */}
+        {/* PWA Install Button - Mobile Only, muncul jika belum install PWA */}
         {isMobile && (
           <div className="mt-auto">
             <SidebarMenu>
-              <PWAInstallButton isCollapsed={isCollapsed} forceShow={process.env.NODE_ENV === 'development'} />
+              <PWAInstallButton isCollapsed={isCollapsed} />
             </SidebarMenu>
           </div>
         )}

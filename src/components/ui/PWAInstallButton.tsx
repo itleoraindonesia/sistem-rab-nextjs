@@ -9,18 +9,19 @@ import {
 
 interface PWAInstallButtonProps {
   isCollapsed?: boolean;
-  forceShow?: boolean; // For development/testing purposes
 }
 
-export default function PWAInstallButton({ isCollapsed = false, forceShow = false }: PWAInstallButtonProps) {
+export default function PWAInstallButton({ isCollapsed = false }: PWAInstallButtonProps) {
   const [deferredPrompt, setDeferredPrompt] = useState<Event | null>(null);
 
   useEffect(() => {
+    // Cek apakah PWA sudah di-install
     const isInstalled =
       typeof window !== "undefined" &&
       (window.matchMedia("(display-mode: standalone)").matches ||
         (window.navigator as any).standalone === true);
 
+    // Jika sudah di-install, tidak perlu setup listener
     if (isInstalled) return;
 
     const handleBeforeInstallPrompt = (e: Event) => {
@@ -46,8 +47,8 @@ export default function PWAInstallButton({ isCollapsed = false, forceShow = fals
     }
   };
 
-  // Show button if either: PWA install is available OR forceShow is enabled (for testing)
-  if (!deferredPrompt && !forceShow) return null;
+  // Tombol muncul hanya jika PWA bisa di-install (belum install dan browser mendukung)
+  if (!deferredPrompt) return null;
 
   return (
     <SidebarMenuItem>
