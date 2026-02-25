@@ -78,16 +78,50 @@ export async function getLetter(letterId: string) {
   return data;
 }
 
-/**
- * Get letters with optional filters
- */
-export async function getLetters(filters?: {
+export interface LetterWithRelations {
+  id: string;
+  document_number: string | null;
+  subject: string;
+  recipient_company: string | null;
+  letter_date: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+  document_type_id: number | null;
+  company_id: string | null;
+  created_by_id: string | null;
+  document_type: { id: number; name: string; code: string } | null;
+  company: { id: string; nama: string } | null;
+  created_by: { id: string; nama: string; email: string } | null;
+}
+
+export interface GetLettersFilters {
   status?: string;
   document_type_id?: number;
   created_by_id?: string;
   limit?: number;
   offset?: number;
-}) {
+  page?: number;
+  search?: string;
+  sortBy?: 'created_at' | 'letter_date' | 'document_number';
+  sortOrder?: 'asc' | 'desc';
+}
+
+const ITEMS_PER_PAGE = 20;
+
+export async function getLetters(filters?: GetLettersFilters): Promise<{
+  data: LetterWithRelations[];
+  totalCount: number;
+  page: number;
+  totalPages: number;
+}> {
+  const page = filters?.page || 1;
+  const limit = filters?.limit || ITEMS_PER_PAGE;
+  const from = (page - 1) * limit;
+  const to = from + limit - 1;
+  const sortBy = filters?.sortBy || 'created_at';
+  const sortOrder = filters?.sortOrder || 'desc';
+
   let query = supabase
     .from('outgoing_letters')
     .select(`
@@ -95,8 +129,7 @@ export async function getLetters(filters?: {
       document_type:document_types(*),
       company:instansi(*),
       created_by:users!outgoing_letters_created_by_id_fkey(id, nama, email)
-    `)
-    .order('created_at', { ascending: false });
+    `, { count: 'exact' });
 
   if (filters?.status) {
     query = query.eq('status', filters.status);
@@ -107,17 +140,25 @@ export async function getLetters(filters?: {
   if (filters?.created_by_id) {
     query = query.eq('created_by_id', filters.created_by_id);
   }
-  if (filters?.limit) {
-    query = query.limit(filters.limit);
-  }
-  if (filters?.offset) {
-    query = query.range(filters.offset, filters.offset + (filters.limit || 10) - 1);
+  if (filters?.search && filters.search.trim() !== '') {
+    const searchTerm = filters.search.trim();
+    query = query.or(`document_number.ilike.%${searchTerm}%,subject.ilike.%${searchTerm}%,recipient_company.ilike.%${searchTerm}%`);
   }
 
-  const { data, error } = await query;
+  query = query
+    .order(sortBy, { ascending: sortOrder === 'asc' })
+    .range(from, to);
+
+  const { data, error, count } = await query;
 
   if (error) throw error;
-  return data;
+  
+  return {
+    data: (data as LetterWithRelations[]) || [],
+    totalCount: count || 0,
+    page,
+    totalPages: Math.ceil((count || 0) / limit),
+  };
 }
 
 /**

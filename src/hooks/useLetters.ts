@@ -13,22 +13,37 @@ import { supabase } from '@/lib/supabase/client';
 // QUERY HOOKS
 // ============================================
 
-/**
- * Get letters list with optional filters
- */
-export function useLetters(filters?: {
+export interface LettersFilters {
   status?: string;
   document_type_id?: number;
   created_by_id?: string;
   limit?: number;
   offset?: number;
-}, options?: { enabled?: boolean }) {
+  page?: number;
+  search?: string;
+  sortBy?: 'created_at' | 'letter_date' | 'document_number';
+  sortOrder?: 'asc' | 'desc';
+}
+
+export interface LettersResponse {
+  data: letterService.LetterWithRelations[];
+  totalCount: number;
+  page: number;
+  totalPages: number;
+}
+
+export function useLetters(filters?: LettersFilters, options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: ['letters', filters],
     queryFn: () => letterService.getLetters(filters),
     enabled: options?.enabled !== undefined ? options.enabled : true,
   });
 }
+
+export const letterKeys = {
+  list: (filters: LettersFilters) => ['letters', filters] as const,
+  detail: (id: string) => ['letter', id] as const,
+};
 
 /**
  * Get single letter with relations

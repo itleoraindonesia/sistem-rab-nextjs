@@ -1,153 +1,178 @@
-"use client"
+'use client';
 
-import * as React from "react"
-import Link from "next/link"
-import { Plus, FileDown, AlertTriangle } from "lucide-react"
-import { Card, CardContent } from "../../../../components/ui"
-import Button from "../../../../components/ui/Button"
-import { Alert, AlertDescription, AlertTitle } from "../../../../components/ui/alert"
-import { useLetters } from "../../../../hooks/useLetters"
+import { useState } from 'react';
+import Link from 'next/link';
+import { Plus, FileDown } from 'lucide-react';
+import * as XLSX from 'xlsx';
+import { useDocumentTypes } from '@/hooks/useLetters';
+import { supabase } from '@/lib/supabase/client';
+import OutgoingLettersTable from '@/components/documents/OutgoingLettersTable';
 
-
-
-
+const STATUS_OPTIONS = [
+  { value: '', label: 'Semua Status' },
+  { value: 'DRAFT', label: 'Draft' },
+  { value: 'SUBMITTED_TO_REVIEW', label: 'Under Review' },
+  { value: 'REVIEWED', label: 'Reviewed' },
+  { value: 'APPROVED', label: 'Approved' },
+  { value: 'REVISION_REQUESTED', label: 'Needs Revision' },
+  { value: 'REJECTED', label: 'Rejected' },
+];
 
 export default function SuratKeluarPage() {
-  const { data: letters, isLoading, error } = useLetters()
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterStatus, setFilterStatus] = useState('');
+  const [filterDocType, setFilterDocType] = useState('');
+  const [isExporting, setIsExporting] = useState(false);
 
-  if (isLoading) {
-    return (
- <div className=" py-8">
-        <div className="text-center">
-          <p>Memuat data surat keluar...</p>
-        </div>
-      </div>
-    )
-  }
+  const { data: documentTypes } = useDocumentTypes();
 
-  if (error) {
-    return (
- <div className=" py-8">
-        <Alert variant="destructive">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>
-            Gagal memuat data: {error.message}
-          </AlertDescription>
-        </Alert>
-      </div>
-    )
-  }
+  const exportToExcel = async () => {
+    setIsExporting(true);
+    try {
+      let query = supabase
+        .from('outgoing_letters')
+        .select(`
+          *,
+          document_type:document_types(*),
+          company:instansi(*),
+          created_by:users!outgoing_letters_created_by_id_fkey(id, nama, email)
+        `)
+        .order('created_at', { ascending: false });
+
+      if (filterStatus) query = query.eq('status', filterStatus);
+      if (filterDocType) query = query.eq('document_type_id', parseInt(filterDocType));
+      if (searchTerm && searchTerm.trim() !== '') {
+        const search = searchTerm.trim();
+        query = query.or(`document_number.ilike.%${search}%,subject.ilike.%${search}%,recipient_company.ilike.%${search}%`);
+      }
+
+      const { data: letters, error } = await query;
+
+      if (error) throw error;
+
+      const exportData = (letters || []).map((letter: any) => ({
+        'No Ref': letter.document_number || '-',
+        'Instansi': letter.company?.nama || '-',
+        'Kategori': letter.document_type?.name || '-',
+        'Perihal': letter.subject || '-',
+        'Penerima': letter.recipient_company || '-',
+        'Status': letter.status || '-',
+        'Tanggal Surat': letter.letter_date ? new Date(letter.letter_date).toLocaleDateString('id-ID') : '-',
+        'Dibuat Oleh': letter.created_by?.nama || '-',
+        'Tanggal Dibuat': letter.created_at ? new Date(letter.created_at).toLocaleDateString('id-ID') : '-',
+      }));
+
+      const worksheet = XLSX.utils.json_to_sheet(exportData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Surat Keluar');
+
+      const colWidths = [
+        { wch: 20 }, { wch: 25 }, { wch: 20 },
+        { wch: 30 }, { wch: 25 }, { wch: 15 },
+        { wch: 15 }, { wch: 20 }, { wch: 15 }
+      ];
+      worksheet['!cols'] = colWidths;
+
+      XLSX.writeFile(
+        workbook,
+        `surat_keluar_export_${new Date().toISOString().split('T')[0]}.xlsx`
+      );
+    } catch (error) {
+      console.error('Export error:', error);
+      alert('Gagal mengekspor data. Silakan coba lagi.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   return (
- <div >
+    <div className="min-h-screen bg-white">
       <div className="space-y-6">
-        {/* Header */}
-        <div className="mb-4">
-          <h1 className="text-2xl font-bold text-brand-primary">Surat Keluar</h1>
-          <p className="text-gray-600">Kelola surat keluar perusahaan dengan workflow approval</p>
+        <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold">Surat Keluar</h1>
+            <p className="text-gray-600 mt-1">Kelola surat keluar perusahaan</p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-3">
+            <button
+              onClick={exportToExcel}
+              disabled={isExporting}
+              className="w-full sm:w-auto px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium shadow-sm hover:shadow transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <FileDown className="w-4 h-4" />
+              {isExporting ? 'Mengexport...' : 'Export Excel'}
+            </button>
+
+            <Link
+              href="/documents/outgoing-letter/new"
+              className="w-full sm:w-auto text-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 font-medium shadow-sm hover:shadow transition-all"
+            >
+              + Buat Surat Baru
+            </Link>
+          </div>
         </div>
 
-        {/* Actions Row */}
-        <div className="flex flex-col gap-4 sm:flex-row sm:justify-end">
-          <Button variant="outline">
-            <FileDown className="mr-2 h-4 w-4" />
-            Export Excel
-          </Button>
-          <Link href="/documents/outgoing-letter/new">
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Buat Surat Baru
-            </Button>
-          </Link>
-        </div>
-
-
-
-        {/* Table */}
-        <Card>
-          <CardContent className="p-6">
-            {!letters || letters.length === 0 ? (
-              <div className="text-center py-8">
-                <p className="text-gray-500">Belum ada surat keluar. Klik "Buat Surat Baru" untuk memulai.</p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left p-4 font-semibold">No Ref</th>
-                    <th className="text-left p-4 font-semibold">Instansi</th>
-                    <th className="text-left p-4 font-semibold">Kategori</th>
-                    <th className="text-left p-4 font-semibold">Perihal</th>
-                    <th className="text-left p-4 font-semibold">Penerima</th>
-                    <th className="text-left p-4 font-semibold">Status</th>
-                    <th className="text-left p-4 font-semibold">Tanggal</th>
-                    <th className="text-left p-4 font-semibold">Aksi</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {letters.map((letter) => (
-                    <tr key={letter.id} className="border-b hover:bg-gray-50">
-                      <td className="p-4 font-mono text-sm">
-                        {letter.document_number || <span className="text-gray-400 italic">Pending</span>}
-                      </td>
-                      <td className="p-4 text-sm">{letter.company?.nama || '-'}</td>
-                      <td className="p-4">
-                        <span className="px-2 py-1 rounded-md bg-blue-50 text-blue-700 text-xs font-medium">
-                          {letter.document_type?.name || '-'}
-                        </span>
-                      </td>
-                      <td className="p-4">{letter.subject}</td>
-                      <td className="p-4 text-sm">{letter.recipient_company}</td>
-                      <td className="p-4">
-                        <span
-                          className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                            letter.status === "DRAFT"
-                              ? "bg-yellow-100 text-yellow-800"
-                              : letter.status === "SUBMITTED_TO_REVIEW"
-                              ? "bg-orange-100 text-orange-800"
-                              : letter.status === "REVIEWED"
-                              ? "bg-blue-100 text-blue-800"
-                              : letter.status === "APPROVED"
-                              ? "bg-green-100 text-green-800"
-                              : letter.status === "NEEDS_REVISION"
-                              ? "bg-red-100 text-red-800"
-                              : "bg-gray-100 text-gray-800"
-                          }`}
-                        >
-                          {letter.status === "DRAFT"
-                            ? "Draft"
-                            : letter.status === "SUBMITTED_TO_REVIEW"
-                            ? "Under Review"
-                            : letter.status === "REVIEWED"
-                            ? "Reviewed"
-                            : letter.status === "APPROVED"
-                            ? "Approved"
-                            : letter.status === "NEEDS_REVISION"
-                            ? "Needs Revision"
-                            : letter.status}
-                        </span>
-                      </td>
-                      <td className="p-4 text-sm text-gray-600">
-                        {new Date(letter.letter_date).toLocaleDateString("id-ID")}
-                      </td>
-                      <td className="p-4">
-                        <Link href={`/documents/outgoing-letter/${letter.id}`}>
-                          <Button variant="ghost" size="sm">
-                            Detail
-                          </Button>
-                        </Link>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+        <div className="space-y-3 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div>
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Cari No Ref, Perihal, Penerima..."
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-transparent"
+              />
             </div>
-            )}
-          </CardContent>
-        </Card>
+
+            <div>
+              <select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-transparent cursor-pointer"
+              >
+                {STATUS_OPTIONS.map(opt => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <select
+                value={filterDocType}
+                onChange={(e) => setFilterDocType(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-transparent cursor-pointer"
+              >
+                <option value="">Semua Kategori</option>
+                {documentTypes?.map((dt: any) => (
+                  <option key={dt.id} value={dt.id}>{dt.name}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {(searchTerm || filterStatus || filterDocType) && (
+            <div className="flex justify-end">
+              <button
+                onClick={() => {
+                  setSearchTerm('');
+                  setFilterStatus('');
+                  setFilterDocType('');
+                }}
+                className="text-sm text-gray-500 hover:text-red-600 flex items-center gap-1"
+              >
+                ✕ Reset Filter
+              </button>
+            </div>
+          )}
+        </div>
+
+        <OutgoingLettersTable 
+          searchTerm={searchTerm}
+          filterStatus={filterStatus}
+          filterDocType={filterDocType}
+        />
       </div>
     </div>
-  )
+  );
 }

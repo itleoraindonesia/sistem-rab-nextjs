@@ -123,9 +123,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { data: pendingReviews } = usePendingReviews(user?.id)
   const { data: pendingApprovals } = usePendingApprovals(user?.id)
   const { data: revisionMemos } = useLetters(
-    { status: 'REVISION_REQUESTED', created_by_id: user?.id },
+    { status: 'REVISION_REQUESTED', created_by_id: user?.id, limit: 100 },
     { enabled: !!user?.id }
   )
+
+  const revisionMemosData = revisionMemos?.data || []
 
   const isCollapsed = isMobile ? false : sidebarState === "collapsed"
 
@@ -156,7 +158,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
   // Update document title with notification count
   React.useEffect(() => {
-    const totalCount = (pendingReviews?.length || 0) + (pendingApprovals?.length || 0) + (revisionMemos?.length || 0)
+    const totalCount = (pendingReviews?.length || 0) + (pendingApprovals?.length || 0) + (revisionMemosData.length || 0)
     
     // Helper to clean title
     const cleanTitle = (title: string) => title.replace(/^\(\d+\)\s/, "")
@@ -381,7 +383,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               // Calculate badge for Administrasi parent menu
               let totalAdminBadge = 0
               if (item.name === "Administrasi") {
-                totalAdminBadge = (pendingReviews?.length || 0) + (pendingApprovals?.length || 0) + (revisionMemos?.length || 0)
+                totalAdminBadge = (pendingReviews?.length || 0) + (pendingApprovals?.length || 0) + (revisionMemosData.length || 0)
               }
 
               return (
@@ -464,7 +466,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                           badge = pendingReviews?.length ? <Badge count={pendingReviews.length} /> : null;
                         } else if (childPath === "/documents/revision") {
                           childLabel = "Revisi";
-                          badge = revisionMemos?.length ? <Badge count={revisionMemos.length} /> : null;
+                          badge = revisionMemosData.length ? <Badge count={revisionMemosData.length} /> : null;
                         } else if (childPath === "/documents/approval") {
                           childLabel = "Approval";
                           badge = pendingApprovalsCount > 0 ? <Badge count={pendingApprovalsCount} /> : null;

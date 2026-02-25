@@ -66,12 +66,11 @@ export default function SuratDetailPage() {
         {/* Header Actions */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => router.back()}>
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
             <div>
-              <h1 className="text-2xl font-bold text-brand-primary">Preview Surat</h1>
-              <p className="text-gray-600">{letter.document_number || "Draft"}</p>
+              <h1 className="text-2xl font-bold text-brand-primary">
+                {letter.document_type?.name ? `(${letter.document_type.name}) ` : ''}{letter.subject} - {letter.recipient_company || letter.recipient_name}
+              </h1>
+              {letter.document_number && <p className="text-gray-600">{letter.document_number}</p>}
             </div>
           </div>
           <div className="flex gap-2">
@@ -80,7 +79,6 @@ export default function SuratDetailPage() {
                 <Button 
                   onClick={() => router.push(`/documents/outgoing-letter/${id}/edit`)}
                   variant="outline"
-                  className="border-yellow-600 text-yellow-700 hover:bg-yellow-50"
                 >
                   <Pencil className="mr-2 h-4 w-4" />
                   Edit
@@ -104,7 +102,7 @@ export default function SuratDetailPage() {
                   }
                 }}
                 disabled={submitMutation.isPending}
-                className="bg-green-600 hover:bg-green-700"
+                className="bg-green-600 hover:bg-green-700 text-white"
               >
                 <Send className="mr-2 h-4 w-4" />
                 {submitMutation.isPending ? 'Submitting...' : 'Submit untuk Review'}
@@ -126,55 +124,78 @@ export default function SuratDetailPage() {
         <Card>
           <CardContent className="p-6">
             <h3 className="font-semibold mb-4">📋 Informasi Dokumen</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-              <div>
-                <p className="text-gray-600">Status:</p>
-                <p className="font-medium">
-                  <span className={`px-2 py-1 rounded text-xs ${
-                     letter.status === 'APPROVED' ? 'bg-green-100 text-green-800' :
-                     letter.status === 'REJECTED' ? 'bg-red-100 text-red-800' :
-                     'bg-blue-100 text-blue-800'
-                  }`}>
-                    {letter.status}
-                  </span>
-                </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 text-sm">
+              <div className="space-y-4">
+                <div>
+                  <p className="text-gray-600">Status:</p>
+                  <p className="font-medium">
+                    <span className={`px-2 py-1 rounded text-xs font-medium ${
+                      letter.status === 'DRAFT' ? 'bg-gray-100 text-gray-800' :
+                      letter.status === 'SUBMITTED_TO_REVIEW' ? 'bg-orange-100 text-orange-800' :
+                      letter.status === 'REVIEWED' ? 'bg-blue-100 text-blue-800' :
+                      letter.status === 'APPROVED' ? 'bg-green-100 text-green-800' :
+                      letter.status === 'REJECTED' ? 'bg-red-100 text-red-800' :
+                      letter.status === 'REVISION_REQUESTED' ? 'bg-yellow-100 text-yellow-800' :
+                      'bg-gray-100 text-gray-800'
+                    }`}>
+                      {letter.status === 'DRAFT' ? 'Draft' :
+                       letter.status === 'SUBMITTED_TO_REVIEW' ? 'Under Review' :
+                       letter.status === 'REVIEWED' ? 'Reviewed' :
+                       letter.status === 'APPROVED' ? 'Approved' :
+                       letter.status === 'REJECTED' ? 'Rejected' :
+                       letter.status === 'REVISION_REQUESTED' ? 'Needs Revision' :
+                       letter.status}
+                    </span>
+                  </p>
+                </div>
+                <div>
+                  <p className="text-gray-600">Perihal:</p>
+                  <p className="font-medium">{letter.subject || "-"}</p>
+                </div>
+                <div>
+                  <p className="text-gray-600">Tujuan / Kepada Yth:</p>
+                  <p className="font-medium">{letter.recipient_company || letter.recipient_name}</p>
+                </div>
               </div>
-              <div>
-                <p className="text-gray-600">Nomor Surat:</p>
-                <p className="font-medium font-mono">{letter.document_number || "-"}</p>
+
+              <div className="space-y-4">
+                <div>
+                  <p className="text-gray-600">Nomor Surat:</p>
+                  <p className="font-medium font-mono">{letter.document_number || "-"}</p>
+                </div>
+                <div>
+                  <p className="text-gray-600">Dibuat oleh:</p>
+                  <p className="font-medium">{letter.created_by?.nama}</p>
+                </div>
+                <div>
+                  <p className="text-gray-600">Tanggal Dibuat:</p>
+                  <p className="font-medium">
+                    {new Date(letter.created_at).toLocaleDateString("id-ID", {
+                      day: "2-digit",
+                      month: "long",
+                      year: "numeric"
+                    })}
+                  </p>
+                </div>
+                {approverName !== '-' && (
+                   <>
+                    <div>
+                       <p className="text-gray-600">Disetujui oleh:</p>
+                       <p className="font-medium">{approverName}</p>
+                    </div>
+                    <div>
+                       <p className="text-gray-600">Tanggal Approval:</p>
+                       <p className="font-medium">
+                          {approvalHistory?.created_at ? new Date(approvalHistory.created_at).toLocaleDateString("id-ID", {
+                             day: "2-digit",
+                             month: "long",
+                             year: "numeric"
+                          }) : '-'}
+                       </p>
+                    </div>
+                   </>
+                )}
               </div>
-              <div>
-                <p className="text-gray-600">Dibuat oleh:</p>
-                <p className="font-medium">{letter.created_by?.nama}</p>
-              </div>
-              <div>
-                <p className="text-gray-600">Tanggal Dibuat:</p>
-                <p className="font-medium">
-                  {new Date(letter.created_at).toLocaleDateString("id-ID", {
-                    day: "2-digit",
-                    month: "long",
-                    year: "numeric"
-                  })}
-                </p>
-              </div>
-              {approverName !== '-' && (
-                 <>
-                  <div>
-                     <p className="text-gray-600">Disetujui oleh:</p>
-                     <p className="font-medium">{approverName}</p>
-                  </div>
-                  <div>
-                     <p className="text-gray-600">Tanggal Approval:</p>
-                     <p className="font-medium">
-                        {approvalHistory?.created_at ? new Date(approvalHistory.created_at).toLocaleDateString("id-ID", {
-                           day: "2-digit",
-                           month: "long",
-                           year: "numeric"
-                        }) : '-'}
-                     </p>
-                  </div>
-                 </>
-              )}
             </div>
           </CardContent>
         </Card>

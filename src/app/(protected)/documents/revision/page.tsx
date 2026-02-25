@@ -10,6 +10,7 @@ import { useUser } from "../../../../hooks/useUser"
 import { useQuery } from "@tanstack/react-query"
 import { supabase } from "@/lib/supabase/client"
 import { OutgoingLetterWithRelations, LetterHistory } from "@/types/letter"
+import type { LetterWithRelations } from "@/lib/supabase/letters"
 
 // Custom hook to fetch revision notes for a letter
 function useRevisionNotes(letterId: string) {
@@ -149,10 +150,12 @@ function RevisionLetterCard({ letter }: { letter: OutgoingLetterWithRelations })
 export default function RevisiPage() {
   const router = useRouter()
   const { data: user } = useUser()
-  const { data: revisionLetters, isLoading } = useLetters({
+  const { data: revisionResult, isLoading } = useLetters({
     status: 'REVISION_REQUESTED',
     created_by_id: user?.id
   })
+
+  const revisionLetters = revisionResult?.data || []
 
    if (isLoading) {
     return (
@@ -175,13 +178,13 @@ export default function RevisiPage() {
            <div>
              <h1 className="text-2xl font-bold text-brand-primary">Surat Perlu Revisi</h1>
              <p className="text-gray-600">
-               {revisionLetters?.length || 0} surat menunggu perbaikan Anda
+               {revisionLetters.length} surat menunggu perbaikan Anda
              </p>
            </div>
         </div>
 
         {/* Empty State */}
-         {!revisionLetters || revisionLetters.length === 0 ? (
+         {revisionLetters.length === 0 ? (
           <Card>
             <CardContent className="p-12 text-center">
               <RotateCcw className="h-16 w-16 mx-auto text-gray-400 mb-4" />
@@ -195,8 +198,8 @@ export default function RevisiPage() {
           </Card>
         ) : (
           <div className="grid grid-cols-1 gap-4">
-            {revisionLetters?.map((letter: OutgoingLetterWithRelations) => (
-              <RevisionLetterCard key={letter.id} letter={letter} />
+            {revisionLetters.map((letter: LetterWithRelations) => (
+              <RevisionLetterCard key={letter.id} letter={letter as OutgoingLetterWithRelations} />
             ))}
           </div>
         )}
