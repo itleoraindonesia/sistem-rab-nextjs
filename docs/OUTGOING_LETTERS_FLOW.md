@@ -331,12 +331,14 @@ useLetterWorkflow(letterId: string, userId?: string)
 
 #### CRUD Operations:
 ```typescript
-createLetter(data: OutgoingLetterInsert)
+createLetter(data: TablesInsert<'outgoing_letters'>)
 getLetter(letterId: string)
 getLetters(filters?: {...})
-updateLetter(letterId: string, updates: Partial<OutgoingLetterInsert>)
+updateLetter(letterId: string, updates: Partial<TablesInsert<'outgoing_letters'>>)
 deleteLetter(letterId: string)
 ```
+
+> **Note:** Types menggunakan `TablesInsert<>` dari generated database types, bukan re-export dari letter.ts
 
 #### Workflow Operations:
 ```typescript
@@ -376,7 +378,7 @@ Kolom penting:
 - `status` (letter_status enum)
 - `current_stage_id` (FK to document_workflow_stages)
 - `document_type_id` (FK to document_types)
-- `company_id` (FK to instansi)
+- `company_id` (FK to instansi) — **NOT NULL**
 - `sender_id` (FK to users)
 - `created_by_id` (FK to users)
 - `subject`, `opening`, `body`, `closing`
@@ -384,6 +386,9 @@ Kolom penting:
 - `letter_date`, `approved_at`, `rejected_at`
 - `attachments` (jsonb)
 - `signatories` (jsonb)
+- **`submitted_at`** (timestamptz) — kapan pertama kali disubmit
+- **`reviewed_at`** (timestamptz) — kapan semua reviewer approve
+- **`revision_count`** (int) — berapa kali diminta revisi
 
 ### 2. **letter_histories**
 **Tabel audit trail / workflow tracking**
@@ -395,18 +400,29 @@ Kolom penting:
 - `assigned_to_id` (FK to users) - yang ditugaskan (untuk review/approval)
 - `action_type` (letter_action_type enum)
 - `from_status` (letter_status enum)
-- `to_status` (letter_status enum)
-- `stage_type` (stage_type enum: REVIEW | APPROVAL)
+- `to_status` (letter_status enum, NULL jika masih pending)
+- `stage_type` (string: REVIEW | APPROVAL)
 - `sequence` (int) - urutan stage
 - `notes` (text)
 - `created_at`
 
 **Digunakan untuk:**
 - Audit trail di halaman detail
-- Query pending reviews: `assigned_to_id = userId AND to_status = 'PENDING' AND stage_type = 'REVIEW'`
-- Query pending approvals: `assigned_to_id = userId AND to_status = 'PENDING' AND stage_type = 'APPROVAL'`
+- Query pending reviews: `assigned_to_id = userId AND to_status IS NULL AND stage_type = 'REVIEW'`
+- Query pending approvals: `assigned_to_id = userId AND to_status IS NULL AND stage_type = 'APPROVAL'`
 
-### 3. **document_workflow_stages**
+### 3. **instansi**
+**Tabel instansi/perusahaan**
+
+Kolom penting:
+- `id` (uuid, PK)
+- `nama` (string)
+- **`code`** (varchar(10)) — kode singkat untuk nomor surat, contoh: MMG, LKI
+- `alamat`, `email`, `telepon`
+
+**Dipakai untuk:** Generate nomor surat format `001/MMG/SPH/02/2025`
+
+### 4. **document_workflow_stages**
 **Tabel konfigurasi workflow**
 
 Kolom penting:
@@ -511,22 +527,62 @@ letter_action_type:
 - Validasi status = DRAFT
 - Get first workflow stage dari document_workflow_stages
 - Update status → SUBMITTED_TO_REVIEW
-- Set current_stage_id
+- Set submitted_at (jika null)
 - Insert history
 
-**Returns:** `{ success: boolean, message: string }`
+**Returns:** `{ success: boolean, id, status }`
 
-### 2. **review_letter(action, letter_id, user_id, notes?)**
+### 2. **resubmit_revision(letter_id, user_id)**
+**Purpose:** Submit ulang surat setelah revisi
+
+**Logic:**
+- Validasi status = REVISION_REQUESTED
+- Delete pending review entries lama
+- Update status → SUBMITTED_TO_REVIEW
+- Set submitted_at (jika null)
+- Create new pending review tasks
+- Increment revision_count
+
+**Returns:** `{ success: boolean, id, status }`
+
+### 3. **review_letter(action, letter_id, user_id, notes?)**
 **Purpose:** Review/approve/reject surat
+
+**Actions:**
+- `APPROVE` — reviewer approve (hanya di REVIEW stage)
+- `REQUEST_REVISION` — reviewer minta revisi
+- `APPROVED_FINAL` — approver approve final
+- `REJECT` — approver reject permanent
+- `REQUEST_REVISION` — approver juga bisa minta revisi
 
 **Logic:**
 - Check user ada di assignees current stage
-- Validate action (APPROVED_REVIEW | APPROVED_FINAL | REJECTED | REVISION_REQUESTED)
-- Kalau APPROVED_REVIEW → move ke next stage atau final approve
-- Update status & current_stage_id
+- Validate action sesuai stage (REVIEW/APPROVAL)
+- Kalau REVIEW + semua approve → status = REVIEWED + create approval tasks
+- Kalau REQUEST_REVISION → status = REVISION_REQUESTED + increment revision_count
+- Update submitted_at / reviewed_at sesuai kondisi
 - Insert history dengan notes
 
-**Returns:** `{ success: boolean, message: string, new_status: letter_status }`
+**Returns:** `{ success: boolean, new_status, document_number? }`
+
+### 4. **generate_document_number(letter_id)**
+**Purpose:** Generate nomor surat saat approval final
+
+**Format:** `XXX/INST/KAT/MM/YYYY`
+- `XXX` = sequence 3 digit, reset per bulan
+- `INST` = kode instansi (instansi.code)
+- `KAT` = kode document type (document_types.code)
+- `MM` = bulan
+- `YYYY` = tahun
+
+**Logic:**
+- Get letter → get instansi.code + document_types.code
+- Hitung sequence: count approved letters bulan ini, instansi ini, doc type ini + 1
+- Format: LPAD(sequence,3,'0') + '/' + code + '/' + code + '/' + MM + '/' + YYYY
+
+**Returns:** String nomor surat
+
+**Dipanggil oleh:** `review_letter` saat action = APPROVED_FINAL
 
 ---
 
@@ -609,17 +665,17 @@ usePendingApprovals(userId) fetches pending approvals
   ↓
 Approver clicks "Detail" → Modal opens
   ↓
-Approver clicks "Setujui"
-  ↓
-useApproveLetter.mutate(letterId)
+Approver clicks "Setetujui" → useApproveLetter.mutate(letterId)
   ↓
 approveLetter(letterId, userId) in letters.ts
   ↓
-Generate document_number via RPC: generate_test_document_number()
+Call RPC: review_letter('APPROVED_FINAL', letterId, userId, notes)
   ↓
-UPDATE outgoing_letters SET status = 'APPROVED', document_number = ..., approved_at = now()
+RPC generates document_number via generate_document_number(letter_id)
   ↓
-INSERT into letter_histories (action_type = 'APPROVED_FINAL', to_status = 'APPROVED')
+UPDATE outgoing_letters: status='APPROVED', document_number=..., approved_at=now()
+  ↓
+INSERT into letter_histories (action_type='APPROVED_FINAL')
   ↓
 Invalidate queries: ['letter', letterId], ['letters'], ['pending-approvals']
 ```
@@ -683,16 +739,31 @@ Invalidate queries: ['letter', letterId], ['letters'], ['pending-approvals']
 
 ## 📝 TODO / Improvements
 
+### ✅ Completed
 1. ✅ Implement RPC functions untuk performance
 2. ✅ Add badge notifications di sidebar
 3. ✅ Audit trail display
-4. ⏳ File upload functionality (currently mock)
-5. ⏳ PDF export/download
-6. ⏳ Email notifications
-7. ⏳ WhatsApp integration untuk notifikasi
-8. ⏳ Advanced filtering di list page
-9. ⏳ Bulk actions (approve multiple, etc)
-10. ⏳ Document templates
+4. ✅ Schema improvements:
+   - Tambah `code` di instansi untuk nomor surat
+   - Tambah `submitted_at`, `reviewed_at`, `revision_count` di outgoing_letters
+   - Fix `company_id` NOT NULL
+   - Buat `generate_document_number` RPC yang proper
+5. ✅ Fix guard edit page (Cek status sebelum akses edit)
+6. ✅ Fix tombol revisi di detail page (Banner + CTA)
+7. ✅ Fix letterhead hardcoded → gunakan data company
+8. ✅ **Type Cleanup** - Hapus re-export alias dari letter.ts, import langsung dari database.ts
+9. ✅ **File Upload Fix** - Files dipindahkan dari temp folder ke actual letter folder setelah letter dibuat
+
+### ⏳ In Progress
+*None*
+
+### ⏳ Pending
+1. PDF export/download
+2. Email notifications
+3. WhatsApp integration untuk notifikasi
+4. Advanced filtering di list page
+5. Bulk actions (approve multiple, etc)
+6. Document templates
 
 ---
 
@@ -707,5 +778,5 @@ Invalidate queries: ['letter', letterId], ['letters'], ['pending-approvals']
 
 ---
 
-**Last Updated:** 2026-02-12  
+**Last Updated:** 2026-02-27 (Type Cleanup & File Upload Fix)  
 **Maintainer:** Development Team
