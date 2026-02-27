@@ -2,13 +2,108 @@
 
 import * as React from "react"
 import { useRouter, useParams } from "next/navigation"
-import { ArrowLeft, Download, Printer, FileDown, MessageSquare, Hash, Send, BarChart3, AlertCircle, Pencil } from "lucide-react"
+import { FileDown, MessageSquare, Send, BarChart3, AlertCircle, Pencil, Printer, ClipboardEdit } from "lucide-react"
 import { Card, CardContent } from "../../../../../components/ui"
 import Button from "../../../../../components/ui/Button"
 import { Alert, AlertDescription, AlertTitle } from "../../../../../components/ui/alert"
 import { useLetter, useSubmitForReview } from "../../../../../hooks/useLetters"
 import { useUser } from "../../../../../hooks/useUser"
 import { LetterHistory } from "../../../../../types/letter"
+
+// Mapping action_type ke label Bahasa Indonesia
+const ACTION_LABEL: Record<string, string> = {
+  CREATED:            'Surat Dibuat',
+  SUBMITTED:          'Diajukan untuk Review',
+  APPROVED_REVIEW:    'Disetujui (Review)',
+  APPROVED_FINAL:     'Disetujui (Final)',
+  REJECTED:           'Ditolak',
+  REVISION_REQUESTED: 'Diminta Revisi',
+  REVISED:            'Telah Direvisi',
+};
+
+const getActionLabel = (action_type: string) =>
+  ACTION_LABEL[action_type] ?? action_type.replace(/_/g, ' ');
+
+// Warna card per action_type
+type ActionStyle = {
+  dot: string;   // background dot
+  icon: string;  // ✓ atau ✕
+  card: string;  // bg + border card
+  title: string; // warna judul
+  sub: string;   // warna "Oleh ..."
+  note: string;  // warna catatan
+};
+
+const ACTION_STYLE: Record<string, ActionStyle> = {
+  CREATED: {
+    dot:   'bg-gray-400',
+    icon:  '✓',
+    card:  'bg-gray-50 border-gray-200',
+    title: 'text-gray-800',
+    sub:   'text-gray-600',
+    note:  'text-gray-500',
+  },
+  SUBMITTED: {
+    dot:   'bg-blue-500',
+    icon:  '✓',
+    card:  'bg-blue-50 border-blue-200',
+    title: 'text-blue-900',
+    sub:   'text-blue-700',
+    note:  'text-blue-600',
+  },
+  APPROVED_REVIEW: {
+    dot:   'bg-teal-500',
+    icon:  '✓',
+    card:  'bg-teal-50 border-teal-200',
+    title: 'text-teal-900',
+    sub:   'text-teal-700',
+    note:  'text-teal-600',
+  },
+  APPROVED_FINAL: {
+    dot:   'bg-green-500',
+    icon:  '✓',
+    card:  'bg-green-50 border-green-200',
+    title: 'text-green-900',
+    sub:   'text-green-700',
+    note:  'text-green-600',
+  },
+  REJECTED: {
+    dot:   'bg-red-500',
+    icon:  '✕',
+    card:  'bg-red-50 border-red-200',
+    title: 'text-red-900',
+    sub:   'text-red-700',
+    note:  'text-red-600',
+  },
+  REVISION_REQUESTED: {
+    dot:   'bg-orange-400',
+    icon:  '✕',
+    card:  'bg-orange-50 border-orange-200',
+    title: 'text-orange-900',
+    sub:   'text-orange-700',
+    note:  'text-orange-600',
+  },
+  REVISED: {
+    dot:   'bg-purple-500',
+    icon:  '✓',
+    card:  'bg-purple-50 border-purple-200',
+    title: 'text-purple-900',
+    sub:   'text-purple-700',
+    note:  'text-purple-600',
+  },
+};
+
+const DEFAULT_STYLE: ActionStyle = {
+  dot:   'bg-gray-400',
+  icon:  '✓',
+  card:  'bg-gray-50 border-gray-200',
+  title: 'text-gray-800',
+  sub:   'text-gray-600',
+  note:  'text-gray-500',
+};
+
+const getActionStyle = (action_type: string): ActionStyle =>
+  ACTION_STYLE[action_type] ?? DEFAULT_STYLE;
 
 export default function SuratDetailPage() {
   const router = useRouter()
@@ -19,17 +114,9 @@ export default function SuratDetailPage() {
   const { data: letter, isLoading, error } = useLetter(id)
   const submitMutation = useSubmitForReview()
 
-  // Debug logging
-  React.useEffect(() => {
-    console.log('Letter ID:', id);
-    console.log('Is Loading:', isLoading);
-    console.log('Error:', error);
-    console.log('Letter Data:', letter);
-  }, [id, isLoading, error, letter]);
-
   if (isLoading) {
     return (
- <div className=" py-8">
+      <div className=" py-8">
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-brand-primary mb-4"></div>
           <p>Memuat data surat...</p>
@@ -39,30 +126,86 @@ export default function SuratDetailPage() {
   }
 
   if (error || !letter) {
+    console.error('[SuratDetailPage] Error loading letter:', error);
+    const errorMessage = error
+      ? ((error as Error).message || JSON.stringify(error) || "Unknown error")
+      : "Surat tidak ditemukan";
+
     return (
- <div className=" py-8">
+      <div className=" py-8">
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Error</AlertTitle>
-          <AlertDescription>
-            {error ? (error as Error).message : "Surat tidak ditemukan"}
-          </AlertDescription>
+          <AlertDescription>{errorMessage}</AlertDescription>
         </Alert>
-        <Button variant="outline" className="mt-4" onClick={() => router.back()}>
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Kembali
-        </Button>
       </div>
     )
   }
 
-  // Helper to get approval info
-  const approvalHistory = letter.histories?.find((h: LetterHistory) => h.to_status === 'APPROVED');
-  const approverName = approvalHistory?.action_by?.nama || '-';
+  // Extract assigned reviewers and approvers from histories
+  const reviewerSet = new Set<string>();
+  const approverSet = new Set<string>();
+
+  letter.histories?.forEach((h: LetterHistory) => {
+    if (h.stage_type === 'REVIEW' && h.assigned_to_user?.nama) {
+      reviewerSet.add(h.assigned_to_user.nama);
+    }
+    if (h.stage_type === 'APPROVAL' && h.assigned_to_user?.nama) {
+      approverSet.add(h.assigned_to_user.nama);
+    }
+  });
+
+  const reviewerNames = Array.from(reviewerSet);
+  const approverNames = Array.from(approverSet);
+
+  // Get latest revision note for REVISION_REQUESTED status
+  const latestRevisionNote = letter.histories
+    ?.filter((h: LetterHistory) => h.action_type === 'REVISION_REQUESTED')
+    .sort((a: LetterHistory, b: LetterHistory) =>
+      new Date(b.created_at || '').getTime() - new Date(a.created_at || '').getTime()
+    )[0];
+
+  // Histories diurutkan dari yang terlama ke terbaru
+  const sortedHistories = [...(letter.histories ?? [])].sort(
+    (a: LetterHistory, b: LetterHistory) =>
+      new Date(a.created_at || '').getTime() - new Date(b.created_at || '').getTime()
+  );
 
   return (
- <div >
+    <div>
       <div className="space-y-6">
+        {/* Banner Revisi - tampil saat status REVISION_REQUESTED */}
+        {letter.status === 'REVISION_REQUESTED' && (
+          <Alert className="border-orange-300 bg-orange-50">
+            <AlertCircle className="h-5 w-5 text-orange-600" />
+            <AlertTitle className="text-orange-900 font-semibold">
+              Surat Perlu Direvisi
+            </AlertTitle>
+            <AlertDescription className="text-orange-800">
+              {latestRevisionNote ? (
+                <div className="space-y-1 mt-1">
+                  <p>
+                    Catatan dari <strong>{latestRevisionNote.action_by?.nama || 'Reviewer'}</strong>:{' '}
+                    <em>&ldquo;{latestRevisionNote.notes || 'Tidak ada catatan spesifik'}&rdquo;</em>
+                  </p>
+                </div>
+              ) : (
+                <p>Surat ini diminta untuk direvisi. Silakan edit dan kirim ulang.</p>
+              )}
+              {letter.created_by_id === user?.id && (
+                <Button
+                  size="sm"
+                  className="mt-3 bg-orange-600 hover:bg-orange-700 text-white"
+                  onClick={() => router.push(`/documents/outgoing-letter/${id}/edit`)}
+                >
+                  <ClipboardEdit className="mr-2 h-4 w-4" />
+                  Edit &amp; Revisi Sekarang
+                </Button>
+              )}
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Header Actions */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-4">
@@ -74,48 +217,57 @@ export default function SuratDetailPage() {
             </div>
           </div>
           <div className="flex gap-2">
+            {/* DRAFT: Edit + Submit */}
             {letter.status === 'DRAFT' && (
               <>
-                <Button 
+                <Button
                   onClick={() => router.push(`/documents/outgoing-letter/${id}/edit`)}
                   variant="outline"
                 >
                   <Pencil className="mr-2 h-4 w-4" />
                   Edit
                 </Button>
-                <Button 
+                <Button
                   onClick={async () => {
-                  if (!user) {
-                    alert('User tidak ditemukan');
-                    return;
-                  }
-                  
-                  if (confirm('Submit surat ini untuk review?\n\nSurat akan dikirim ke reviewer untuk ditinjau.')) {
-                    try {
-                      await submitMutation.mutateAsync(id);
-                      alert('Surat berhasil disubmit untuk review!');
-                      router.push('/documents/outgoing-letter');
-                    } catch (error: any) {
-                      console.error('Submit error:', error);
-                      alert(`Gagal submit surat: ${error.message || 'Unknown error'}`);
+                    if (!user) {
+                      alert('User tidak ditemukan');
+                      return;
                     }
-                  }
-                }}
-                disabled={submitMutation.isPending}
-                className="bg-green-600 hover:bg-green-700 text-white"
-              >
-                <Send className="mr-2 h-4 w-4" />
-                {submitMutation.isPending ? 'Submitting...' : 'Submit untuk Review'}
-              </Button>
+
+                    if (confirm('Submit surat ini untuk review?\n\nSurat akan dikirim ke reviewer untuk ditinjau.')) {
+                      try {
+                        await submitMutation.mutateAsync(id);
+                        alert('Surat berhasil disubmit untuk review!');
+                        router.push('/documents/outgoing-letter');
+                      } catch (error: any) {
+                        console.error('Submit error:', error);
+                        alert(`Gagal submit surat: ${error.message || 'Unknown error'}`);
+                      }
+                    }
+                  }}
+                  disabled={submitMutation.isPending}
+                  className="bg-green-600 hover:bg-green-700 text-white"
+                >
+                  <Send className="mr-2 h-4 w-4" />
+                  {submitMutation.isPending ? 'Submitting...' : 'Submit untuk Review'}
+                </Button>
               </>
             )}
-            <Button variant="outline">
+
+            {/* REVISION_REQUESTED: Tombol revisi yang jelas */}
+            {letter.status === 'REVISION_REQUESTED' && letter.created_by_id === user?.id && (
+              <Button
+                onClick={() => router.push(`/documents/outgoing-letter/${id}/edit`)}
+                className="bg-orange-600 hover:bg-orange-700 text-white"
+              >
+                <ClipboardEdit className="mr-2 h-4 w-4" />
+                Revisi Surat
+              </Button>
+            )}
+
+            <Button variant="outline" onClick={() => window.print()}>
               <Printer className="mr-2 h-4 w-4" />
               Print
-            </Button>
-            <Button>
-              <Download className="mr-2 h-4 w-4" />
-              Download PDF
             </Button>
           </div>
         </div>
@@ -124,7 +276,7 @@ export default function SuratDetailPage() {
         <Card>
           <CardContent className="p-6">
             <h3 className="font-semibold mb-4">📋 Informasi Dokumen</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 text-sm">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-4 text-sm">
               <div className="space-y-4">
                 <div>
                   <p className="text-gray-600">Status:</p>
@@ -139,11 +291,11 @@ export default function SuratDetailPage() {
                       'bg-gray-100 text-gray-800'
                     }`}>
                       {letter.status === 'DRAFT' ? 'Draft' :
-                       letter.status === 'SUBMITTED_TO_REVIEW' ? 'Under Review' :
-                       letter.status === 'REVIEWED' ? 'Reviewed' :
-                       letter.status === 'APPROVED' ? 'Approved' :
-                       letter.status === 'REJECTED' ? 'Rejected' :
-                       letter.status === 'REVISION_REQUESTED' ? 'Needs Revision' :
+                       letter.status === 'SUBMITTED_TO_REVIEW' ? 'Sedang Direview' :
+                       letter.status === 'REVIEWED' ? 'Sudah Direview' :
+                       letter.status === 'APPROVED' ? 'Disetujui' :
+                       letter.status === 'REJECTED' ? 'Ditolak' :
+                       letter.status === 'REVISION_REQUESTED' ? 'Perlu Revisi' :
                        letter.status}
                     </span>
                   </p>
@@ -177,24 +329,21 @@ export default function SuratDetailPage() {
                     })}
                   </p>
                 </div>
-                {approverName !== '-' && (
-                   <>
-                    <div>
-                       <p className="text-gray-600">Disetujui oleh:</p>
-                       <p className="font-medium">{approverName}</p>
-                    </div>
-                    <div>
-                       <p className="text-gray-600">Tanggal Approval:</p>
-                       <p className="font-medium">
-                          {approvalHistory?.created_at ? new Date(approvalHistory.created_at).toLocaleDateString("id-ID", {
-                             day: "2-digit",
-                             month: "long",
-                             year: "numeric"
-                          }) : '-'}
-                       </p>
-                    </div>
-                   </>
-                )}
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <p className="text-gray-600">Reviewer:</p>
+                  <p className="font-medium">
+                    {reviewerNames.length > 0 ? reviewerNames.join(', ') : '-'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-gray-600">Approver:</p>
+                  <p className="font-medium">
+                    {approverNames.length > 0 ? approverNames.join(', ') : '-'}
+                  </p>
+                </div>
               </div>
             </div>
           </CardContent>
@@ -211,20 +360,19 @@ export default function SuratDetailPage() {
                   {/* Logo & Company Info */}
                   <div className="flex items-center gap-4">
                     <div className="w-16 h-16 bg-brand-primary rounded-lg flex items-center justify-center text-white font-bold text-2xl">
-                      L
+                      {(letter.company?.nama || 'L').charAt(0).toUpperCase()}
                     </div>
                     <div>
-                      <h2 className="text-2xl font-bold text-brand-primary">PT LEORA INDONESIA</h2>
-                      <p className="text-sm text-gray-600 mt-1">Solar Panel & Renewable Energy Solutions</p>
+                      <h2 className="text-2xl font-bold text-brand-primary">
+                        {letter.company?.nama || '-'}
+                      </h2>
                     </div>
                   </div>
                   {/* Contact Info */}
                   <div className="text-right text-sm text-gray-600">
-                    <p>Jl. Raya Industri No. 456</p>
-                    <p>Jakarta Selatan 12345</p>
-                    <p className="mt-2">Tel: (021) 1234-5678</p>
-                    <p>Email: info@leora.co.id</p>
-                    <p>www.leora.co.id</p>
+                    {letter.company?.alamat && <p>{letter.company.alamat}</p>}
+                    {letter.company?.telepon && <p className="mt-1">Tel: {letter.company.telepon}</p>}
+                    {letter.company?.email && <p>Email: {letter.company.email}</p>}
                   </div>
                 </div>
               </div>
@@ -258,24 +406,22 @@ export default function SuratDetailPage() {
                 {/* Recipient */}
                 <div className="text-sm">
                   <p>Kepada Yth,</p>
-                  {/* <p className="font-semibold">{letter.recipient_attention}</p> */}
                   <p className="font-semibold">{letter.recipient_name}</p>
-                   <p className="font-semibold">{letter.recipient_company}</p>
+                  <p className="font-semibold">{letter.recipient_company}</p>
                   <p>{letter.recipient_address}</p>
                 </div>
 
                 {/* Body */}
                 <div className="text-sm leading-relaxed whitespace-pre-line">
-                   <p>{letter.opening}</p>
-                   <div dangerouslySetInnerHTML={{ __html: letter.body }} className="my-4" />
-                   <p>{letter.closing}</p>
+                  <p>{letter.opening}</p>
+                  <div dangerouslySetInnerHTML={{ __html: letter.body }} className="my-4" />
+                  <p>{letter.closing}</p>
                 </div>
 
                 {/* Signature */}
                 <div className="mt-40 px-12">
                   {letter.signatories && Array.isArray(letter.signatories) && letter.signatories.length > 0 ? (
                     <div className={`flex w-full ${(letter.signatories as any[]).length === 1 ? 'justify-end' : 'justify-between items-end'} gap-8`}>
-                       {/* Sort by order if available */}
                       {(letter.signatories as any[]).sort((a: any, b: any) => (a.order || 0) - (b.order || 0)).map((sig: any, index: number) => (
                         <div key={index} className="text-center min-w-[200px]">
                           <p className="text-sm mb-16 font-medium">{sig.pihak || (index === 0 && letter.signatories.length === 1 ? "Hormat kami," : "")}</p>
@@ -293,7 +439,7 @@ export default function SuratDetailPage() {
                         <div className="border-t-2 border-gray-800 pt-2">
                           <p className="font-semibold">{letter.sender?.nama || letter.created_by?.nama}</p>
                           <p className="text-sm text-gray-600">{letter.sender?.jabatan || "Staff"}</p>
-                          <p className="text-sm text-gray-600">{letter.sender?.departemen || "PT Leora Indonesia"}</p>
+                          <p className="text-sm text-gray-600">{letter.sender?.departemen || letter.company?.nama || '-'}</p>
                         </div>
                       </div>
                     </div>
@@ -304,7 +450,7 @@ export default function SuratDetailPage() {
               {/* FOOTER */}
               <div className="border-t-2 border-brand-primary p-4">
                 <div className="flex justify-between items-center text-xs text-gray-600">
-                  <p>© 2026 PT Leora Indonesia - All Rights Reserved</p>
+                  <p>© {new Date().getFullYear()} {letter.company?.nama || '-'} - All Rights Reserved</p>
                   <p>Halaman 1 dari 1</p>
                 </div>
               </div>
@@ -312,79 +458,68 @@ export default function SuratDetailPage() {
           </CardContent>
         </Card>
 
-        {/* Audit Trail / Document Flow */}
+        {/* Audit Trail / Riwayat Dokumen */}
         <Card>
           <CardContent className="p-6">
-            <h3 className="font-semibold mb-6 flex items-center gap-2"><BarChart3 className="h-5 w-5" /> Audit Trail - Alur Dokumen</h3>
+            <h3 className="font-semibold mb-6 flex items-center gap-2">
+              <BarChart3 className="h-5 w-5" /> Riwayat Dokumen
+            </h3>
             <div className="space-y-4">
-              {/* Timeline */}
               <div className="relative">
                 {/* Vertical Line */}
                 <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-gray-200"></div>
 
-                {/* Timeline Items from History */}
                 <div className="space-y-6">
-                  {letter.histories?.sort((a: LetterHistory, b: LetterHistory) => new Date(a.created_at || '').getTime() - new Date(b.created_at || '').getTime()).map((history: LetterHistory, index: number) => (
-                     <div key={index} className="relative flex gap-4">
-                        <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-white font-bold z-10 ${
-                           history.action_type.includes('REJECTED') || history.action_type.includes('REVISION') ? 'bg-red-500' : 'bg-green-500'
-                        }`}>
-                           {history.action_type.includes('REJECTED') ? '✕' : '✓'}
+                  {sortedHistories.map((history: LetterHistory, index: number) => {
+                    const s = getActionStyle(history.action_type);
+                    return (
+                      <div key={index} className="relative flex items-center gap-4">
+                        <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-white font-bold z-10 ${s.dot}`}>
+                          {s.icon}
                         </div>
-                        <div className="flex-1 pb-4">
-                           <div className={`border rounded-lg p-4 ${
-                              history.action_type.includes('REJECTED') || history.action_type.includes('REVISION') ? 'bg-red-50 border-red-200' : 'bg-green-50 border-green-200'
-                           }`}>
-                              <div className="flex items-start justify-between">
-                                 <div>
-                                    <p className={`font-semibold ${
-                                       history.action_type.includes('REJECTED') || history.action_type.includes('REVISION') ? 'text-red-900' : 'text-green-900'
-                                    }`}>
-                                       {history.action_type.replace(/_/g, ' ')}
-                                    </p>
-                                    <p className={`text-sm mt-1 ${
-                                       history.action_type.includes('REJECTED') || history.action_type.includes('REVISION') ? 'text-red-700' : 'text-green-700'
-                                    }`}>
-                                       Oleh <strong>{history.action_by?.nama || history.action_by_id}</strong>
-                                    </p>
-                                    {history.notes && (
-                                       <p className={`text-xs mt-2 italic flex items-center gap-1 ${
-                                          history.action_type.includes('REJECTED') || history.action_type.includes('REVISION') ? 'text-red-600' : 'text-green-600'
-                                       }`}>
-                                          <MessageSquare className="h-3 w-3" />
-                                          Catatan: "{history.notes}"
-                                       </p>
-                                    )}
-                                 </div>
-                                 <span className={`text-xs font-medium ${
-                                    history.action_type.includes('REJECTED') || history.action_type.includes('REVISION') ? 'text-red-600' : 'text-green-600'
-                                 }`}>
-                                    {new Date(history.created_at || '').toLocaleDateString("id-ID", {
-                                       day: "2-digit",
-                                       month: "short",
-                                       year: "numeric",
-                                       hour: "2-digit",
-                                       minute: "2-digit"
-                                    })}
-                                 </span>
+                        <div className="flex-1">
+                          <div className={`border rounded-lg p-4 ${s.card}`}>
+                            <div className="flex items-start justify-between">
+                              <div>
+                                <p className={`font-semibold ${s.title}`}>
+                                  {getActionLabel(history.action_type)}
+                                </p>
+                                <p className={`text-sm mt-1 ${s.sub}`}>
+                                  Oleh <strong>{history.action_by?.nama || history.action_by_id}</strong>
+                                </p>
+                                {history.notes && (
+                                  <p className={`text-xs mt-2 italic flex items-center gap-1 ${s.note}`}>
+                                    <MessageSquare className="h-3 w-3" />
+                                    Catatan: &ldquo;{history.notes}&rdquo;
+                                  </p>
+                                )}
                               </div>
-                           </div>
+                              <span className={`text-xs font-medium shrink-0 ml-4 ${s.sub}`}>
+                                {new Date(history.created_at || '').toLocaleDateString("id-ID", {
+                                  day: "2-digit",
+                                  month: "short",
+                                  year: "numeric",
+                                  hour: "2-digit",
+                                  minute: "2-digit"
+                                })}
+                              </span>
+                            </div>
+                          </div>
                         </div>
-                     </div>
-                  ))}
-                  
-                  {(!letter.histories || letter.histories.length === 0) && (
-                     <div className="p-4 text-center text-gray-500">Belum ada riwayat aktivitas.</div>
-                  )}
+                      </div>
+                    );
+                  })}
 
+                  {sortedHistories.length === 0 && (
+                    <div className="p-4 text-center text-gray-500">Belum ada riwayat aktivitas.</div>
+                  )}
                 </div>
               </div>
-
             </div>
-           </CardContent>
-         </Card>
+          </CardContent>
+        </Card>
 
-         {/* Attachments */}
+        {/* Attachments */}
         {Array.isArray(letter.attachments) && letter.attachments.length > 0 && (
           <Card>
             <CardContent className="p-6">

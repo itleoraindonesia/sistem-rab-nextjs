@@ -172,9 +172,6 @@ export default function RevisiPage() {
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4 mb-4">
-          <Button variant="ghost" size="icon" onClick={() => router.back()}>
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
            <div>
              <h1 className="text-2xl font-bold text-brand-primary">Surat Perlu Revisi</h1>
              <p className="text-gray-600">

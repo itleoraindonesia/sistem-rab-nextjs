@@ -99,9 +99,6 @@ export default function ReviewDetailPage() {
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4 mb-4">
-          <Button variant="ghost" size="icon" onClick={() => router.back()}>
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
           <div className="flex-1">
             <h1 className="text-2xl font-bold text-brand-primary">Review Dokumen</h1>
             <p className="text-gray-600">Periksa dan berikan review untuk dokumen ini</p>
@@ -173,9 +170,29 @@ export default function ReviewDetailPage() {
                  </div>
 
                  <div className="text-sm leading-relaxed whitespace-pre-line">
-                    <p>{letter.opening}</p>
-                    <div dangerouslySetInnerHTML={{ __html: letter.body }} className="my-4" />
-                    <p>{letter.closing}</p>
+                    {letter.opening ? (
+                      <p className="mb-4">{letter.opening}</p>
+                    ) : (
+                      <p className="text-gray-400 italic mb-4">[Tidak ada paragraf pembuka]</p>
+                    )}
+                    
+                    {letter.body && letter.body.trim() && letter.body !== '<p></p>' && letter.body !== '<p><br></p>' ? (
+                      <div 
+                        dangerouslySetInnerHTML={{ __html: letter.body }} 
+                        className="my-4 prose prose-sm max-w-none" 
+                      />
+                    ) : (
+                      <div className="my-4 p-4 bg-yellow-50 border border-yellow-200 rounded text-yellow-800">
+                        <strong>⚠️ Perhatian:</strong> Isi utama surat (body) kosong. 
+                        Mohon periksa kembali data surat ini.
+                      </div>
+                    )}
+                    
+                    {letter.closing ? (
+                      <p className="mt-4">{letter.closing}</p>
+                    ) : (
+                      <p className="text-gray-400 italic mt-4">[Tidak ada paragraf penutup]</p>
+                    )}
                  </div>
                  
                  {letter.attachments && letter.attachments.length > 0 && (

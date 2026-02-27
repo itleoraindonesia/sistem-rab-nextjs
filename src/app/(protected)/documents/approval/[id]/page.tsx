@@ -78,9 +78,6 @@ export default function ApprovalDetailPage() {
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4 mb-4">
-          <Button variant="ghost" size="icon" onClick={() => router.back()}>
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
           <div className="flex-1">
             <h1 className="text-2xl font-bold text-brand-primary">Final Approval</h1>
             <p className="text-gray-600">Berikan persetujuan final untuk dokumen ini</p>

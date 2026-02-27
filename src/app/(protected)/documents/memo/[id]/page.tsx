@@ -62,9 +62,6 @@ export default function MemoDetailPage() {
         {/* Header Actions */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => router.back()}>
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
             <div>
               <h1 className="text-2xl font-bold text-brand-primary">Preview Internal Memo</h1>
               <p className="text-gray-600">{mockMemo.no_ref}</p>

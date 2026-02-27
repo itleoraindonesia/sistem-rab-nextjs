@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { createPortal } from "react-dom"
 import { useRouter } from "next/navigation"
 import { ArrowLeft, Eye, CheckCircle2, AlertCircle, FileText } from "lucide-react"
 import { Card, CardContent } from "../../../../components/ui"
@@ -20,6 +21,11 @@ export default function ReviewQueuePage() {
   const [notes, setNotes] = React.useState('')
   const [loading, setLoading] = React.useState<string | null>(null)
   const [error, setError] = React.useState<string | null>(null)
+  const [mounted, setMounted] = React.useState(false)
+
+  React.useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const handleReview = async (letterId: string, action: 'APPROVE' | 'REQUEST_REVISION') => {
     if (action === 'REQUEST_REVISION' && !notes.trim()) {
@@ -82,9 +88,6 @@ export default function ReviewQueuePage() {
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4 mb-4">
-          <Button variant="ghost" size="icon" onClick={() => router.back()}>
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
           <div>
             <h1 className="text-2xl font-bold text-brand-primary">Antrian Review Surat</h1>
             <p className="text-gray-600">
@@ -93,12 +96,6 @@ export default function ReviewQueuePage() {
           </div>
         </div>
 
-        {/* Error Message */}
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-md">
-            <p className="text-sm font-medium">{error}</p>
-          </div>
-        )}
 
         {/* Empty State */}
         {!pendingReviews || pendingReviews.length === 0 ? (
@@ -179,106 +176,164 @@ export default function ReviewQueuePage() {
         )}
 
         {/* Review Modal */}
-        {selectedLetter && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
- <Card className=" max-h-[90vh] overflow-y-auto">
-              <CardContent className="p-6">
+        {selectedLetter && typeof document !== 'undefined' && createPortal(
+          <div 
+            className="fixed top-0 left-0 w-screen h-screen z-[99999] bg-black/60 flex items-center justify-center p-4 sm:p-6 overflow-hidden backdrop-blur-sm"
+            style={{ position: 'fixed', top: 0, left: 0, bottom: 0, right: 0 }}
+            onClick={() => setSelectedLetter(null)}
+          >
+            <Card 
+              className="w-full max-w-5xl max-h-[95vh] flex flex-col overflow-hidden shadow-2xl bg-white m-0"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header - Sticky */}
+              <div className="p-6 border-b border-gray-100 bg-white shrink-0 flex items-start justify-between relative shadow-sm z-10">
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900 mb-2">
+                    {selectedLetter.letter?.subject}
+                  </h2>
+                  <p className="text-sm text-gray-600">
+                    {selectedLetter.letter?.document_type?.name} • {selectedLetter.letter?.created_by?.nama}
+                  </p>
+                </div>
+                <Button variant="ghost" size="icon" onClick={() => setSelectedLetter(null)} className="shrink-0 -mt-2 -mr-2">
+                  ✕
+                </Button>
+              </div>
+
+              {/* Scrollable Content */}
+              <div className="p-6 overflow-y-auto flex-1 bg-gray-50/30">
                 <div className="space-y-6">
-                  {/* Header */}
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <h2 className="text-xl font-bold text-gray-900 mb-2">
-                        {selectedLetter.letter?.subject}
-                      </h2>
-                      <p className="text-sm text-gray-600">
-                        {selectedLetter.letter?.document_type?.name} • {selectedLetter.letter?.created_by?.nama}
-                      </p>
-                    </div>
-                    <Button variant="ghost" size="icon" onClick={() => setSelectedLetter(null)}>
-                      ✕
-                    </Button>
-                  </div>
 
-                  {/* Letter Details */}
+                  {/* Letter Details (A4 Preview) */}
                   <div className="space-y-4">
-                    <div>
-                      <h3 className="font-semibold text-gray-900 mb-2">Informasi Surat</h3>
-                      <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div>
-                          <p className="text-gray-500">Nomor Surat</p>
-                          <p className="font-medium">{selectedLetter.letter?.document_number || '-'}</p>
+                    <div className="bg-white flex flex-col border border-gray-200 rounded-lg shadow-sm" style={{ aspectRatio: "210/297" }}>
+                      {/* HEADER - Company Letterhead */}
+                      <div className="border-b-4 border-brand-primary p-8">
+                        <div className="flex items-start justify-between">
+                          {/* Logo & Company Info */}
+                          <div className="flex items-center gap-4">
+                            <div className="w-16 h-16 bg-brand-primary rounded-lg flex items-center justify-center text-white font-bold text-2xl">
+                              {(selectedLetter.letter?.company?.nama || 'L').charAt(0).toUpperCase()}
+                            </div>
+                            <div>
+                              <h2 className="text-2xl font-bold text-brand-primary">
+                                {selectedLetter.letter?.company?.nama || '-'}
+                              </h2>
+                            </div>
+                          </div>
+                          {/* Contact Info */}
+                          <div className="text-right text-sm text-gray-600">
+                            {selectedLetter.letter?.company?.alamat && <p>{selectedLetter.letter.company.alamat}</p>}
+                            {selectedLetter.letter?.company?.telepon && <p className="mt-1">Tel: {selectedLetter.letter.company.telepon}</p>}
+                            {selectedLetter.letter?.company?.email && <p>Email: {selectedLetter.letter.company.email}</p>}
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-gray-500">Tanggal</p>
-                          <p className="font-medium">
-                            {new Date(selectedLetter.letter?.letter_date).toLocaleDateString('id-ID', {
-                              day: 'numeric',
-                              month: 'long',
-                              year: 'numeric'
-                            })}
-                          </p>
+                      </div>
+
+                      {/* LETTER CONTENT */}
+                      <div className="p-8 space-y-6 flex-1">
+                        {/* Reference Number & Date */}
+                        <div className="flex justify-between text-sm">
+                          <div className="grid grid-cols-[80px_10px_1fr] gap-y-1">
+                            <div>Nomor</div>
+                            <div>:</div>
+                            <div className="font-bold">{selectedLetter.letter?.document_number || "Pending"}</div>
+
+                            <div>Lampiran</div>
+                            <div>:</div>
+                            <div>{Array.isArray(selectedLetter.letter?.attachments) && selectedLetter.letter.attachments.length > 0 ? `${selectedLetter.letter.attachments.length} file` : "-"}</div>
+
+                            <div>Perihal</div>
+                            <div>:</div>
+                            <div className="font-bold">{selectedLetter.letter?.subject}</div>
+                          </div>
+                          <div className="text-right">
+                            <p>Jakarta, {new Date(selectedLetter.letter?.letter_date || new Date()).toLocaleDateString("id-ID", {
+                              day: "2-digit",
+                              month: "long",
+                              year: "numeric"
+                            })}</p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-gray-500">Instansi</p>
-                          <p className="font-medium">{selectedLetter.letter?.company?.nama || '-'}</p>
+
+                        {/* Recipient */}
+                        <div className="text-sm">
+                          <p>Kepada Yth,</p>
+                          <p className="font-semibold">{selectedLetter.letter?.recipient_name}</p>
+                          <p className="font-semibold">{selectedLetter.letter?.recipient_company}</p>
+                          <p>{selectedLetter.letter?.recipient_address}</p>
                         </div>
-                        <div>
-                          <p className="text-gray-500">Pengirim</p>
-                          <p className="font-medium">{selectedLetter.letter?.sender_name || selectedLetter.letter?.created_by?.nama}</p>
+
+                        {/* Body */}
+                        <div className="text-sm leading-relaxed whitespace-pre-line">
+                           {selectedLetter.letter?.opening ? (
+                             <p className="mb-4">{selectedLetter.letter.opening}</p>
+                           ) : (
+                             <p className="text-gray-400 italic mb-4">[Tidak ada paragraf pembuka]</p>
+                           )}
+                           
+                           {selectedLetter.letter?.body && selectedLetter.letter.body.trim() && selectedLetter.letter.body !== '<p></p>' && selectedLetter.letter.body !== '<p><br></p>' ? (
+                             <div dangerouslySetInnerHTML={{ __html: selectedLetter.letter.body }} className="my-4" />
+                           ) : (
+                             <div className="my-4 p-4 bg-yellow-50 border border-yellow-200 rounded text-yellow-800">
+                               <strong>⚠️ Perhatian:</strong> Isi utama surat (body) kosong. 
+                               Mohon periksa kembali data surat ini atau minta pembuat surat untuk melengkapi isinya.
+                             </div>
+                           )}
+                           
+                           {selectedLetter.letter?.closing ? (
+                             <p className="mt-4">{selectedLetter.letter.closing}</p>
+                           ) : (
+                             <p className="text-gray-400 italic mt-4">[Tidak ada paragraf penutup]</p>
+                           )}
+                        </div>
+
+                        {/* Signature */}
+                        <div className="mt-40 px-12">
+                          {selectedLetter.letter?.signatories && Array.isArray(selectedLetter.letter.signatories) && selectedLetter.letter.signatories.length > 0 ? (
+                            <div className={`flex w-full ${(selectedLetter.letter.signatories as any[]).length === 1 ? 'justify-end' : 'justify-between items-end'} gap-8`}>
+                              {(selectedLetter.letter.signatories as any[]).sort((a: any, b: any) => (a.order || 0) - (b.order || 0)).map((sig: any, index: number) => (
+                                <div key={index} className="text-center min-w-[200px]">
+                                  <p className="text-sm mb-16 font-medium">{sig.pihak || (index === 0 && selectedLetter.letter.signatories.length === 1 ? "Hormat kami," : "")}</p>
+                                  <div className="border-t-2 border-gray-800 pt-2">
+                                    <p className="font-semibold">{sig.name}</p>
+                                    <p className="text-sm text-gray-600">{sig.position}</p>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="flex justify-end">
+                              <div className="text-center min-w-[200px]">
+                                <p className="text-sm mb-16">Hormat kami,</p>
+                                <div className="border-t-2 border-gray-800 pt-2">
+                                  <p className="font-semibold">{selectedLetter.letter?.sender?.nama || selectedLetter.letter?.created_by?.nama}</p>
+                                  <p className="text-sm text-gray-600">{selectedLetter.letter?.sender?.jabatan || "Staff"}</p>
+                                  <p className="text-sm text-gray-600">{selectedLetter.letter?.sender?.departemen || selectedLetter.letter?.company?.nama || '-'}</p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* FOOTER */}
+                      <div className="border-t-2 border-brand-primary p-4 mt-auto">
+                        <div className="flex justify-between items-center text-xs text-gray-600">
+                          <p>© {new Date().getFullYear()} {selectedLetter.letter?.company?.nama || '-'} - All Rights Reserved</p>
+                          <p>Halaman 1 dari 1</p>
                         </div>
                       </div>
                     </div>
 
-                    <div>
-                      <h3 className="font-semibold text-gray-900 mb-2">Penerima</h3>
-                      <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div>
-                          <p className="text-gray-500">Nama Instansi</p>
-                          <p className="font-medium">{selectedLetter.letter?.recipient_company}</p>
-                        </div>
-                        <div>
-                          <p className="text-gray-500">Nama Kontak</p>
-                          <p className="font-medium">{selectedLetter.letter?.recipient_name}</p>
-                        </div>
-                        <div>
-                          <p className="text-gray-500">WhatsApp</p>
-                          <p className="font-medium">{selectedLetter.letter?.recipient_whatsapp}</p>
-                        </div>
-                        <div>
-                          <p className="text-gray-500">Email</p>
-                          <p className="font-medium">{selectedLetter.letter?.recipient_email || '-'}</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div>
-                      <h3 className="font-semibold text-gray-900 mb-2">Isi Surat</h3>
-                      <div className="space-y-2 text-sm">
-                        <div>
-                          <p className="text-gray-500">Pembuka</p>
-                          <p className="text-gray-700">{selectedLetter.letter?.opening}</p>
-                        </div>
-                        <div className="border-t pt-2">
-                          <p className="text-gray-500">Isi Utama</p>
-                          <div 
-                            className="text-gray-700 prose prose-sm max-w-none"
-                            dangerouslySetInnerHTML={{ __html: selectedLetter.letter?.body }}
-                          />
-                        </div>
-                        <div className="border-t pt-2">
-                          <p className="text-gray-500">Penutup</p>
-                          <p className="text-gray-700">{selectedLetter.letter?.closing}</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {selectedLetter.letter?.attachments && selectedLetter.letter.attachments.length > 0 && (
+                    {Array.isArray(selectedLetter.letter?.attachments) && selectedLetter.letter.attachments.length > 0 && (
                       <div>
-                        <h3 className="font-semibold text-gray-900 mb-2">Lampiran</h3>
+                        <h3 className="font-semibold text-gray-900 mb-2 mt-6">Lampiran</h3>
                         <div className="space-y-2">
                           {selectedLetter.letter.attachments.map((file: any, idx: number) => (
-                            <div key={idx} className="flex items-center gap-2 text-sm p-2 bg-gray-50 rounded">
-                              <FileText className="h-4 w-4 text-gray-500" />
+                            <div key={idx} className="flex items-center gap-2 text-sm p-3 bg-blue-50 border border-blue-100 rounded-md">
+                              <FileText className="h-5 w-5 text-blue-500" />
                               <span>{file.name}</span>
                             </div>
                           ))}
@@ -333,9 +388,10 @@ export default function ReviewQueuePage() {
                     </div>
                   </div>
                 </div>
-              </CardContent>
+              </div>
             </Card>
-          </div>
+          </div>,
+          document.body
         )}
       </div>
     </div>

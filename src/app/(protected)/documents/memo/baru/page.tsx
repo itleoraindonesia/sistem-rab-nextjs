@@ -19,9 +19,6 @@ export default function BuatMemoPage() {
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4 mb-4">
-          <Button variant="ghost" size="icon" onClick={() => router.back()}>
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
           <div>
             <h1 className="text-2xl font-bold text-brand-primary">Buat Internal Memo Baru</h1>
             <p className="text-gray-600">Isi form di bawah untuk membuat memo internal</p>
@@ -125,9 +122,6 @@ Demikian memo ini disampaikan, atas perhatian dan kerjasamanya diucapkan terima 
 
               {/* Action Buttons */}
               <div className="flex gap-4 justify-end pt-6 border-t">
-                <Button type="button" variant="outline" onClick={() => router.back()}>
-                  Batal
-                </Button>
                 <Button type="button" variant="outline">
                   <Save className="mr-2 h-4 w-4" />
                   Simpan Draft

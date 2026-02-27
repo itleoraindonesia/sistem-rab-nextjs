@@ -11,9 +11,9 @@ import { Input } from "../../../../../components/ui/input"
 import { Label } from "../../../../../components/ui/label"
 import { Alert, AlertDescription, AlertTitle } from "../../../../../components/ui/alert"
 import { RichTextEditor } from "../../../../../components/ui"
-import { useDocumentTypes, useInstansiList, useUsersList, useCreateLetter, useSubmitForReview } from "../../../../../hooks/useLetters"
+import { useDocumentTypes, useInstansiList, useUsersList, useCreateLetter, useSubmitForReview, useUpdateLetter } from "../../../../../hooks/useLetters"
 import { outgoingLetterSchema, type OutgoingLetterFormData, type SignatureData, type AttachmentData } from "../../../../../schemas/outgoing-letter.schema"
-import { uploadFile, deleteFile, validateFile, formatFileSize, getFileIcon } from "../../../../../lib/supabase/storage"
+import { uploadFile, deleteFile, validateFile, formatFileSize, getFileIcon, moveFilesToLetter } from "../../../../../lib/supabase/storage"
 import { supabase } from "@/lib/supabase/client";
 
 export default function BuatSuratKeluarPage() {
@@ -27,6 +27,7 @@ export default function BuatSuratKeluarPage() {
   // Mutations
   const createLetter = useCreateLetter()
   const submitForReview = useSubmitForReview()
+  const updateLetter = useUpdateLetter()
   
   // React Hook Form with Zod validation
   const {
@@ -176,9 +177,37 @@ export default function BuatSuratKeluarPage() {
   const onSaveDraft = async (data: OutgoingLetterFormData) => {
     setError(null)
     setSuccess(null)
-    
+
     try {
       const letter = await createLetter.mutateAsync(data)
+
+      // Move uploaded files from temp to actual letter folder
+      const currentAttachments = watchedAttachments || []
+      if (currentAttachments.length > 0) {
+        const hasTempFiles = currentAttachments.some(file =>
+          file.path?.startsWith(`${tempLetterId}/`)
+        )
+
+        if (hasTempFiles) {
+          const movedFiles = await moveFilesToLetter(
+            currentAttachments.map(f => ({
+              path: f.path!,
+              name: f.name,
+              size: f.size,
+              type: f.type || ''
+            })),
+            tempLetterId,
+            letter.id
+          )
+
+          // Update letter with correct attachment paths - convert to JSON-serializable format
+          await updateLetter.mutateAsync({
+            letterId: letter.id,
+            updates: { attachments: JSON.parse(JSON.stringify(movedFiles)) }
+          })
+        }
+      }
+
       router.push(`/documents/outgoing-letter/${letter.id}`)
     } catch (err: any) {
       setError(err.message || 'Gagal menyimpan draft')
@@ -189,9 +218,37 @@ export default function BuatSuratKeluarPage() {
   const onSubmitForReview = async (data: OutgoingLetterFormData) => {
     setError(null)
     setSuccess(null)
-    
+
     try {
       const letter = await createLetter.mutateAsync(data)
+
+      // Move uploaded files from temp to actual letter folder
+      const currentAttachments = watchedAttachments || []
+      if (currentAttachments.length > 0) {
+        const hasTempFiles = currentAttachments.some(file =>
+          file.path?.startsWith(`${tempLetterId}/`)
+        )
+
+        if (hasTempFiles) {
+          const movedFiles = await moveFilesToLetter(
+            currentAttachments.map(f => ({
+              path: f.path!,
+              name: f.name,
+              size: f.size,
+              type: f.type || ''
+            })),
+            tempLetterId,
+            letter.id
+          )
+
+          // Update letter with correct attachment paths - convert to JSON-serializable format
+          await updateLetter.mutateAsync({
+            letterId: letter.id,
+            updates: { attachments: JSON.parse(JSON.stringify(movedFiles)) }
+          })
+        }
+      }
+
       await submitForReview.mutateAsync(letter.id)
       router.push(`/documents/outgoing-letter/${letter.id}`)
     } catch (err: any) {
@@ -217,9 +274,6 @@ export default function BuatSuratKeluarPage() {
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4 mb-4">
-          <Button variant="ghost" size="icon" onClick={() => router.back()}>
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
           <div>
             <h1 className="text-2xl font-bold text-brand-primary">Buat Surat Keluar Baru</h1>
             <p className="text-gray-600">Isi form dengan 5 section sesuai format surat resmi</p>
@@ -244,9 +298,9 @@ export default function BuatSuratKeluarPage() {
         )}
 
         {/* Form */}
-        <Card>
-          <CardContent className="p-6">
-            <form className="space-y-8">
+        <form className="space-y-6">
+          <Card>
+            <CardContent className="p-6">
               {/* Section 1: Identitas Surat */}
               <div className="space-y-4">
                 <div className="flex items-center gap-2 border-b pb-2">
@@ -329,7 +383,11 @@ export default function BuatSuratKeluarPage() {
                   </div>
                 </div>
               </div>
+            </CardContent>
+          </Card>
 
+          <Card>
+            <CardContent className="p-6">
               {/* Section 2: Konten Surat */}
               <div className="space-y-4">
                 <div className="flex items-center gap-2 border-b pb-2">
@@ -414,7 +472,11 @@ export default function BuatSuratKeluarPage() {
                    </div>
                 </div>
               </div>
+            </CardContent>
+          </Card>
 
+          <Card>
+            <CardContent className="p-6">
               {/* Section 3: Pengirim */}
               <div className="space-y-4">
                 <div className="flex items-center gap-2 border-b pb-2">
@@ -461,7 +523,11 @@ export default function BuatSuratKeluarPage() {
                   )}
                 </div>
               </div>
+            </CardContent>
+          </Card>
 
+          <Card>
+            <CardContent className="p-6">
               {/* Section 4: Penerima */}
               <div className="space-y-4">
                 <div className="flex items-center gap-2 border-b pb-2">
@@ -540,7 +606,11 @@ export default function BuatSuratKeluarPage() {
                   </div>
                 </div>
               </div>
+            </CardContent>
+          </Card>
 
+          <Card>
+            <CardContent className="p-6">
               {/* Section 5: Lampiran & Tanda Tangan */}
               <div className="space-y-4">
                 <div className="flex items-center gap-2 border-b pb-2">
@@ -724,7 +794,11 @@ export default function BuatSuratKeluarPage() {
                   </div>
                 </div>
               </div>
+            </CardContent>
+          </Card>
 
+          <Card>
+            <CardContent className="p-6">
               {/* Workflow Info */}
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold border-b pb-2">Informasi Workflow</h3>
@@ -758,12 +832,11 @@ export default function BuatSuratKeluarPage() {
                   </div>
                 </div>
               </div>
+            </CardContent>
+          </Card>
 
               {/* Action Buttons */}
-              <div className="flex gap-4 justify-end pt-6 border-t">
-                <Button type="button" variant="outline" onClick={() => router.back()} disabled={isSubmitting}>
-                  Batal
-                </Button>
+              <div className="flex gap-4 justify-end pt-4">
                 <Button 
                   type="button" 
                   variant="outline" 
@@ -782,9 +855,7 @@ export default function BuatSuratKeluarPage() {
                   {isSubmitting ? 'Mengirim...' : 'Submit untuk Review'}
                 </Button>
               </div>
-            </form>
-          </CardContent>
-        </Card>
+        </form>
       </div>
     </div>
   )

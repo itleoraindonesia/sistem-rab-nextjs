@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { useRouter, useParams } from "next/navigation"
-import { ArrowLeft, Save, Send, Upload, X, Plus, Trash2, AlertCircle, CheckCircle2 } from "lucide-react"
+import { Save, Send, Upload, X, Plus, Trash2, AlertCircle, CheckCircle2, Loader2 } from "lucide-react"
 import { Card, CardContent } from "../../../../../../components/ui"
 import Button from "../../../../../../components/ui/Button"
 import { Input } from "../../../../../../components/ui/input"
@@ -21,6 +21,7 @@ import {
 import { useQuery } from "@tanstack/react-query"
 import { supabase } from "@/lib/supabase/client"
 import { LetterHistory } from "@/types/letter"
+import { uploadFile, deleteFile, validateFile, formatFileSize, getFileIcon } from "../../../../../../lib/supabase/storage"
 
 interface Signature {
   id: string
@@ -33,7 +34,10 @@ interface Signature {
 interface Attachment {
   id: string
   name: string
-  size: string
+  size: number
+  type?: string
+  url?: string
+  path?: string
 }
 
 export default function EditSuratKeluarPage() {
@@ -87,6 +91,8 @@ export default function EditSuratKeluarPage() {
   const [isiSurat, setIsiSurat] = React.useState('')
   const [pembuka, setPembuka] = React.useState('Dengan hormat,')
   const [penutup, setPenutup] = React.useState('Demikian surat ini kami sampaikan, atas perhatian dan kerjasamanya kami ucapkan terima kasih.')
+  const [letterDate, setLetterDate] = React.useState('')
+  const [uploadingFiles, setUploadingFiles] = React.useState(false)
   
   const [perihal, setPerihal] = React.useState('')
   const [perihalError, setPerihalError] = React.useState('')
@@ -118,10 +124,8 @@ export default function EditSuratKeluarPage() {
   React.useEffect(() => {
     if (letter) {
       setSelectedDocTypeId(letter.document_type_id)
-      setSelectedInstansiId(letter.company_id || "") // Assuming company_id exists in letter type, check logic
-      // Note: company_id might not be directly available if letter type doesn't have it, need to check type definition
-      // But based on create payload, it should be there. If not, use selectedInstansiId logic carefully.
-      // Let's assume letter object has these fields as per create payload.
+      setSelectedInstansiId(letter.company_id || "")
+      setLetterDate(letter.letter_date ? new Date(letter.letter_date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0])
       
       setPerihal(letter.subject || "")
       setPembuka(letter.opening || "")
@@ -159,17 +163,56 @@ export default function EditSuratKeluarPage() {
     setPerihal(value)
   }
 
-  const handleAddFile = () => {
-    const newFile: Attachment = {
-      id: Date.now().toString(),
-      name: `document-${attachments.length + 1}.pdf`,
-      size: "2.3 MB"
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files
+    if (!files || files.length === 0) return
+
+    setUploadingFiles(true)
+    setError(null)
+
+    try {
+      if (attachments.length + files.length > 10) {
+        throw new Error('Maksimal 10 file lampiran')
+      }
+
+      const uploadedFiles: Attachment[] = []
+
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i]
+        const validation = validateFile(file)
+        if (!validation.valid) {
+          throw new Error(`${file.name}: ${validation.error}`)
+        }
+        const uploadedFile = await uploadFile(file, id)
+        uploadedFiles.push({
+          id: uploadedFile.id,
+          name: uploadedFile.name,
+          size: uploadedFile.size,
+          type: uploadedFile.type,
+          url: uploadedFile.url,
+          path: uploadedFile.path,
+        })
+      }
+
+      setAttachments([...attachments, ...uploadedFiles])
+    } catch (err: any) {
+      setError(err.message || 'Gagal upload file')
+    } finally {
+      setUploadingFiles(false)
+      event.target.value = ''
     }
-    setAttachments([...attachments, newFile])
   }
 
-  const handleRemoveFile = (id: string) => {
-    setAttachments(attachments.filter(file => file.id !== id))
+  const handleRemoveFile = async (id: string, path?: string) => {
+    try {
+      if (path) {
+        await deleteFile(path)
+      }
+      setAttachments(attachments.filter(file => file.id !== id))
+    } catch (err: any) {
+      console.error('Error removing file:', err)
+      setError('Gagal menghapus file')
+    }
   }
 
   const handleAddSignature = () => {
@@ -206,8 +249,8 @@ export default function EditSuratKeluarPage() {
     try {
       const letterData = {
         document_type_id: selectedDocTypeId!,
-        company_id: selectedInstansiId!, // Ensure this matches creation logic
-        letter_date: new Date().toISOString().split('T')[0],
+        company_id: selectedInstansiId!,
+        letter_date: letterDate || new Date().toISOString().split('T')[0],
         subject: perihal,
         opening: pembuka,
         body: isiSurat,
@@ -251,7 +294,7 @@ export default function EditSuratKeluarPage() {
       const letterData = {
         document_type_id: selectedDocTypeId!,
         company_id: selectedInstansiId!,
-        letter_date: new Date().toISOString().split('T')[0],
+        letter_date: letterDate || new Date().toISOString().split('T')[0],
         subject: perihal,
         opening: pembuka,
         body: isiSurat,
@@ -301,14 +344,43 @@ export default function EditSuratKeluarPage() {
     )
   }
 
+  // Guard: hanya DRAFT dan REVISION_REQUESTED yang boleh diedit
+  const EDITABLE_STATUSES = ['DRAFT', 'REVISION_REQUESTED'];
+  if (letter && !EDITABLE_STATUSES.includes(letter.status)) {
+    return (
+ <div className=" py-8">
+        <div className="max-w-lg mx-auto text-center space-y-4">
+          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto">
+            <AlertCircle className="h-8 w-8 text-gray-400" />
+          </div>
+          <h2 className="text-xl font-semibold text-gray-800">Surat Tidak Dapat Diedit</h2>
+          <p className="text-gray-600">
+            Surat dengan status{' '}
+            <span className="font-medium text-gray-800">
+              {letter.status === 'SUBMITTED_TO_REVIEW' ? 'Under Review' :
+               letter.status === 'REVIEWED' ? 'Reviewed' :
+               letter.status === 'APPROVED' ? 'Approved' :
+               letter.status === 'REJECTED' ? 'Rejected' :
+               letter.status}
+            </span>{' '}
+            tidak dapat diedit.
+          </p>
+          <button
+            onClick={() => router.push(`/documents/outgoing-letter/${id}`)}
+            className="px-4 py-2 bg-brand-primary text-white rounded-lg hover:bg-brand-primary/90 font-medium"
+          >
+            Kembali ke Detail Surat
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   return (
  <div className=" py-6">
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4 mb-4">
-          <Button variant="ghost" size="icon" onClick={() => router.back()}>
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
           <div>
             <h1 className="text-2xl font-bold text-brand-primary">Edit Surat Keluar</h1>
             <p className="text-gray-600">Perbarui data surat sebelum submit</p>
@@ -332,39 +404,45 @@ export default function EditSuratKeluarPage() {
           </Alert>
         )}
 
-        {/* Revision Alert - Only show if status is REVISION_REQUESTED */}
-        {letter?.status === 'REVISION_REQUESTED' && revisionNote && (
+        {/* Revision Alert - Show when status is REVISION_REQUESTED */}
+        {letter?.status === 'REVISION_REQUESTED' && (
           <Alert className="border-orange-200 bg-orange-50">
             <AlertCircle className="h-5 w-5 text-orange-600" />
             <AlertTitle className="text-orange-900 font-semibold">
               Surat Perlu Direvisi
             </AlertTitle>
             <AlertDescription className="text-orange-800">
-              <div className="space-y-2 mt-2">
-                <p className="font-medium">
-                  Catatan dari {revisionNote.action_by?.nama}:
+              {revisionNote ? (
+                <div className="space-y-2 mt-2">
+                  <p className="font-medium">
+                    Catatan dari {revisionNote.action_by?.nama}:
+                  </p>
+                  <p className="italic">
+                    &ldquo;{revisionNote.notes || 'Tidak ada catatan spesifik'}&rdquo;
+                  </p>
+                  <p className="text-sm text-orange-600">
+                    Diminta pada: {revisionNote.created_at ? new Date(revisionNote.created_at).toLocaleDateString('id-ID', {
+                      day: 'numeric',
+                      month: 'long',
+                      year: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    }) : '-'}
+                  </p>
+                </div>
+              ) : (
+                <p className="mt-1">
+                  Surat ini diminta untuk direvisi. Silakan periksa catatan di bagian Audit Trail pada halaman detail surat.
                 </p>
-                <p className="italic">
-                  "{revisionNote.notes || 'Tidak ada catatan spesifik'}"
-                </p>
-                <p className="text-sm text-orange-600">
-                  Diminta pada: {revisionNote.created_at ? new Date(revisionNote.created_at).toLocaleDateString('id-ID', {
-                    day: 'numeric',
-                    month: 'long',
-                    year: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  }) : '-'}
-                </p>
-              </div>
+              )}
             </AlertDescription>
           </Alert>
         )}
 
         {/* Form */}
-        <Card>
-          <CardContent className="p-6">
-            <form ref={formRef} className="space-y-8" onSubmit={(e) => e.preventDefault()}>
+        <form ref={formRef} className="space-y-6" onSubmit={(e) => e.preventDefault()}>
+          <Card>
+            <CardContent className="p-6">
               {/* Section 1: Identitas Surat */}
               <div className="space-y-4">
                 <div className="flex items-center gap-2 border-b pb-2">
@@ -434,12 +512,17 @@ export default function EditSuratKeluarPage() {
                       id="tanggal" 
                       type="date"
                       required
-                      defaultValue={letter?.letter_date ? new Date(letter.letter_date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]}
+                      value={letterDate}
+                      onChange={(e) => setLetterDate(e.target.value)}
                     />
                   </div>
                 </div>
               </div>
+            </CardContent>
+          </Card>
 
+          <Card>
+            <CardContent className="p-6">
               {/* Section 2: Konten Surat */}
               <div className="space-y-4">
                 <div className="flex items-center gap-2 border-b pb-2">
@@ -508,7 +591,11 @@ export default function EditSuratKeluarPage() {
                    </div>
                 </div>
               </div>
+            </CardContent>
+          </Card>
 
+          <Card>
+            <CardContent className="p-6">
               {/* Section 3: Pengirim */}
               <div className="space-y-4">
                 <div className="flex items-center gap-2 border-b pb-2">
@@ -554,7 +641,11 @@ export default function EditSuratKeluarPage() {
                   )}
                 </div>
               </div>
+            </CardContent>
+          </Card>
 
+          <Card>
+            <CardContent className="p-6">
               {/* Section 4: Penerima */}
               <div className="space-y-4">
                 <div className="flex items-center gap-2 border-b pb-2">
@@ -622,7 +713,11 @@ export default function EditSuratKeluarPage() {
                   </div>
                 </div>
               </div>
+            </CardContent>
+          </Card>
 
+          <Card>
+            <CardContent className="p-6">
               {/* Section 5: Lampiran & Tanda Tangan */}
               <div className="space-y-4">
                 <div className="flex items-center gap-2 border-b pb-2">
@@ -650,38 +745,66 @@ export default function EditSuratKeluarPage() {
                   {hasLampiran && (
                     <div className="ml-7 space-y-3">
                       <div>
-                        <Button type="button" variant="outline" onClick={handleAddFile}>
-                          <Upload className="mr-2 h-4 w-4" />
-                          Upload File
-                        </Button>
+                        <input
+                          type="file"
+                          id="file-upload-edit"
+                          multiple
+                          accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                          onChange={handleFileSelect}
+                          disabled={uploadingFiles}
+                          className="hidden"
+                        />
+                        <label htmlFor="file-upload-edit">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            disabled={uploadingFiles}
+                            onClick={() => document.getElementById('file-upload-edit')?.click()}
+                            asChild
+                          >
+                            <span>
+                              {uploadingFiles ? (
+                                <>
+                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                  Uploading...
+                                </>
+                              ) : (
+                                <>
+                                  <Upload className="mr-2 h-4 w-4" />
+                                  Upload File
+                                </>
+                              )}
+                            </span>
+                          </Button>
+                        </label>
                         <p className="text-sm text-gray-500 mt-2">
-                          Max 5MB per file - PDF, DOC, DOCX, JPG, PNG
+                          Max 5MB per file - PDF, DOC, DOCX, JPG, PNG (Maksimal 10 file)
                         </p>
                       </div>
 
                       {/* File List */}
                       {attachments.length > 0 && (
                         <div className="space-y-2">
-                          <p className="text-sm font-medium">File yang akan diupload ({attachments.length}):</p>
+                          <p className="text-sm font-medium">File terupload ({attachments.length}/10):</p>
                           {attachments.map((file) => (
                             <div
                               key={file.id}
-                              className="flex items-center justify-between p-3 bg-blue-50 border border-blue-200 rounded-md"
+                              className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-md"
                             >
                               <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 bg-blue-500 rounded flex items-center justify-center text-white text-xs font-bold">
-                                  📄
+                                <div className="w-8 h-8 bg-green-500 rounded flex items-center justify-center text-white text-lg">
+                                  {getFileIcon(file.type || '')}
                                 </div>
                                 <div>
-                                  <p className="text-sm font-medium">{file.name}</p>
-                                  <p className="text-xs text-gray-600">{file.size}</p>
+                                  <p className="text-sm font-medium text-green-900">{file.name}</p>
+                                  <p className="text-xs text-green-700">{formatFileSize(file.size)}</p>
                                 </div>
                               </div>
                               <Button
                                 type="button"
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => handleRemoveFile(file.id)}
+                                onClick={() => handleRemoveFile(file.id, file.path)}
                                 className="text-red-600 hover:text-red-800 hover:bg-red-50"
                               >
                                 <X className="h-4 w-4" />
@@ -770,13 +893,11 @@ export default function EditSuratKeluarPage() {
                   </div>
                 </div>
               </div>
+            </CardContent>
+          </Card>
 
               {/* Action Buttons */}
-              <div className="flex gap-4 justify-end pt-6 border-t">
-                <Button type="button" variant="outline" onClick={() => router.back()} disabled={loading}>
-                  Batal
-                </Button>
-                
+              <div className="flex gap-4 justify-end pt-4">
                 {/* Conditional buttons based on letter status */}
                 {letter?.status === 'REVISION_REQUESTED' ? (
                   <>
@@ -827,9 +948,7 @@ export default function EditSuratKeluarPage() {
                   </>
                 )}
               </div>
-            </form>
-          </CardContent>
-        </Card>
+        </form>
       </div>
     </div>
   )
