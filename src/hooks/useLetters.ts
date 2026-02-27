@@ -321,23 +321,6 @@ export function useRejectLetter() {
 }
 
 /**
- * Revise and resubmit mutation
- */
-export function useReviseAndResubmit() {
-  const queryClient = useQueryClient();
-  const { data: user } = useUser();
-
-  return useMutation({
-    mutationFn: (letterId: string) =>
-      letterService.reviseAndResubmit(letterId, user?.id || ''),
-    onSuccess: (_, letterId) => {
-      queryClient.invalidateQueries({ queryKey: ['letter', letterId] });
-      queryClient.invalidateQueries({ queryKey: ['letters'] });
-    },
-  });
-}
-
-/**
  * Resubmit revision mutation
  */
 export function useResubmitRevision() {
