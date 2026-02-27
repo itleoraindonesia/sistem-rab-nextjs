@@ -3,6 +3,7 @@
  */
 
 export type StageType = 'REVIEW' | 'APPROVAL'
+export type ReviewMode = 'SEQUENTIAL' | 'PARALLEL'
 export type CompletionRule = 'ALL' | 'ANY_ONE' | 'MAJORITY'
 
 export interface WorkflowAssignee {

@@ -12,31 +12,6 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.1"
   }
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
       clients: {
@@ -179,6 +154,7 @@ export type Database = {
       instansi: {
         Row: {
           alamat: string | null
+          code: string | null
           created_at: string | null
           email: string | null
           id: string
@@ -188,6 +164,7 @@ export type Database = {
         }
         Insert: {
           alamat?: string | null
+          code?: string | null
           created_at?: string | null
           email?: string | null
           id?: string
@@ -197,6 +174,7 @@ export type Database = {
         }
         Update: {
           alamat?: string | null
+          code?: string | null
           created_at?: string | null
           email?: string | null
           id?: string
@@ -395,7 +373,7 @@ export type Database = {
           attachments: Json | null
           body: string
           closing: string | null
-          company_id: string | null
+          company_id: string
           created_at: string | null
           created_by_id: string
           current_stage_id: number | null
@@ -411,6 +389,8 @@ export type Database = {
           recipient_name: string
           recipient_whatsapp: string
           rejected_at: string | null
+          reviewed_at: string | null
+          revision_count: number
           sender_department: string | null
           sender_email: string | null
           sender_id: string | null
@@ -418,6 +398,7 @@ export type Database = {
           signatories: Json | null
           status: Database["public"]["Enums"]["letter_status"]
           subject: string
+          submitted_at: string | null
           updated_at: string | null
         }
         Insert: {
@@ -425,7 +406,7 @@ export type Database = {
           attachments?: Json | null
           body: string
           closing?: string | null
-          company_id?: string | null
+          company_id: string
           created_at?: string | null
           created_by_id: string
           current_stage_id?: number | null
@@ -441,6 +422,8 @@ export type Database = {
           recipient_name: string
           recipient_whatsapp: string
           rejected_at?: string | null
+          reviewed_at?: string | null
+          revision_count?: number
           sender_department?: string | null
           sender_email?: string | null
           sender_id?: string | null
@@ -448,6 +431,7 @@ export type Database = {
           signatories?: Json | null
           status?: Database["public"]["Enums"]["letter_status"]
           subject: string
+          submitted_at?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -455,7 +439,7 @@ export type Database = {
           attachments?: Json | null
           body?: string
           closing?: string | null
-          company_id?: string | null
+          company_id?: string
           created_at?: string | null
           created_by_id?: string
           current_stage_id?: number | null
@@ -471,6 +455,8 @@ export type Database = {
           recipient_name?: string
           recipient_whatsapp?: string
           rejected_at?: string | null
+          reviewed_at?: string | null
+          revision_count?: number
           sender_department?: string | null
           sender_email?: string | null
           sender_id?: string | null
@@ -478,6 +464,7 @@ export type Database = {
           signatories?: Json | null
           status?: Database["public"]["Enums"]["letter_status"]
           subject?: string
+          submitted_at?: string | null
           updated_at?: string | null
         }
         Relationships: [
@@ -724,6 +711,10 @@ export type Database = {
           status: string
         }[]
       }
+      generate_document_number: {
+        Args: { p_letter_id: string }
+        Returns: string
+      }
       get_generated_meeting_number_preview: { Args: never; Returns: string }
       get_next_meeting_number_preview: { Args: never; Returns: string }
       get_roman_month: { Args: { month_int: number }; Returns: string }
@@ -731,15 +722,25 @@ export type Database = {
         Args: { p_letter_id: string; p_user_id: string }
         Returns: Json
       }
-      review_letter: {
-        Args: {
-          p_action: string
-          p_letter_id: string
-          p_notes?: string
-          p_user_id: string
-        }
-        Returns: Json
-      }
+      review_letter:
+        | {
+            Args: {
+              p_action: string
+              p_letter_id: string
+              p_notes?: string
+              p_user_id: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_action: string
+              p_letter_id: string
+              p_notes?: string
+              p_user_id: string
+            }
+            Returns: Json
+          }
       submit_letter_for_review: {
         Args: { p_letter_id: string; p_user_id: string }
         Returns: Json
@@ -924,9 +925,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {
       kebutuhan_type: [
