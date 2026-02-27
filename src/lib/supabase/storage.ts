@@ -149,6 +149,77 @@ export async function deleteMultipleFiles(filePaths: string[]): Promise<void> {
 }
 
 /**
+ * Move files from temp folder to actual letter folder
+ * Used when letter is created after file uploads
+ */
+export async function moveFilesToLetter(
+  files: { path: string; name: string; size: number; type: string }[],
+  tempLetterId: string,
+  actualLetterId: string
+): Promise<UploadedFile[]> {
+  const movedFiles: UploadedFile[] = []
+
+  for (const file of files) {
+    if (!file.path.startsWith(`${tempLetterId}/`)) {
+      // File already in correct location, just update ID
+      movedFiles.push({
+        id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        url: file.path,
+        path: file.path,
+      })
+      continue
+    }
+
+    const oldPath = file.path
+    const newPath = oldPath.replace(`${tempLetterId}/`, `${actualLetterId}/`)
+
+    try {
+      // Copy file to new location
+      const { error: copyError } = await supabase.storage
+        .from(STORAGE_BUCKET)
+        .copy(oldPath, newPath)
+
+      if (copyError) {
+        console.error('Copy error:', copyError)
+        throw new Error(`Gagal copy file: ${copyError.message}`)
+      }
+
+      // Delete old file
+      const { error: deleteError } = await supabase.storage
+        .from(STORAGE_BUCKET)
+        .remove([oldPath])
+
+      if (deleteError) {
+        console.warn('Failed to delete temp file:', deleteError)
+        // Continue anyway, file was copied successfully
+      }
+
+      // Get new public URL
+      const { data: urlData } = supabase.storage
+        .from(STORAGE_BUCKET)
+        .getPublicUrl(newPath)
+
+      movedFiles.push({
+        id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        url: urlData.publicUrl,
+        path: newPath,
+      })
+    } catch (err: any) {
+      console.error('Move file error:', err)
+      throw new Error(err.message || 'Gagal memindahkan file')
+    }
+  }
+
+  return movedFiles
+}
+
+/**
  * Get file download URL
  */
 export async function getFileDownloadUrl(filePath: string): Promise<string> {
