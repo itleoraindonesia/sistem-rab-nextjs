@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { useRouter } from "next/navigation"
-import { ArrowLeft, Save, Loader2 } from "lucide-react"
+import { Save, Loader2 } from "lucide-react"
 import { useQueryClient } from "@tanstack/react-query"
 import { useToast } from "@/components/ui/use-toast"
 
@@ -130,14 +130,6 @@ export default function NewDocumentTypePage() {
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4">
-          <Button 
-            variant="ghost" 
-            size="sm"
-            onClick={() => router.push('/setting/workflow')}
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Kembali
-          </Button>
           <div>
             <h1 className="text-3xl font-bold text-brand-primary">
               Buat Document Type Baru

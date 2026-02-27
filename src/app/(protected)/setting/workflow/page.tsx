@@ -44,72 +44,9 @@ export default function WorkflowAdminPage() {
           </Button>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">Total Document Types</p>
-                  <p className="text-2xl font-bold text-brand-primary mt-1">
-                    {allDocTypes?.length || 0}
-                  </p>
-                </div>
-                <FileText className="h-8 w-8 text-blue-500" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">With Workflow</p>
-                  <p className="text-2xl font-bold text-green-600 mt-1">
-                    {documentTypesWithWorkflow?.filter(dt => dt.stages.length > 0).length || 0}
-                  </p>
-                </div>
-                <Settings className="h-8 w-8 text-green-500" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">Without Workflow</p>
-                  <p className="text-2xl font-bold text-orange-600 mt-1">
-                    {docTypesWithoutWorkflow.length}
-                  </p>
-                </div>
-                <Settings className="h-8 w-8 text-orange-500" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">Total Stages</p>
-                  <p className="text-2xl font-bold text-purple-600 mt-1">
-                    {documentTypesWithWorkflow?.reduce((sum, dt) => sum + dt.stages.length, 0) || 0}
-                  </p>
-                </div>
-                <ArrowRight className="h-8 w-8 text-purple-500" />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
         {/* Document Types with Workflow */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Document Types & Workflow Configuration</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {!documentTypesWithWorkflow || documentTypesWithWorkflow.length === 0 ? (
+        <div className="w-full">
+          {!documentTypesWithWorkflow || documentTypesWithWorkflow.length === 0 ? (
               <div className="text-center py-8">
                 <p className="text-gray-500">Belum ada document type. Klik "Tambah Document Type" untuk memulai.</p>
               </div>
@@ -172,13 +109,13 @@ export default function WorkflowAdminPage() {
                     ) : (
                       <div className="space-y-3">
                         <p className="text-sm font-medium text-gray-700">
-                          Workflow Stages ({docType.stages.length}):
+                          Workflow Stages:
                         </p>
-                        <div className="flex items-center gap-2 overflow-x-auto pb-2">
-                          {docType.stages.map((stage, index) => (
+                        <div className="flex flex-col md:flex-row items-stretch gap-4 pb-2">
+                          {docType.stages.slice(0, 2).map((stage, index) => (
                             <React.Fragment key={stage.id}>
                               {/* Stage Card */}
-                              <div className="flex-shrink-0 bg-white border-2 border-gray-200 rounded-lg p-3 min-w-[200px]">
+                              <div className="flex-1 bg-white border-2 border-gray-200 rounded-lg p-4">
                                 <div className="flex items-center gap-2 mb-2">
                                   <span className="w-6 h-6 rounded-full bg-brand-primary text-white text-xs flex items-center justify-center font-bold">
                                     {stage.sequence}
@@ -220,8 +157,10 @@ export default function WorkflowAdminPage() {
                               </div>
 
                               {/* Arrow */}
-                              {index < docType.stages.length - 1 && (
-                                <ArrowRight className="h-5 w-5 text-gray-400 flex-shrink-0" />
+                              {index === 0 && docType.stages.length > 1 && (
+                                <div className="hidden md:flex flex-col justify-center items-center">
+                                  <ArrowRight className="h-6 w-6 text-gray-400 flex-shrink-0" />
+                                </div>
                               )}
                             </React.Fragment>
                           ))}
@@ -231,9 +170,8 @@ export default function WorkflowAdminPage() {
                   </div>
                 ))}
               </div>
-            )}
-          </CardContent>
-        </Card>
+          )}
+        </div>
 
         {/* Document Types Without Workflow */}
         {docTypesWithoutWorkflow.length > 0 && (

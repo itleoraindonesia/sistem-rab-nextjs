@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { useRouter, useParams } from "next/navigation"
-import { ArrowLeft, Plus, Trash2, Save, Loader2 } from "lucide-react"
+import { Plus, Trash2, Save, Loader2 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui"
 import Button from "@/components/ui/Button"
 import { Input } from "@/components/ui/input"
@@ -48,10 +48,15 @@ export default function EditWorkflowPage() {
   }, [stages])
 
   const addStage = () => {
+    if ((localStages?.length || 0) >= 2) {
+      alert("Maksimal hanya 2 stage (Review dan Approval)")
+      return
+    }
     const newSequence = (localStages?.length || 0) + 1
+    const newStageType = newSequence === 1 ? 'REVIEW' : 'APPROVAL'
     const newStage = {
       document_type_id: documentTypeId,
-      stage_type: 'REVIEW' as StageType,
+      stage_type: newStageType as StageType,
       stage_name: `Stage ${newSequence}`,
       sequence: newSequence,
       assignees: [] as WorkflowAssignee[],
@@ -161,14 +166,6 @@ export default function EditWorkflowPage() {
  <div className=" py-8">
         <div className="text-center">
           <p className="text-gray-500">Document type tidak ditemukan.</p>
-          <Button 
-            variant="outline" 
-            className="mt-4"
-            onClick={() => router.push('/setting/workflow')}
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Kembali
-          </Button>
         </div>
       </div>
     )
@@ -180,14 +177,6 @@ export default function EditWorkflowPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => router.push('/setting/workflow')}
-            >
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Kembali
-            </Button>
             <div>
               <h1 className="text-3xl font-bold text-brand-primary">
                 Edit Workflow: {documentType.name}
@@ -216,9 +205,9 @@ export default function EditWorkflowPage() {
         </div>
 
         {/* Stages */}
-        <div className="space-y-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {localStages?.map((stage, index) => (
-            <Card key={stage.id || index}>
+            <Card key={stage.id || index} className="flex flex-col h-full">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-lg flex items-center gap-2">
@@ -237,7 +226,7 @@ export default function EditWorkflowPage() {
                   </Button>
                 </div>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-4 flex-1">
                 {/* Stage Type */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
@@ -335,14 +324,17 @@ export default function EditWorkflowPage() {
           ))}
 
           {/* Add Stage Button */}
-          <Button
-            variant="outline"
-            className="w-full py-8 border-dashed"
-            onClick={addStage}
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            Tambah Stage
-          </Button>
+          {(!localStages || localStages.length < 2) && (
+            <Button
+              variant="outline"
+              className="w-full h-full min-h-[300px] border-dashed flex flex-col items-center justify-center text-gray-500 hover:text-brand-primary hover:border-brand-primary/50 transition-colors"
+              onClick={addStage}
+            >
+              <Plus className="mb-2 h-8 w-8 text-gray-400" />
+              <span className="font-medium text-gray-600">Tambah Stage</span>
+              <span className="text-xs text-gray-400 mt-1">Maksimal 2 stage (Review & Approval)</span>
+            </Button>
+          )}
         </div>
       </div>
     </div>
