@@ -722,25 +722,15 @@ export type Database = {
         Args: { p_letter_id: string; p_user_id: string }
         Returns: Json
       }
-      review_letter:
-        | {
-            Args: {
-              p_action: string
-              p_letter_id: string
-              p_notes?: string
-              p_user_id: string
-            }
-            Returns: Json
-          }
-        | {
-            Args: {
-              p_action: string
-              p_letter_id: string
-              p_notes?: string
-              p_user_id: string
-            }
-            Returns: Json
-          }
+      review_letter: {
+        Args: {
+          p_action: string
+          p_letter_id: string
+          p_notes?: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
       submit_letter_for_review: {
         Args: { p_letter_id: string; p_user_id: string }
         Returns: Json
@@ -762,6 +752,7 @@ export type Database = {
         | "Lapangan"
         | "Sekolah"
         | "Kantor"
+        | "Tahu Beton"
       letter_action_type:
         | "CREATED"
         | "SUBMITTED"
@@ -790,6 +781,7 @@ export type Database = {
         | "Jasa Renovasi"
         | "Jasa RAB/Gambar"
         | "U-Ditch"
+        | "Tahu Beton"
       sales_stage:
         | "IG_Lead"
         | "WA_Negotiation"
@@ -942,6 +934,7 @@ export const Constants = {
         "Lapangan",
         "Sekolah",
         "Kantor",
+        "Tahu Beton",
       ],
       letter_action_type: [
         "CREATED",
@@ -973,6 +966,7 @@ export const Constants = {
         "Jasa Renovasi",
         "Jasa RAB/Gambar",
         "U-Ditch",
+        "Tahu Beton",
       ],
       sales_stage: [
         "IG_Lead",
