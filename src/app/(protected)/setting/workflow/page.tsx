@@ -128,7 +128,7 @@ export default function WorkflowAdminPage() {
                                     {stage.stage_type}
                                   </span>
                                 </div>
-                                <p className="font-medium text-sm mb-2">{stage.stage_name}</p>
+                                <p className="font-medium text-sm mb-2 capitalize">{stage.stage_type.toLowerCase()}</p>
                                 <div className="space-y-1">
                                   <div className="flex items-center gap-1 text-xs text-gray-600">
                                     <Users className="h-3 w-3" />
