@@ -17,7 +17,6 @@ export interface WorkflowStage {
   id?: number
   document_type_id: number
   stage_type: StageType
-  stage_name: string
   sequence: number
   assignees: WorkflowAssignee[]
   completion_rule: CompletionRule
@@ -43,7 +42,6 @@ export interface WorkflowSummary {
   document_type_code: string
   stage_id: number | null
   stage_type: StageType | null
-  stage_name: string | null
   sequence: number | null
   assignees: WorkflowAssignee[] | null
   completion_rule: CompletionRule | null

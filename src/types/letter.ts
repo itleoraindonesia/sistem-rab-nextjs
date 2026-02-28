@@ -43,9 +43,8 @@ export type OutgoingLetterWithRelations = Tables<'outgoing_letters'> & {
   created_by: Tables<'users'>;
   sender?: Tables<'users'> | null;
   histories?: LetterHistory[];
-  workflow_stages?: Array<{
+    workflow_stages?: Array<{
     id: number;
-    stage_name: string;
     stage_type: string;
     sequence: number;
     assignee_users?: Array<Pick<Tables<'users'>, 'id' | 'nama' | 'email' | 'jabatan' | 'departemen'>>;
