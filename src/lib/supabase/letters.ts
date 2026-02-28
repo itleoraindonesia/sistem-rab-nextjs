@@ -256,7 +256,7 @@ export async function resubmitRevision(letterId: string, userId: string) {
 export async function reviewLetter(
   letterId: string,
   userId: string,
-  action: 'APPROVE' | 'REQUEST_REVISION',
+  action: 'APPROVE' | 'REQUEST_REVISION' | 'APPROVED_FINAL' | 'REJECT',
   notes?: string
 ) {
   console.log('[reviewLetter] RPC call:', { letterId, userId, action });
@@ -277,8 +277,14 @@ export async function reviewLetter(
   });
 
   if (error) {
-    console.error('[reviewLetter] RPC error:', error);
-    throw new Error(`Review gagal: ${error.message}`);
+    // Log full error object — error bisa berupa {} jika PostgREST schema cache belum refresh
+    console.error('[reviewLetter] RPC error (full):', JSON.stringify(error));
+    const errMsg = (error as any).message
+      || (error as any).details
+      || (error as any).hint
+      || (error as any).code
+      || JSON.stringify(error);
+    throw new Error(`Review gagal: ${errMsg}`);
   }
 
   if (data?.success === false) {
@@ -348,7 +354,9 @@ export async function getPendingReviews(userId: string) {
       letter:outgoing_letters!letter_id(
         *,
         document_type:document_types(id, name, code),
-        created_by:users!outgoing_letters_created_by_id_fkey(id, nama, email)
+        company:instansi(id, nama, alamat, telepon, email),
+        created_by:users!outgoing_letters_created_by_id_fkey(id, nama, email, jabatan),
+        sender:users!outgoing_letters_sender_id_fkey(id, nama, email, jabatan)
       )
     `)
     .eq('assigned_to_id', userId)
@@ -378,7 +386,9 @@ export async function getPendingApprovals(userId: string) {
       letter:outgoing_letters!letter_id(
         *,
         document_type:document_types(id, name, code),
-        created_by:users!outgoing_letters_created_by_id_fkey(id, nama, email)
+        company:instansi(id, nama, alamat, telepon, email),
+        created_by:users!outgoing_letters_created_by_id_fkey(id, nama, email, jabatan),
+        sender:users!outgoing_letters_sender_id_fkey(id, nama, email, jabatan)
       )
     `)
     .eq('assigned_to_id', userId)

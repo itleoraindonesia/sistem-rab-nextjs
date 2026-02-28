@@ -246,7 +246,7 @@ export function useSubmitForReview() {
 }
 
 /**
- * Review letter mutation
+ * Review letter mutation (handles both REVIEW and APPROVAL actions)
  */
 export function useReviewLetter() {
   const queryClient = useQueryClient();
@@ -259,7 +259,7 @@ export function useReviewLetter() {
       notes,
     }: {
       letterId: string;
-      action: 'APPROVE' | 'REQUEST_REVISION';
+      action: 'APPROVE' | 'REQUEST_REVISION' | 'APPROVED_FINAL' | 'REJECT';
       notes?: string;
     }) => letterService.reviewLetter(letterId, user?.id || '', action, notes),
     onSuccess: (_, variables) => {
