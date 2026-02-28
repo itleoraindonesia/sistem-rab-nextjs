@@ -111,10 +111,12 @@ export default function PreviewWorkflowPage() {
                             {stage.sequence}
                           </span>
                           <div>
-                            <h3 className="font-semibold text-lg">{stage.stage_name}</h3>
+                            <h3 className="font-semibold text-lg capitalize">
+                              {stage.stage_type.toLowerCase()}
+                            </h3>
                             <span className={`inline-block px-2 py-0.5 mt-1 rounded text-xs font-semibold ${
-                              stage.stage_type === 'REVIEW' 
-                                ? 'bg-blue-100 text-blue-700' 
+                              stage.stage_type === 'REVIEW'
+                                ? 'bg-blue-100 text-blue-700'
                                 : 'bg-green-100 text-green-700'
                             }`}>
                               {stage.stage_type}
