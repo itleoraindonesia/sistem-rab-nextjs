@@ -57,7 +57,6 @@ export default function EditWorkflowPage() {
     const newStage = {
       document_type_id: documentTypeId,
       stage_type: newStageType as StageType,
-      stage_name: `Stage ${newSequence}`,
       sequence: newSequence,
       assignees: [] as WorkflowAssignee[],
       completion_rule: 'ALL' as CompletionRule,
@@ -119,7 +118,6 @@ export default function EditWorkflowPage() {
             stageId: stage.id,
             updates: {
               stage_type: stage.stage_type,
-              stage_name: stage.stage_name,
               sequence: stage.sequence,
               assignees: stage.assignees,
               completion_rule: stage.completion_rule,
@@ -131,7 +129,6 @@ export default function EditWorkflowPage() {
           await createStage.mutateAsync({
             document_type_id: documentTypeId,
             stage_type: stage.stage_type,
-            stage_name: stage.stage_name,
             sequence: stage.sequence,
             assignees: stage.assignees,
             completion_rule: stage.completion_rule,
@@ -214,7 +211,13 @@ export default function EditWorkflowPage() {
                     <span className="w-8 h-8 rounded-full bg-brand-primary text-white text-sm flex items-center justify-center font-bold">
                       {stage.sequence}
                     </span>
-                    Stage {stage.sequence}
+                    <span className={`px-4 py-2 rounded-md text-base font-semibold ${
+                      stage.stage_type === 'REVIEW'
+                        ? 'bg-blue-100 text-blue-700'
+                        : 'bg-green-100 text-green-700'
+                    }`}>
+                      {stage.stage_type === 'REVIEW' ? 'Review' : 'Approval'}
+                    </span>
                   </CardTitle>
                   <Button
                     variant="ghost"
@@ -227,36 +230,6 @@ export default function EditWorkflowPage() {
                 </div>
               </CardHeader>
               <CardContent className="space-y-4 flex-1">
-                {/* Stage Type */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Tipe Stage</Label>
-                    <Select
-                      value={stage.stage_type}
-                      onValueChange={(value: StageType) => 
-                        updateLocalStage(index, { stage_type: value })
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="REVIEW">Review</SelectItem>
-                        <SelectItem value="APPROVAL">Approval</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Nama Stage</Label>
-                    <Input
-                      value={stage.stage_name}
-                      onChange={(e) => updateLocalStage(index, { stage_name: e.target.value })}
-                      placeholder="Contoh: Review oleh Manager"
-                    />
-                  </div>
-                </div>
-
                 {/* Completion Rule */}
                 <div className="space-y-2">
                   <Label>Aturan Penyelesaian</Label>
