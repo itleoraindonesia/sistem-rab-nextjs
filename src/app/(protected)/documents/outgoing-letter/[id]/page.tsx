@@ -19,6 +19,7 @@ const ACTION_LABEL: Record<string, string> = {
   REJECTED:           'Ditolak',
   REVISION_REQUESTED: 'Diminta Revisi',
   REVISED:            'Telah Direvisi',
+  CANCELLED:          'Dibatalkan',
 };
 
 const getActionLabel = (action_type: string) =>
@@ -165,11 +166,13 @@ export default function SuratDetailPage() {
       new Date(b.created_at || '').getTime() - new Date(a.created_at || '').getTime()
     )[0];
 
-  // Histories diurutkan dari yang terlama ke terbaru
-  const sortedHistories = [...(letter.histories ?? [])].sort(
-    (a: LetterHistory, b: LetterHistory) =>
-      new Date(a.created_at || '').getTime() - new Date(b.created_at || '').getTime()
-  );
+  // Histories diurutkan dari yang terlama ke terbaru, exclude CANCELLED entries
+  const sortedHistories = [...(letter.histories ?? [])]
+    .filter((h: LetterHistory) => h.action_type !== 'CANCELLED')
+    .sort(
+      (a: LetterHistory, b: LetterHistory) =>
+        new Date(a.created_at || '').getTime() - new Date(b.created_at || '').getTime()
+    );
 
   return (
     <div>
@@ -273,81 +276,79 @@ export default function SuratDetailPage() {
         </div>
 
         {/* Document Metadata */}
-        <Card>
-          <CardContent className="p-6">
-            <h3 className="font-semibold mb-4">📋 Informasi Dokumen</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-4 text-sm">
-              <div className="space-y-4">
-                <div>
-                  <p className="text-gray-600">Status:</p>
-                  <p className="font-medium">
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${
-                      letter.status === 'DRAFT' ? 'bg-gray-100 text-gray-800' :
-                      letter.status === 'SUBMITTED_TO_REVIEW' ? 'bg-orange-100 text-orange-800' :
-                      letter.status === 'REVIEWED' ? 'bg-blue-100 text-blue-800' :
-                      letter.status === 'APPROVED' ? 'bg-green-100 text-green-800' :
-                      letter.status === 'REJECTED' ? 'bg-red-100 text-red-800' :
-                      letter.status === 'REVISION_REQUESTED' ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-gray-100 text-gray-800'
-                    }`}>
-                      {letter.status === 'DRAFT' ? 'Draft' :
-                       letter.status === 'SUBMITTED_TO_REVIEW' ? 'Sedang Direview' :
-                       letter.status === 'REVIEWED' ? 'Sudah Direview' :
-                       letter.status === 'APPROVED' ? 'Disetujui' :
-                       letter.status === 'REJECTED' ? 'Ditolak' :
-                       letter.status === 'REVISION_REQUESTED' ? 'Perlu Revisi' :
-                       letter.status}
-                    </span>
-                  </p>
-                </div>
-                <div>
-                  <p className="text-gray-600">Perihal:</p>
-                  <p className="font-medium">{letter.subject || "-"}</p>
-                </div>
-                <div>
-                  <p className="text-gray-600">Tujuan / Kepada Yth:</p>
-                  <p className="font-medium">{letter.recipient_company || letter.recipient_name}</p>
-                </div>
+        <div className="py-6">
+          <h3 className="font-semibold mb-4 text-lg">📋 Informasi Dokumen</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-4 text-sm">
+            <div className="space-y-4">
+              <div>
+                <p className="text-gray-600">Status:</p>
+                <p className="font-medium">
+                  <span className={`px-2 py-1 rounded text-xs font-medium ${
+                    letter.status === 'DRAFT' ? 'bg-gray-100 text-gray-800' :
+                    letter.status === 'SUBMITTED_TO_REVIEW' ? 'bg-orange-100 text-orange-800' :
+                    letter.status === 'REVIEWED' ? 'bg-blue-100 text-blue-800' :
+                    letter.status === 'APPROVED' ? 'bg-green-100 text-green-800' :
+                    letter.status === 'REJECTED' ? 'bg-red-100 text-red-800' :
+                    letter.status === 'REVISION_REQUESTED' ? 'bg-yellow-100 text-yellow-800' :
+                    'bg-gray-100 text-gray-800'
+                  }`}>
+                    {letter.status === 'DRAFT' ? 'Draft' :
+                     letter.status === 'SUBMITTED_TO_REVIEW' ? 'Sedang Direview' :
+                     letter.status === 'REVIEWED' ? 'Sudah Direview' :
+                     letter.status === 'APPROVED' ? 'Disetujui' :
+                     letter.status === 'REJECTED' ? 'Ditolak' :
+                     letter.status === 'REVISION_REQUESTED' ? 'Perlu Revisi' :
+                     letter.status}
+                  </span>
+                </p>
               </div>
-
-              <div className="space-y-4">
-                <div>
-                  <p className="text-gray-600">Nomor Surat:</p>
-                  <p className="font-medium font-mono">{letter.document_number || "-"}</p>
-                </div>
-                <div>
-                  <p className="text-gray-600">Dibuat oleh:</p>
-                  <p className="font-medium">{letter.created_by?.nama}</p>
-                </div>
-                <div>
-                  <p className="text-gray-600">Tanggal Dibuat:</p>
-                  <p className="font-medium">
-                    {new Date(letter.created_at).toLocaleDateString("id-ID", {
-                      day: "2-digit",
-                      month: "long",
-                      year: "numeric"
-                    })}
-                  </p>
-                </div>
+              <div>
+                <p className="text-gray-600">Perihal:</p>
+                <p className="font-medium">{letter.subject || "-"}</p>
               </div>
-
-              <div className="space-y-4">
-                <div>
-                  <p className="text-gray-600">Reviewer:</p>
-                  <p className="font-medium">
-                    {reviewerNames.length > 0 ? reviewerNames.join(', ') : '-'}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-gray-600">Approver:</p>
-                  <p className="font-medium">
-                    {approverNames.length > 0 ? approverNames.join(', ') : '-'}
-                  </p>
-                </div>
+              <div>
+                <p className="text-gray-600">Tujuan / Kepada Yth:</p>
+                <p className="font-medium">{letter.recipient_company || letter.recipient_name}</p>
               </div>
             </div>
-          </CardContent>
-        </Card>
+
+            <div className="space-y-4">
+              <div>
+                <p className="text-gray-600">Nomor Surat:</p>
+                <p className="font-medium font-mono">{letter.document_number || "-"}</p>
+              </div>
+              <div>
+                <p className="text-gray-600">Dibuat oleh:</p>
+                <p className="font-medium">{letter.created_by?.nama}</p>
+              </div>
+              <div>
+                <p className="text-gray-600">Tanggal Dibuat:</p>
+                <p className="font-medium">
+                  {new Date(letter.created_at).toLocaleDateString("id-ID", {
+                    day: "2-digit",
+                    month: "long",
+                    year: "numeric"
+                  })}
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <p className="text-gray-600">Reviewer:</p>
+                <p className="font-medium">
+                  {reviewerNames.length > 0 ? reviewerNames.join(', ') : '-'}
+                </p>
+              </div>
+              <div>
+                <p className="text-gray-600">Approver:</p>
+                <p className="font-medium">
+                  {approverNames.length > 0 ? approverNames.join(', ') : '-'}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
 
         {/* Letter Preview - A4 Format */}
         <Card className="shadow-lg">
