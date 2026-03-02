@@ -168,7 +168,7 @@ export default function SuratDetailPage() {
 
   // Histories diurutkan dari yang terlama ke terbaru, exclude CANCELLED entries
   const sortedHistories = [...(letter.histories ?? [])]
-    .filter((h: LetterHistory) => h.action_type !== 'CANCELLED')
+    .filter((h: LetterHistory) => (h.action_type as string) !== 'CANCELLED')
     .sort(
       (a: LetterHistory, b: LetterHistory) =>
         new Date(a.created_at || '').getTime() - new Date(b.created_at || '').getTime()
