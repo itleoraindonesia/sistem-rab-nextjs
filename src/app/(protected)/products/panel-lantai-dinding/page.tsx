@@ -1,152 +1,93 @@
-"use client";
+'use client';
 
-import { useState, useCallback, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { Plus, FileDown, AlertTriangle } from "lucide-react";
-import * as XLSX from "xlsx";
-import { supabase } from "@/lib/supabase/client";
-import { RABDataTable } from "@/components/tables/RABDataTable";
-import { Card, CardContent } from "@/components/ui";
-import Button from "@/components/ui/Button";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { getCurrentWIBISO } from "@/lib/utils/dateUtils";
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Plus, FileDown } from 'lucide-react';
+import * as XLSX from 'xlsx';
+import ConnectionStatus from '@/components/crm/ConnectionStatus';
+import RABDocumentsTable from '@/components/products/RABDocumentsTable';
+import Button from '@/components/ui/Button';
+import { useRABDocuments, RAB_DOCUMENT_STATUS } from '@/hooks/useRABDocuments';
 
 export default function ListRAB() {
-  const [dokumen, setDokumen] = useState<any[]>([]);
-  const [search, setSearch] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
   const router = useRouter();
 
-  // Fetch data RAB - Live from Supabase only
-  const loadDokumen = useCallback(async () => {
-    setLoading(true);
-    setError(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterStatus, setFilterStatus] = useState('');
 
+  const { data } = useRABDocuments({
+    search: searchTerm,
+    filterStatus,
+  });
+
+  const documents = data?.data || [];
+  const totalCount = data?.totalCount || 0;
+
+  const exportToExcel = async () => {
+    setIsExporting(true);
     try {
-      if (!supabase) {
-        throw new Error(
-          "Supabase client tidak tersedia. Periksa konfigurasi environment variables."
-        );
-      }
+      const exportData = documents.map((doc) => ({
+        'No Ref': doc.no_ref || '-',
+        'Proyek': doc.project_name,
+        'Kabupaten': doc.location_kabupaten || '-',
+        'Client': doc.client_profile?.nama || '-',
+        'Total':
+          doc.total !== null && doc.total !== undefined
+            ? new Intl.NumberFormat('id-ID', {
+                style: 'currency',
+                currency: 'IDR',
+                minimumFractionDigits: 0,
+              }).format(doc.total)
+            : '-',
+        'Status': doc.status,
+        'Tanggal': doc.created_at ? new Date(doc.created_at).toLocaleDateString('id-ID') : '-',
+      }));
 
-      const { data: documentsData, error: documentsError } = await supabase
-        .from("rab_documents")
-        .select(
-          "id, no_ref, project_name, location_kabupaten, client_profile, snapshot, status, total, created_at"
-        )
-        .is("deleted_at", null)
-        .order("created_at", { ascending: false });
+      const worksheet = XLSX.utils.json_to_sheet(exportData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Dokumen RAB');
 
-      if (documentsError) {
-        console.error(
-          "Error fetching documents from Supabase:",
-          documentsError
-        );
-        throw new Error(
-          `Database error: ${documentsError.message || "Unknown error"}`
-        );
-      }
-
-      // Set data langsung dari database (bisa kosong array)
-      setDokumen(documentsData || []);
-    } catch (err) {
-      console.error("Gagal load dokumen:", err);
-      const errorMessage =
-        err instanceof Error
-          ? err.message
-          : "Terjadi kesalahan yang tidak diketahui";
-      setError(errorMessage);
-      setDokumen([]); // Pastikan array kosong saat error
+      XLSX.writeFile(
+        workbook,
+        `dokumen_rab_${new Date().toISOString().split('T')[0]}.xlsx`
+      );
+    } catch (error) {
+      console.error('Export error:', error);
+      alert('Gagal mengekspor data. Silakan coba lagi.');
     } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    loadDokumen();
-  }, [loadDokumen]);
-
-  const handleDelete = async (
-    id: string,
-    projectName: string,
-    status?: string
-  ) => {
-    // Check if document can be deleted
-    if (status === "approved") {
-      alert("Dokumen yang sudah disetujui tidak dapat dihapus.");
-      return;
-    }
-
-    if (!confirm(`Hapus dokumen "${projectName}"?`)) return;
-
-    try {
-      setLoading(true);
-
-      if (supabase) {
-        // Soft delete: set deleted_at instead of hard delete
-        const { error } = await (supabase as any)
-          .from("rab_documents")
-          .update({ deleted_at: getCurrentWIBISO() })
-          .eq("id", id);
-
-        if (error) throw error;
-      }
-
-      alert("Dokumen berhasil dihapus");
-      loadDokumen(); // refresh list
-    } catch (err) {
-      console.error("Gagal hapus:", err);
-      alert("Gagal menghapus: " + (err as Error).message);
-    } finally {
-      setLoading(false);
+      setIsExporting(false);
     }
   };
 
-  const exportToExcel = () => {
-    const filteredData = dokumen.filter(
-      (doc) =>
-        (doc.project_name || "").toLowerCase().includes(search.toLowerCase()) ||
-        (doc.location_kabupaten || "")
-          .toLowerCase()
-          .includes(search.toLowerCase()) ||
-        (doc.no_ref || "").toLowerCase().includes(search.toLowerCase())
-    );
-
-    const exportData = filteredData.map((doc) => ({
-      "No Ref": doc.no_ref || "-",
-      "Proyek": doc.project_name,
-      "Kabupaten": doc.location_kabupaten || "-",
-      "Client": doc.client_profile?.nama || "-",
-      "Total":
-        doc.total !== null && doc.total !== undefined
-          ? new Intl.NumberFormat("id-ID", {
-              style: "currency",
-              currency: "IDR",
-              minimumFractionDigits: 0,
-            }).format(doc.total)
-          : "-",
-      "Status": doc.status,
-      "Tanggal": new Date(doc.created_at).toLocaleDateString("id-ID"),
-    }));
-
-    const worksheet = XLSX.utils.json_to_sheet(exportData);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Dokumen RAB");
-
-    XLSX.writeFile(
-      workbook,
-      `dokumen_rab_${new Date().toISOString().split("T")[0]}.xlsx`
-    );
+  const stats = {
+    total: totalCount,
+    draft: documents.filter(d => d.status === 'draft').length,
+    sent: documents.filter(d => d.status === 'sent').length,
+    approved: documents.filter(d => d.status === 'approved').length,
   };
 
   return (
- <div >
-      <div className="space-y-6">
-        {/* Header */}
-        <div className='mb-4'>
-          <h1 className='text-2xl font-bold text-brand-primary'>Panel Lantai & Dinding</h1>
-          <p className='text-gray-600'>Kelola dokumen RAB panel lantai dan dinding</p>
+    <div className="min-h-screen bg-white">
+      <ConnectionStatus />
+      <div className="md:">
+        <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-brand-primary">Panel Lantai & Dinding</h1>
+            <p className='text-gray-600'>Kelola dokumen RAB panel lantai dan dinding</p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Button variant="outline" onClick={exportToExcel} disabled={isExporting}>
+              <FileDown className="mr-2 h-4 w-4" />
+              {isExporting ? 'Mengexport...' : 'Export Excel'}
+            </Button>
+
+            <Button onClick={() => router.push("/products/panel-lantai-dinding/new")}>
+              <Plus className="mr-2 h-4 w-4" />
+              Buat Baru
+            </Button>
+          </div>
         </div>
 
         {/* Statistik */}
@@ -154,28 +95,28 @@ export default function ListRAB() {
           {[
             {
               name: "Total Dokumen",
-              value: dokumen.length,
+              value: stats.total,
               bgColor: "bg-blue-50",
               textColor: "text-blue-800",
               dotColor: "text-blue-500",
             },
             {
               name: "Draft",
-              value: dokumen.filter(d => d.status === "draft").length,
+              value: stats.draft,
               bgColor: "bg-yellow-50",
               textColor: "text-yellow-800",
               dotColor: "text-yellow-500",
             },
             {
               name: "Terkirim",
-              value: dokumen.filter(d => d.status === "sent").length,
+              value: stats.sent,
               bgColor: "bg-indigo-50",
               textColor: "text-indigo-800",
               dotColor: "text-indigo-500",
             },
             {
               name: "Disetujui",
-              value: dokumen.filter(d => d.status === "approved").length,
+              value: stats.approved,
               bgColor: "bg-green-50",
               textColor: "text-green-800",
               dotColor: "text-green-500",
@@ -202,46 +143,53 @@ export default function ListRAB() {
           ))}
         </div>
 
-        {/* Actions Row */}
-        <div className="flex flex-col gap-4 sm:flex-row sm:justify-end">
-          <Button variant="outline" onClick={exportToExcel}>
-            <FileDown className="mr-2 h-4 w-4" />
-            Export Excel
-          </Button>
-          <Button onClick={() => router.push("/products/panel-lantai-dinding/new")}>
-            <Plus className="mr-2 h-4 w-4" />
-            Buat Baru
-          </Button>
+        {/* Filters */}
+        <div className="space-y-3 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="🔍 Cari Nama Proyek, No Ref, atau Lokasi..."
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-transparent"
+              />
+            </div>
+
+            <div>
+              <select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-transparent cursor-pointer"
+              >
+                <option value="">Semua Status</option>
+                {RAB_DOCUMENT_STATUS.map(st => (
+                  <option key={st} value={st}>{st.charAt(0).toUpperCase() + st.slice(1)}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {(searchTerm || filterStatus) && (
+            <div className="flex justify-end">
+              <button
+                onClick={() => {
+                  setSearchTerm('');
+                  setFilterStatus('');
+                }}
+                className="text-sm text-gray-500 hover:text-red-600 flex items-center gap-1"
+              >
+                ✕ Reset Filter
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Table */}
-        <Card>
-          <CardContent className="p-0">
-            {error ? (
-              <div className="p-6">
-                <Alert variant="destructive">
-                  <AlertTriangle className="h-4 w-4" />
-                  <AlertTitle>Gagal Memuat Data</AlertTitle>
-                  <AlertDescription>{error}</AlertDescription>
-                  <Button
-                    variant="outline"
-                    onClick={loadDokumen}
-                    className="mt-4"
-                  >
-                    Coba Lagi
-                  </Button>
-                </Alert>
-              </div>
-            ) : (
-              <RABDataTable
-                data={dokumen}
-                loading={loading}
-                onDelete={handleDelete}
-              />
-            )}
-
-          </CardContent>
-        </Card>
+        <RABDocumentsTable 
+          searchTerm={searchTerm}
+          filterStatus={filterStatus}
+        />
       </div>
     </div>
   );
