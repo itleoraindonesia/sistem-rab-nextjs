@@ -182,9 +182,9 @@ export default function EmbeddedPanelCalculator({
   }
 
   return (
-    <div ref={containerRef} className="min-h-screen bg-gray-50">
+    <div ref={containerRef} className="bg-gray-50">
       {/* Page Title - Compact for embed */}
-      <div className="px-4 py-4 border-b border-gray-200 bg-white">
+      <div className="border-b border-gray-200 bg-white">
         <h1 className="text-xl font-bold text-gray-900">
           Kalkulator Panel Lantai & Dinding
         </h1>
@@ -194,7 +194,7 @@ export default function EmbeddedPanelCalculator({
       </div>
 
       <form>
-        <div className="p-2 md:p-3 grid grid-cols-1 lg:grid-cols-12 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
           {/* Left Column: Calculator */}
           <div className="lg:col-span-8 space-y-4">
             {/* Hitung Panel Section - Wrapper for both checkboxes */}

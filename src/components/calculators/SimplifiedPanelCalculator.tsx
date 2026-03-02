@@ -192,7 +192,7 @@ window.addEventListener('message', (e) => {
     <>
       {/* Mobile Header - Same as FormRAB */}
       <div className="bg-success border-b border-gray-300 shadow-sm lg:hidden">
-        <div className="px-4 py-4">
+        <div>
           <div className="flex items-center justify-between gap-3">
             <button
               onClick={() => router.back()}
@@ -213,24 +213,24 @@ window.addEventListener('message', (e) => {
       </div>
 
       {/* Page Title */}
-      <div className="px-4 py-6 border-b border-gray-200 bg-surface">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-primary">Kalkulator Panel Lantai & Dinding</h1>
-            <p className="text-sm text-green-600 mt-1 font-medium">Hitung kebutuhan panel untuk proyek Anda</p>
-          </div>
-          <button
-            onClick={() => setIsEmbedModalOpen(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-brand-primary text-white rounded-lg font-medium hover:bg-brand-primary-dark transition-colors shadow-sm"
-          >
-            <Code size={18} />
-            <span>Embed</span>
-          </button>
-        </div>
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold mb-2">Kalkulator Panel Lantai & Dinding</h1>
+        <p className="text-gray-600">Hitung kebutuhan panel untuk proyek Anda</p>
+      </div>
+
+      {/* Calculator with Embed Button */}
+      <div className="border-b border-gray-200 bg-surface pb-4 mb-4">
+        <button
+          onClick={() => setIsEmbedModalOpen(true)}
+          className="inline-flex items-center gap-2 px-4 py-2 bg-brand-primary text-white rounded-lg font-medium hover:bg-brand-primary-dark transition-colors shadow-sm"
+        >
+          <Code size={18} />
+          <span>Embed</span>
+        </button>
       </div>
 
       <form>
-        <div className="p-2 md:p-3 grid grid-cols-1 lg:grid-cols-12 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
           {/* Left Column: Calculator */}
           <div className="lg:col-span-8 space-y-4">
             {/* Hitung Panel Section - Wrapper for both checkboxes */}
