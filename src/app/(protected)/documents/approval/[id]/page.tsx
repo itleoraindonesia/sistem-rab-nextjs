@@ -31,11 +31,12 @@ export default function ApprovalDetailPage() {
 
     setLoading(true)
     try {
-      await approveLetter.mutateAsync(id)
+      await approveLetter.mutateAsync({ letterId: id, notes: notes.trim() || undefined })
       alert("✅ Dokumen berhasil di-approve & Published!")
       router.push("/documents/approval")
     } catch (error: any) {
-      alert("Gagal melakukan approve: " + error.message)
+      console.error("[ApprovalPage] handleApprove error:", error)
+      alert("Gagal melakukan approve: " + (error.message || JSON.stringify(error)))
     } finally {
       setLoading(false)
     }

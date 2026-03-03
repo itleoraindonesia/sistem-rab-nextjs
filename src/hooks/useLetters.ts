@@ -287,12 +287,19 @@ export function useApproveLetter() {
   const { data: user } = useUser();
 
   return useMutation({
-    mutationFn: (letterId: string) =>
-      letterService.approveLetter(letterId, user?.id || ''),
-    onSuccess: (_, letterId) => {
-      queryClient.invalidateQueries({ queryKey: ['letter', letterId] });
+    mutationFn: ({ letterId, notes }: { letterId: string; notes?: string }) => {
+      if (!user?.id) throw new Error('User belum ter-load. Silakan refresh halaman.');
+      return letterService.approveLetter(letterId, user.id, notes);
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['letter', variables.letterId] });
       queryClient.invalidateQueries({ queryKey: ['letters'] });
+      queryClient.invalidateQueries({ queryKey: ['pending-approvals', user?.id] });
       queryClient.invalidateQueries({ queryKey: ['pending-approvals'] });
+      queryClient.invalidateQueries({ queryKey: ['letter-workflow-histories', variables.letterId] });
+    },
+    onError: (error: any) => {
+      console.error('[useApproveLetter] Error:', error);
     },
   });
 }
@@ -311,11 +318,19 @@ export function useRejectLetter() {
     }: {
       letterId: string;
       notes?: string;
-    }) => letterService.rejectLetter(letterId, user?.id || '', notes),
+    }) => {
+      if (!user?.id) throw new Error('User belum ter-load. Silakan refresh halaman.');
+      return letterService.rejectLetter(letterId, user.id, notes);
+    },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['letter', variables.letterId] });
       queryClient.invalidateQueries({ queryKey: ['letters'] });
+      queryClient.invalidateQueries({ queryKey: ['pending-approvals', user?.id] });
       queryClient.invalidateQueries({ queryKey: ['pending-approvals'] });
+      queryClient.invalidateQueries({ queryKey: ['letter-workflow-histories', variables.letterId] });
+    },
+    onError: (error: any) => {
+      console.error('[useRejectLetter] Error:', error);
     },
   });
 }
