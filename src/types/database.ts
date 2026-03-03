@@ -761,6 +761,8 @@ export type Database = {
         | "REJECTED"
         | "REVISION_REQUESTED"
         | "REVISED"
+        | "CANCELLED"
+        | "PENDING_APPROVAL"
       letter_status:
         | "DRAFT"
         | "SUBMITTED_TO_REVIEW"
@@ -944,6 +946,8 @@ export const Constants = {
         "REJECTED",
         "REVISION_REQUESTED",
         "REVISED",
+        "CANCELLED",
+        "PENDING_APPROVAL",
       ],
       letter_status: [
         "DRAFT",
