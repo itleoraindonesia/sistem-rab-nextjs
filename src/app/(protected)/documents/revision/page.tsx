@@ -168,7 +168,7 @@ export default function RevisiPage() {
   }
 
   return (
- <div className=" py-6">
+    <div>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4 mb-4">

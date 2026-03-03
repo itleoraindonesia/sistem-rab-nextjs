@@ -62,7 +62,7 @@ export default function MeetingDetailPage({ params }: { params: Promise<{ id: st
 
   if (error || !meeting) {
     return (
-      <div className="w-full mx-auto md:p-6">
+    <div className="w-full mx-auto">
         <Alert variant="destructive">
           <AlertTitle>Error</AlertTitle>
           <AlertDescription>

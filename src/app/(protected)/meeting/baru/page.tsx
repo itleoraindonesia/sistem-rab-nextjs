@@ -64,10 +64,10 @@ export default function CreateMeetingPage() {
   })
 
   return (
-    <div className="w-full mx-auto md:p-6">
+    <div className="w-full mx-auto">
       <div className="space-y-6">
           {/* Header */}
-          <div className="flex items-center gap-4 mb-4">
+          <div className="flex items-center gap-4">
             <Button variant="ghost" size="icon" onClick={() => router.back()}>
               <ArrowLeft className="h-4 w-4" />
             </Button>

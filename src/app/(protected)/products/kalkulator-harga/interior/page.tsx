@@ -9,7 +9,7 @@ export default function KalkulatorInteriorPage() {
  <div >
         <Link 
           href="/products/kalkulator-harga" 
-          className="inline-flex items-center gap-2 text-muted hover:text-primary mb-6 transition-colors"
+          className="inline-flex items-center gap-2 text-muted hover:text-primary transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Kembali ke Menu Kalkulator</span>

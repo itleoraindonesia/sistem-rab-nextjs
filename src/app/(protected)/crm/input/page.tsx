@@ -9,7 +9,7 @@ export default function CRMInputPage() {
 
 
         {/* Main Content */}
-        <div className="mb-6">
+        <div>
           <BulkInputForm />
         </div>
 

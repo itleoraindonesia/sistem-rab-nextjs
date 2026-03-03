@@ -87,7 +87,7 @@ export default function KalkulatorHargaPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      <div className="mb-6">
+      <div>
         <h1 className="text-3xl font-bold mb-2">Kalkulator Sistem</h1>
         <p className="text-gray-600">Pilih kalkulator untuk menghitung biaya proyek Anda</p>
       </div>

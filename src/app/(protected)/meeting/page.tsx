@@ -43,7 +43,7 @@ export default function MoMPage() {
   }
 
   return (
-    <div className="w-full mx-auto md:p-6">
+    <div className="w-full mx-auto">
       <div className="space-y-6">
         {/* Header & Actions */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">

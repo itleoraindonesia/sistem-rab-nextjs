@@ -19,7 +19,7 @@ export default function CRMDashboardPage() {
       <ConnectionStatus />
       <div>
         {/* Header & Actions */}
-        <div className="mb-4 flex flex-col md:flex-row md:items-center justify-between gap-2">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
           <div>
             <h1 className="text-3xl font-bold mb-1">CRM Dashboard</h1>
             <p className="text-gray-600">Statistik dan overview data client & prospek</p>

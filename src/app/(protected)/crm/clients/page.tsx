@@ -82,7 +82,7 @@ export default function ClientsPage() {
       <ConnectionStatus />
  <div className=" md:">
         {/* Header */}
-        <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold">Daftar Client</h1>
           </div>

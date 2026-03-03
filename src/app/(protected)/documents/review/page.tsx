@@ -159,7 +159,7 @@ export default function ReviewQueuePage() {
   )
 
   return (
-    <div className="py-6">
+    <div>
       <div className="space-y-8">
         {/* Header */}
         <div>

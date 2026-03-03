@@ -7,7 +7,7 @@ export default function PagarBetonPage() {
  <div className=' '>
       <div className='space-y-6'>
         {/* Header */}
-        <div className='mb-4'>
+        <div>
           <h1 className='text-2xl font-bold text-brand-primary'>Pagar Beton</h1>
           <p className='text-gray-600'>Produk pagar beton precast</p>
         </div>

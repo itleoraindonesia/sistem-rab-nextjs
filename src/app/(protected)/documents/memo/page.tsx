@@ -48,7 +48,7 @@ export default function InternalMemoPage() {
  <div >
       <div className="space-y-6">
         {/* Header */}
-        <div className="mb-4">
+        <div>
           <h1 className="text-2xl font-bold text-brand-primary">Internal Memo</h1>
           <p className="text-gray-600">Memo internal untuk komunikasi antar departemen</p>
         </div>

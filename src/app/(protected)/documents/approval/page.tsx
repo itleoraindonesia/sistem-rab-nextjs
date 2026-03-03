@@ -56,12 +56,14 @@ export default function ApprovalQueuePage() {
       setLoading(null)
       router.refresh()
     } catch (err: any) {
-      setError(err.message || 'Gagal melakukan approval')
+      console.error('[ApprovalPage] handleApproval error:', { action, letterId, err })
+      const errMsg = err.message || JSON.stringify(err) || 'Gagal melakukan approval'
+      setError(errMsg)
       setLoading(null)
       toast({
         variant: "destructive",
         title: "Error",
-        description: err.message || 'Gagal melakukan approval',
+        description: errMsg,
       })
     }
   }
@@ -77,7 +79,7 @@ export default function ApprovalQueuePage() {
   }
 
   return (
-    <div className="py-6">
+    <div>
       <div className="space-y-6">
         {/* Header */}
         <div>
