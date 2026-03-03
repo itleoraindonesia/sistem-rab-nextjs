@@ -133,6 +133,13 @@ const ACTION_ICON: Record<string, React.ElementType> = {
 const getActionIcon = (action_type: string): React.ElementType =>
   ACTION_ICON[action_type] ?? FileText;
 
+const getFirstMiddleName = (fullName?: string) => {
+  if (!fullName) return '';
+  const parts = fullName.trim().split(' ');
+  if (parts.length === 1) return parts[0];
+  return parts.slice(0, 2).join(' ');
+};
+
 export default function SuratDetailPage() {
   const router = useRouter()
   const params = useParams()
@@ -191,22 +198,8 @@ export default function SuratDetailPage() {
       new Date(b.created_at || '').getTime() - new Date(a.created_at || '').getTime()
     )[0];
 
-  // Deduplicate pending tasks: jika ada multiple reviewer/approver per stage,
-  // cukup tampilkan 1 entry per stage per cycle.
-  // Selain itu, semua entry ditampilkan (termasuk CANCELLED).
-  const seenPendingKeys = new Set<string>();
-
+  // Tampilkan semua history tanpa deduplikasi
   const sortedHistories = [...(letter.histories ?? [])]
-    .filter((h: LetterHistory) => {
-      if (h.assigned_to_id && h.to_status === null) {
-        // Buat key unik per stage & cycle (berdasarkan stage_type + tanggal menit)
-        const minute = new Date(h.created_at || '').toISOString().slice(0, 16);
-        const key = `${h.stage_type ?? 'UNKNOWN'}-${minute}`;
-        if (seenPendingKeys.has(key)) return false;
-        seenPendingKeys.add(key);
-      }
-      return true;
-    })
     .map((h: LetterHistory) => {
       // Remap pending tasks agar bisa dirender khusus
       if (h.assigned_to_id && h.to_status === null) {
@@ -551,29 +544,43 @@ export default function SuratDetailPage() {
                         <div className={`border rounded-md p-2 ${s.card}`}>
                           {history.action_type === 'SUBMITTED' ? (
                             <>
-                              {/* Title: Review by [reviewer] — tanpa baris kedua */}
+                              {/* Title: Proses Review by [reviewer] */}
                               <div className={`flex items-center gap-1 font-semibold text-xs ${s.title}`}>
                                 <Eye className="h-3 w-3 shrink-0" />
-                                <span>Review by {reviewerNames.length > 0 ? reviewerNames.join(', ') : '-'}</span>
+                                <span>Proses Review by {reviewerNames.length > 0 ? reviewerNames.map(n => getFirstMiddleName(n)).join(', ') : '-'}</span>
                               </div>
                             </>
                           ) : history.action_type === 'PENDING_APPROVAL' ? (
                             <>
-                              {/* Title: Approval by [approver] — tanpa baris kedua */}
+                              {/* Title: Approval by [approver] */}
                               <div className={`flex items-center gap-1 font-semibold text-xs ${s.title}`}>
                                 <ShieldCheck className="h-3 w-3 shrink-0" />
-                                <span>Approval by {approverNames.length > 0 ? approverNames.join(', ') : '-'}</span>
+                                <span>Approval by {approverNames.length > 0 ? approverNames.map(n => getFirstMiddleName(n)).join(', ') : '-'}</span>
                               </div>
                             </>
                           ) : (
                             <>
-                              {/* Title: [ActionIcon] + label */}
+                              {/* Title: [ActionIcon] + label + by [action_by] */}
                               {(() => {
                                 const ActionIcon = getActionIcon(history.action_type);
+                                let byText = '';
+                                
+                                // Untuk APPROVED_REVIEW, APPROVED_FINAL, dan REVISION_REQUESTED, gunakan assigned_to_user (reviewer/approver)
+                                if (history.action_type === 'APPROVED_REVIEW' || 
+                                    history.action_type === 'APPROVED_FINAL' || 
+                                    history.action_type === 'REVISION_REQUESTED') {
+                                  const actionName = history.assigned_to_user?.nama || history.action_by?.nama || letter.created_by?.nama;
+                                  byText = actionName ? ` by ${getFirstMiddleName(actionName)}` : '';
+                                } else {
+                                  // Untuk action lain (REVISED, REJECTED, dll), gunakan action_by, fallback ke created_by
+                                  const actionName = history.action_by?.nama || letter.created_by?.nama;
+                                  byText = actionName ? ` by ${getFirstMiddleName(actionName)}` : '';
+                                }
+                                
                                 return (
                                   <div className={`flex items-center gap-1 font-semibold text-xs ${s.title}`}>
                                     <ActionIcon className="h-3 w-3 shrink-0" />
-                                    <span>{getActionLabel(history.action_type)}</span>
+                                    <span>{getActionLabel(history.action_type)}{byText}</span>
                                   </div>
                                 );
                               })()}
