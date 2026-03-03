@@ -26,6 +26,18 @@ export async function createLetter(data: TablesInsert<'outgoing_letters'>) {
     .single();
 
   if (error) throw new Error(`Create letter failed: ${error.message}`);
+
+  // Insert CREATED audit trail entry
+  await supabase.from('letter_histories').insert({
+    letter_id: letter.id,
+    action_by_id: data.created_by_id ?? null,
+    action_type: 'CREATED',
+    from_status: null,
+    to_status: 'DRAFT',
+    notes: null,
+    created_at: new Date().toISOString(),
+  });
+
   return letter;
 }
 
