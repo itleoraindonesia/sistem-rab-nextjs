@@ -26,8 +26,19 @@ export default function ReviewQueuePage() {
   const [notes, setNotes] = React.useState('')
   const [loading, setLoading] = React.useState<string | null>(null)
   const [error, setError] = React.useState<string | null>(null)
+  // Defer heavy A4 preview render until after modal first paint
+  const [previewReady, setPreviewReady] = React.useState(false)
 
   const isLoading = isLoadingReviews || isLoadingApprovals
+
+  // Set previewReady after modal overlay renders (next animation frame)
+  React.useEffect(() => {
+    if (selectedLetter) {
+      setPreviewReady(false)
+      const raf = requestAnimationFrame(() => setPreviewReady(true))
+      return () => cancelAnimationFrame(raf)
+    }
+  }, [selectedLetter])
 
   const openModal = (item: any, mode: ActionMode) => {
     setSelectedLetter(item)
@@ -158,70 +169,35 @@ export default function ReviewQueuePage() {
           </p>
         </div>
 
-        {/* ── SECTION: Antrian Review ── */}
-        <div className="space-y-4">
-          <div className="flex items-center gap-2">
-            <FileText className="h-5 w-5 text-blue-600" />
-            <h2 className="text-lg font-semibold text-gray-800">
-              Antrian Review
-              {pendingReviews && pendingReviews.length > 0 && (
-                <span className="ml-2 px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 text-sm font-medium">
-                  {pendingReviews.length}
-                </span>
-              )}
-            </h2>
+        {/* ── Review Queue ── */}
+        {!pendingReviews || pendingReviews.length === 0 ? (
+          <Card>
+            <CardContent className="p-8 text-center">
+              <FileText className="h-12 w-12 mx-auto text-gray-300 mb-3" />
+              <p className="text-gray-500">Tidak ada surat untuk direview saat ini.</p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid grid-cols-1 gap-4">
+            {pendingReviews.map((item: any) => (
+              <QueueCard key={item.id} item={item} mode="review" />
+            ))}
           </div>
+        )}
 
-          {!pendingReviews || pendingReviews.length === 0 ? (
-            <Card>
-              <CardContent className="p-8 text-center">
-                <FileText className="h-12 w-12 mx-auto text-gray-300 mb-3" />
-                <p className="text-gray-500">Tidak ada surat untuk direview saat ini.</p>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="grid grid-cols-1 gap-4">
-              {pendingReviews.map((item: any) => (
-                <QueueCard key={item.id} item={item} mode="review" />
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* ── SECTION: Antrian Approval ── */}
-        <div className="space-y-4">
-          <div className="flex items-center gap-2">
-            <ShieldCheck className="h-5 w-5 text-green-600" />
-            <h2 className="text-lg font-semibold text-gray-800">
-              Antrian Approval
-              {pendingApprovals && pendingApprovals.length > 0 && (
-                <span className="ml-2 px-2 py-0.5 rounded-full bg-green-100 text-green-700 text-sm font-medium">
-                  {pendingApprovals.length}
-                </span>
-              )}
-            </h2>
+        {/* ── Approval Queue ── */}
+        {pendingApprovals && pendingApprovals.length > 0 && (
+          <div className="grid grid-cols-1 gap-4">
+            {pendingApprovals.map((item: any) => (
+              <QueueCard key={item.id} item={item} mode="approval" />
+            ))}
           </div>
-
-          {!pendingApprovals || pendingApprovals.length === 0 ? (
-            <Card>
-              <CardContent className="p-8 text-center">
-                <ShieldCheck className="h-12 w-12 mx-auto text-gray-300 mb-3" />
-                <p className="text-gray-500">Tidak ada surat untuk di-approve saat ini.</p>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="grid grid-cols-1 gap-4">
-              {pendingApprovals.map((item: any) => (
-                <QueueCard key={item.id} item={item} mode="approval" />
-              ))}
-            </div>
-          )}
-        </div>
+        )}
 
         {/* Modal Detail + Aksi */}
         {selectedLetter && typeof document !== 'undefined' && createPortal(
           <div
-            className="fixed top-0 left-0 w-screen h-screen z-[99999] bg-black/60 flex items-center justify-center p-4 sm:p-6 overflow-hidden backdrop-blur-sm"
+            className="fixed top-0 left-0 w-screen h-screen z-[99999] bg-black/60 flex items-center justify-center p-4 sm:p-6 overflow-hidden"
             style={{ position: 'fixed', top: 0, left: 0, bottom: 0, right: 0 }}
             onClick={() => setSelectedLetter(null)}
           >
@@ -252,7 +228,8 @@ export default function ReviewQueuePage() {
               {/* Scrollable Content */}
               <div className="p-6 overflow-y-auto flex-1 bg-gray-50/30">
                 <div className="space-y-6">
-                  {/* A4 Preview */}
+                  {/* A4 Preview — deferred until modal is painted */}
+                  {previewReady ? (
                   <div className="bg-white flex flex-col border border-gray-200 rounded-lg shadow-sm" style={{ aspectRatio: "210/297" }}>
                     <div className="border-b-4 border-brand-primary p-8">
                       <div className="flex items-start justify-between">
@@ -331,6 +308,11 @@ export default function ReviewQueuePage() {
                       </div>
                     </div>
                   </div>
+                  ) : (
+                    <div className="bg-gray-100 rounded-lg animate-pulse" style={{ aspectRatio: "210/297" }}>
+                      <div className="h-full flex items-center justify-center text-gray-400 text-sm">Memuat preview...</div>
+                    </div>
+                  )}
 
                   {/* Action Form */}
                   <div className="border-t pt-6 space-y-4">

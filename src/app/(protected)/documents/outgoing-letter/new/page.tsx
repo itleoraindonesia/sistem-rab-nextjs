@@ -78,6 +78,7 @@ export default function BuatSuratKeluarPage() {
   const [error, setError] = React.useState<string | null>(null)
   const [success, setSuccess] = React.useState<string | null>(null)
   const [uploadingFiles, setUploadingFiles] = React.useState<boolean>(false)
+  const [isProcessing, setIsProcessing] = React.useState<boolean>(false)
   const [tempLetterId] = React.useState(() => `temp-${Date.now()}`) // Temporary ID for uploads
   
   // Handle signature operations
@@ -175,6 +176,8 @@ export default function BuatSuratKeluarPage() {
 
   // Save as draft
   const onSaveDraft = async (data: OutgoingLetterFormData) => {
+    if (isProcessing) return
+    setIsProcessing(true)
     setError(null)
     setSuccess(null)
 
@@ -211,11 +214,15 @@ export default function BuatSuratKeluarPage() {
       router.push(`/documents/outgoing-letter/${letter.id}`)
     } catch (err: any) {
       setError(err.message || 'Gagal menyimpan draft')
+    } finally {
+      setIsProcessing(false)
     }
   }
 
   // Submit for review
   const onSubmitForReview = async (data: OutgoingLetterFormData) => {
+    if (isProcessing) return
+    setIsProcessing(true)
     setError(null)
     setSuccess(null)
 
@@ -253,6 +260,8 @@ export default function BuatSuratKeluarPage() {
       router.push(`/documents/outgoing-letter/${letter.id}`)
     } catch (err: any) {
       setError(err.message || 'Gagal mengirim surat')
+    } finally {
+      setIsProcessing(false)
     }
   }
 
@@ -841,18 +850,24 @@ export default function BuatSuratKeluarPage() {
                   type="button" 
                   variant="outline" 
                   onClick={handleSubmit(onSaveDraft)} 
-                  disabled={isSubmitting}
+                  disabled={isProcessing}
                 >
-                  <Save className="mr-2 h-4 w-4" />
-                  Simpan Draft
+                  {isProcessing
+                    ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    : <Save className="mr-2 h-4 w-4" />
+                  }
+                  {isProcessing ? 'Menyimpan...' : 'Simpan Draft'}
                 </Button>
                 <Button 
                   type="button" 
                   onClick={handleSubmit(onSubmitForReview)} 
-                  disabled={isSubmitting}
+                  disabled={isProcessing}
                 >
-                  <Send className="mr-2 h-4 w-4" />
-                  {isSubmitting ? 'Mengirim...' : 'Submit untuk Review'}
+                  {isProcessing
+                    ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    : <Send className="mr-2 h-4 w-4" />
+                  }
+                  {isProcessing ? 'Mengirim...' : 'Submit untuk Review'}
                 </Button>
               </div>
         </form>
