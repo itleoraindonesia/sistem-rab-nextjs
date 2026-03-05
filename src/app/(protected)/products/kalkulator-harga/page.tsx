@@ -87,9 +87,9 @@ export default function KalkulatorHargaPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      <div>
-        <h1 className="text-3xl font-bold mb-2">Kalkulator Sistem</h1>
-        <p className="text-gray-600">Pilih kalkulator untuk menghitung biaya proyek Anda</p>
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold text-brand-primary mb-2">Kalkulator Sistem</h1>
+        <p className="text-gray-600 mt-1">Pilih kalkulator untuk menghitung biaya proyek Anda</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -103,21 +103,21 @@ export default function KalkulatorHargaPage() {
               href={isActive ? calc.href : "#"}
               aria-disabled={!isActive}
               className={`
-                flex flex-col p-6 rounded-xl border transition-all duration-200
+                flex flex-col p-6 rounded-xl border transition-all duration-300 group
                 ${isActive 
-                  ? "bg-white border-gray-200 hover:border-gray-300 hover:shadow-sm" 
+                  ? "bg-white border-gray-200 hover:border-brand-primary/40 hover:shadow-md hover:ring-1 hover:ring-brand-primary/20" 
                   : "bg-gray-50 border-gray-100 cursor-not-allowed opacity-75"
                 }
-                ${isCurrentPage ? "ring-2 ring-blue-500/20 border-blue-400" : ""}
+                ${isCurrentPage ? "ring-2 ring-brand-primary/20 border-brand-primary" : ""}
               `}
               onClick={(e) => !isActive && e.preventDefault()}
             >
               {/* Top part: Icon & Badge */}
               <div className="flex items-start justify-between mb-4">
                 <div className={`
-                  w-12 h-12 rounded-lg flex items-center justify-center
+                  w-12 h-12 rounded-lg flex items-center justify-center transition-colors duration-300
                   ${isActive 
-                    ? "bg-blue-50 text-blue-600" 
+                    ? "bg-emerald-50 text-brand-primary border border-emerald-100 shadow-sm group-hover:bg-brand-primary group-hover:text-white" 
                     : "bg-gray-200 text-gray-500"
                   }
                 `}>
@@ -125,9 +125,9 @@ export default function KalkulatorHargaPage() {
                 </div>
                 {calc.badge && (
                   <span className={`
-                    px-2.5 py-1 rounded-full text-xs font-medium
+                    px-2.5 py-1 rounded-full text-xs font-medium transition-colors duration-300
                     ${isActive 
-                      ? "bg-blue-50 text-blue-700" 
+                      ? "bg-emerald-50 text-brand-primary border border-emerald-100 group-hover:bg-brand-accent group-hover:text-brand-primary" 
                       : "bg-gray-200 text-gray-600"
                     }
                   `}>
@@ -138,7 +138,7 @@ export default function KalkulatorHargaPage() {
 
               {/* Content */}
               <div className="flex-1">
-                <h3 className={`text-lg font-semibold mb-1 ${isActive ? "text-gray-900" : "text-gray-700"}`}>
+                <h3 className={`text-lg font-semibold mb-1 transition-colors ${isActive ? "text-gray-900 group-hover:text-brand-primary" : "text-gray-700"}`}>
                   {calc.name}
                 </h3>
                 <p className={`text-sm ${isActive ? "text-gray-500" : "text-gray-400"}`}>
@@ -148,8 +148,8 @@ export default function KalkulatorHargaPage() {
 
               {/* Action */}
               <div className={`
-                mt-4 flex items-center gap-2 text-sm font-medium
-                ${isActive ? "text-blue-600" : "text-gray-400"}
+                mt-4 flex items-center gap-2 text-sm font-medium transition-colors
+                ${isActive ? "text-brand-primary group-hover:text-brand-dark" : "text-gray-400"}
               `}>
                 {isActive ? (
                   <>
