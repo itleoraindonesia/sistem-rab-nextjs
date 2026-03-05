@@ -28,7 +28,7 @@ export function useWorkflowStages(documentTypeId?: number) {
         .eq('is_active', true)
         .order('sequence', { ascending: true })
       
-      if (error) throw error
+      if (error) throw new Error(error.message || 'Failed to fetch workflow stages')
       return data as WorkflowStage[]
     },
     enabled: !!documentTypeId,
@@ -48,7 +48,7 @@ export function useWorkflowSummary() {
         .order('document_type_id', { ascending: true })
         .order('sequence', { ascending: true })
       
-      if (error) throw error
+      if (error) throw new Error(error.message || 'Failed to fetch workflow summary')
       return data as WorkflowSummary[]
     },
   })
@@ -68,7 +68,7 @@ export function useDocumentTypesWithWorkflow() {
         .eq('is_active', true)
         .order('name')
       
-      if (docError) throw docError
+      if (docError) throw new Error(docError.message || 'Failed to fetch document types')
       
       // Get all workflow stages
       const { data: stages, error: stagesError } = await supabase
@@ -77,7 +77,7 @@ export function useDocumentTypesWithWorkflow() {
         .eq('is_active', true)
         .order('sequence', { ascending: true })
       
-      if (stagesError) throw stagesError
+      if (stagesError) throw new Error(stagesError.message || 'Failed to fetch workflow stages')
       
       // Combine them
       const result: DocumentTypeWithWorkflow[] = (docTypes || []).map((dt: any) => ({
@@ -105,7 +105,7 @@ export function useWorkflowStage(stageId?: number) {
         .eq('id', stageId)
         .single()
       
-      if (error) throw error
+      if (error) throw new Error(error.message || 'Failed to fetch workflow stage')
       return data as WorkflowStage
     },
     enabled: !!stageId,
@@ -130,7 +130,7 @@ export function useCreateWorkflowStage() {
         .select()
         .single()
       
-      if (error) throw error
+      if (error) throw new Error(error.message || 'Failed to create workflow stage')
       return data as WorkflowStage
     },
     onSuccess: (_, variables) => {
@@ -162,7 +162,7 @@ export function useUpdateWorkflowStage() {
         .select()
         .single()
       
-      if (error) throw error
+      if (error) throw new Error(error.message || 'Failed to update workflow stage')
       return data as WorkflowStage
     },
     onSuccess: (data: any) => {
@@ -187,7 +187,7 @@ export function useDeleteWorkflowStage() {
         .delete()
         .eq('id', stageId)
       
-      if (error) throw error
+      if (error) throw new Error(error.message || 'Failed to delete workflow stage')
       return stageId
     },
     onSuccess: () => {
@@ -251,7 +251,7 @@ export function useUpdateStageAssignees() {
         .select()
         .single()
       
-      if (error) throw error
+      if (error) throw new Error(error.message || 'Failed to update stage assignees')
       return data as WorkflowStage
     },
     onSuccess: (data: any) => {
