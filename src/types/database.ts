@@ -111,7 +111,6 @@ export type Database = {
           is_active: boolean
           is_required: boolean
           sequence: number
-          stage_name: string
           stage_type: string
           updated_at: string | null
         }
@@ -124,7 +123,6 @@ export type Database = {
           is_active?: boolean
           is_required?: boolean
           sequence: number
-          stage_name: string
           stage_type: string
           updated_at?: string | null
         }
@@ -137,7 +135,6 @@ export type Database = {
           is_active?: boolean
           is_required?: boolean
           sequence?: number
-          stage_name?: string
           stage_type?: string
           updated_at?: string | null
         }
@@ -762,7 +759,6 @@ export type Database = {
         | "REVISION_REQUESTED"
         | "REVISED"
         | "CANCELLED"
-        | "PENDING_APPROVAL"
       letter_status:
         | "DRAFT"
         | "SUBMITTED_TO_REVIEW"
@@ -947,7 +943,6 @@ export const Constants = {
         "REVISION_REQUESTED",
         "REVISED",
         "CANCELLED",
-        "PENDING_APPROVAL",
       ],
       letter_status: [
         "DRAFT",
