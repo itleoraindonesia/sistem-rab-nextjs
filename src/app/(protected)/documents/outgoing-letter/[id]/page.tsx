@@ -21,6 +21,7 @@ const ACTION_LABEL: Record<string, string> = {
   REVISION_REQUESTED: 'Diminta Revisi',
   REVISED:            'Telah Direvisi',
   CANCELLED:          'Dibatalkan',
+  PENDING_REVIEW:     'Menunggu Review',
   PENDING_APPROVAL:   'Menunggu Approval',
 };
 
@@ -38,82 +39,87 @@ type ActionStyle = {
 
 const ACTION_STYLE: Record<string, ActionStyle> = {
   CREATED: {
-    dot:   'bg-gray-400',
+    dot:   'bg-[#737373]',
     icon:  '✓',
-    card:  'bg-gray-50 border-gray-200',
-    title: 'text-gray-800',
-    sub:   'text-gray-600',
-    note:  'text-gray-500',
+    card:  'bg-[#F5F5F5] border-[#E5E5E5]',
+    title: 'text-[#737373]',
+    sub:   'text-[#A3A3A3]',
+    note:  'text-[#888888]',
   },
-  // Abu-abu: pending queue (belum ada aksi)
   SUBMITTED: {
-    dot:   'bg-gray-400',
+    dot:   'bg-[#5B7C99]',
     icon:  '✓',
-    card:  'bg-gray-50 border-gray-200',
-    title: 'text-gray-700',
-    sub:   'text-gray-500',
-    note:  'text-gray-500',
+    card:  'bg-[#E8EEF4] border-[#DCE4ED]',
+    title: 'text-[#5B7C99]',
+    sub:   'text-[#7FA1BD]',
+    note:  'text-[#6B8BA6]',
+  },
+  PENDING_REVIEW: {
+    dot:   'bg-[#5B7C99]',
+    icon:  '✓',
+    card:  'bg-[#E8EEF4] border-[#DCE4ED]',
+    title: 'text-[#5B7C99]',
+    sub:   'text-[#7FA1BD]',
+    note:  'text-[#6B8BA6]',
   },
   PENDING_APPROVAL: {
-    dot:   'bg-gray-400',
+    dot:   'bg-[#5B7C99]',
     icon:  '✓',
-    card:  'bg-gray-50 border-gray-200',
-    title: 'text-gray-700',
-    sub:   'text-gray-500',
-    note:  'text-gray-500',
+    card:  'bg-[#E8EEF4] border-[#DCE4ED]',
+    title: 'text-[#5B7C99]',
+    sub:   'text-[#7FA1BD]',
+    note:  'text-[#6B8BA6]',
   },
-  // Biru: aksi positif / disetujui
   APPROVED_REVIEW: {
-    dot:   'bg-blue-500',
+    dot:   'bg-[#5B7C5B]',
     icon:  '✓',
-    card:  'bg-blue-50 border-blue-200',
-    title: 'text-blue-900',
-    sub:   'text-blue-700',
-    note:  'text-blue-600',
+    card:  'bg-[#E8F0E8] border-[#DCE6DC]',
+    title: 'text-[#5B7C5B]',
+    sub:   'text-[#7FA17F]',
+    note:  'text-[#6B8B6B]',
   },
   APPROVED_FINAL: {
-    dot:   'bg-blue-600',
+    dot:   'bg-[#5B7C5B]',
     icon:  '✓',
-    card:  'bg-blue-50 border-blue-200',
-    title: 'text-blue-900',
-    sub:   'text-blue-700',
-    note:  'text-blue-600',
+    card:  'bg-[#E8F0E8] border-[#DCE6DC]',
+    title: 'text-[#5B7C5B]',
+    sub:   'text-[#7FA17F]',
+    note:  'text-[#6B8B6B]',
   },
   REVISED: {
-    dot:   'bg-blue-400',
+    dot:   'bg-[#5B7C5B]',
     icon:  '✓',
-    card:  'bg-blue-50 border-blue-200',
-    title: 'text-blue-900',
-    sub:   'text-blue-700',
-    note:  'text-blue-600',
+    card:  'bg-[#E8F0E8] border-[#DCE6DC]',
+    title: 'text-[#5B7C5B]',
+    sub:   'text-[#7FA17F]',
+    note:  'text-[#6B8B6B]',
   },
-  // Merah: ditolak
+  // Merah halus (muted red) bila ditolak
   REJECTED: {
-    dot:   'bg-red-500',
+    dot:   'bg-[#995B5B]',
     icon:  '✕',
-    card:  'bg-red-50 border-red-200',
-    title: 'text-red-900',
-    sub:   'text-red-700',
-    note:  'text-red-600',
+    card:  'bg-[#F9E8E8] border-[#EEDCDC]',
+    title: 'text-[#995B5B]',
+    sub:   'text-[#BD7F7F]',
+    note:  'text-[#A66B6B]',
   },
-  // Oranye: revisi
   REVISION_REQUESTED: {
-    dot:   'bg-orange-400',
+    dot:   'bg-[#8B7355]',
     icon:  '✕',
-    card:  'bg-orange-50 border-orange-200',
-    title: 'text-orange-900',
-    sub:   'text-orange-700',
-    note:  'text-orange-600',
+    card:  'bg-[#F0EDE5] border-[#E5E2D9]',
+    title: 'text-[#8B7355]',
+    sub:   'text-[#A6947D]',
+    note:  'text-[#968369]',
   },
 };
 
 const DEFAULT_STYLE: ActionStyle = {
-  dot:   'bg-gray-400',
+  dot:   'bg-[#737373]',
   icon:  '✓',
-  card:  'bg-gray-50 border-gray-200',
-  title: 'text-gray-800',
-  sub:   'text-gray-600',
-  note:  'text-gray-500',
+  card:  'bg-[#F5F5F5] border-[#E5E5E5]',
+  title: 'text-[#737373]',
+  sub:   'text-[#A3A3A3]',
+  note:  'text-[#888888]',
 };
 
 const getActionStyle = (action_type: string): ActionStyle =>
@@ -121,12 +127,13 @@ const getActionStyle = (action_type: string): ActionStyle =>
 
 const ACTION_ICON: Record<string, React.ElementType> = {
   CREATED:            FileText,
-  SUBMITTED:          Eye,
+  SUBMITTED:          Send,
   APPROVED_REVIEW:    CheckCircle2,
   APPROVED_FINAL:     ShieldCheck,
   REJECTED:           XCircle,
   REVISION_REQUESTED: AlertCircle,
   REVISED:            RotateCcw,
+  PENDING_REVIEW:     Eye,
   PENDING_APPROVAL:   ShieldCheck,
 };
 
@@ -198,13 +205,28 @@ export default function SuratDetailPage() {
       new Date(b.created_at || '').getTime() - new Date(a.created_at || '').getTime()
     )[0];
 
-  // Tampilkan semua history tanpa deduplikasi
+  // Deduplikasi pending tasks: hanya tampilkan 1 baris status per stage_type yang sedang berjalan
+  const pendingStagesMatched = new Set<string>();
+
   const sortedHistories = [...(letter.histories ?? [])]
+    .filter((h: LetterHistory) => {
+      // Hilangkan entri sistem yang dibatalkan
+      if (h.action_type === 'CANCELLED') return false;
+      
+      // Deduplikasi pending task: jika ada beberapa reviewer di stage yang sama, 
+      // cukup tampilkan satu baris status "Proses Review" atau "Menunggu Approval"
+      if (h.assigned_to_id && h.to_status === null) {
+        const stageKey = `${h.stage_type}-${h.sequence}`;
+        if (pendingStagesMatched.has(stageKey)) return false;
+        pendingStagesMatched.add(stageKey);
+      }
+      return true;
+    })
     .map((h: LetterHistory) => {
       // Remap pending tasks agar bisa dirender khusus
       if (h.assigned_to_id && h.to_status === null) {
-        if ((h.stage_type as string) === 'APPROVAL') return { ...h, action_type: 'PENDING_APPROVAL' } as LetterHistory;
-        if ((h.stage_type as string) === 'REVIEW')   return { ...h, action_type: 'SUBMITTED' } as LetterHistory;
+        if ((h.stage_type as string) === 'APPROVAL') return { ...h, action_type: 'PENDING_APPROVAL' } as unknown as LetterHistory;
+        if ((h.stage_type as string) === 'REVIEW')   return { ...h, action_type: 'PENDING_REVIEW' } as unknown as LetterHistory;
       }
       return h;
     })
@@ -517,44 +539,39 @@ export default function SuratDetailPage() {
                   const s = getActionStyle(history.action_type);
                   const isFirst = index === 0;
                   const isLast = index === sortedHistories.length - 1;
+                  const ActionIcon = getActionIcon(history.action_type);
+
                   return (
                     <div key={index} className="flex gap-3">
                       {/* Kolom kiri: dot + garis vertikal */}
                       <div className="relative w-6 flex-shrink-0 flex items-center justify-center self-stretch">
                         {/* Garis atas: dari top row ke center dot (untuk semua kecuali item pertama) */}
                         {!isFirst && (
-                          <div className="absolute top-0 bottom-1/2 left-1/2 -translate-x-1/2 w-px bg-gray-200" />
+                          <div className="absolute top-0 bottom-1/2 left-1/2 -translate-x-1/2 w-0.5 bg-gray-300" />
                         )}
                         {/* Garis bawah: dari center dot ke bottom row (untuk semua kecuali item terakhir) */}
                         {!isLast && (
-                          <div className="absolute top-1/2 bottom-0 left-1/2 -translate-x-1/2 w-px bg-gray-200" />
+                          <div className="absolute top-1/2 bottom-0 left-1/2 -translate-x-1/2 w-0.5 bg-gray-300" />
                         )}
                         {/* Dot — selalu di center vertikal */}
                         <div className={`relative z-10 w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center text-white text-xs font-bold ${s.dot}`}>
-                          {(history.action_type === 'SUBMITTED' || history.action_type === 'PENDING_APPROVAL')
-                            ? <Clock className="h-3 w-3" />
-                            : s.icon === '✕'
-                              ? <X className="h-3 w-3" />
-                              : <Check className="h-3 w-3" />
-                          }
+                          <ActionIcon className="h-3 w-3" />
                         </div>
                       </div>
                       {/* Konten kanan: card */}
                       <div className={`flex-1 min-w-0 ${isLast ? 'pb-0' : 'pb-3'}`}>
                         <div className={`border rounded-md p-2 ${s.card}`}>
-                          {history.action_type === 'SUBMITTED' ? (
+                          {(history.action_type as string) === 'PENDING_REVIEW' ? (
                             <>
                               {/* Title: Proses Review by [reviewer] */}
                               <div className={`flex items-center gap-1 font-semibold text-xs ${s.title}`}>
-                                <Eye className="h-3 w-3 shrink-0" />
                                 <span>Proses Review by {reviewerNames.length > 0 ? reviewerNames.map(n => getFirstMiddleName(n)).join(', ') : '-'}</span>
                               </div>
                             </>
-                          ) : history.action_type === 'PENDING_APPROVAL' ? (
+                          ) : (history.action_type as string) === 'PENDING_APPROVAL' ? (
                             <>
                               {/* Title: Approval by [approver] */}
                               <div className={`flex items-center gap-1 font-semibold text-xs ${s.title}`}>
-                                <ShieldCheck className="h-3 w-3 shrink-0" />
                                 <span>Approval by {approverNames.length > 0 ? approverNames.map(n => getFirstMiddleName(n)).join(', ') : '-'}</span>
                               </div>
                             </>
@@ -562,7 +579,6 @@ export default function SuratDetailPage() {
                             <>
                               {/* Title: [ActionIcon] + label + by [action_by] */}
                               {(() => {
-                                const ActionIcon = getActionIcon(history.action_type);
                                 let byText = '';
                                 
                                 // Untuk APPROVED_REVIEW, APPROVED_FINAL, dan REVISION_REQUESTED, gunakan assigned_to_user (reviewer/approver)
@@ -579,7 +595,6 @@ export default function SuratDetailPage() {
                                 
                                 return (
                                   <div className={`flex items-center gap-1 font-semibold text-xs ${s.title}`}>
-                                    <ActionIcon className="h-3 w-3 shrink-0" />
                                     <span>{getActionLabel(history.action_type)}{byText}</span>
                                   </div>
                                 );
