@@ -49,7 +49,7 @@ const navItems = [
     name: "Produk & RAB",
     path: "/products",
     icon: Package,
-    children: ["/products/dashboard", "/products/kalkulator-harga", "/products/panel-lantai-dinding", "/products/pagar-beton"],
+    children: ["/products/dashboard", "/products/project-tracking", "/products/kalkulator-harga", "/products/panel-lantai-dinding", "/products/pagar-beton"],
     activeColor: "green", // Warna untuk child routes
   },
   {
@@ -447,6 +447,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
                         if (childPath === "/products/dashboard") {
                           childLabel = "Dashboard Produk & RAB"
+                        } else if (childPath === "/products/project-tracking") {
+                          childLabel = "Project Tracking"
                         } else if (childPath === "/products/kalkulator-harga") {
                           childLabel = "Kalkulator Harga"
                         } else if (childPath === "/products/panel-lantai-dinding") {
