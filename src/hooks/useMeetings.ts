@@ -2,6 +2,15 @@ import { useQuery, useMutation, useQueryClient, UseQueryOptions } from '@tanstac
 import { supabase } from '@/lib/supabase/client'
 
 // Types
+export interface MeetingAttachment {
+  id: string
+  name: string
+  size: number
+  type: string
+  url: string
+  path: string
+}
+
 export interface Meeting {
   id: string
   title: string
@@ -12,6 +21,7 @@ export interface Meeting {
   participants: string[]
   status: 'draft' | 'published'
   meeting_number?: string
+  attachments?: MeetingAttachment[]
   created_by: string
   created_at: string
   updated_at: string
@@ -35,6 +45,7 @@ export interface MeetingFormData {
   location: string
   description: string
   participants: string[]
+  attachments?: MeetingAttachment[]
 }
 
 const ITEMS_PER_PAGE = 10
@@ -170,7 +181,6 @@ export function useMeetingNumberPreview() {
       try {
         const { data, error } = await supabase.rpc('get_generated_meeting_number_preview')
         if (error) {
-          // Don't throw for abort errors - they're normal cancellations
           if (error.message?.includes('AbortError') || error.message?.includes('aborted')) {
             console.log('[useMeetingNumberPreview] Request cancelled (AbortError)')
             return null
@@ -180,7 +190,6 @@ export function useMeetingNumberPreview() {
         }
         return data as string
       } catch (err: any) {
-        // Don't throw for abort errors - they're normal cancellations
         if (err?.message?.includes('AbortError') || err?.message?.includes('aborted')) {
           console.log('[useMeetingNumberPreview] Request cancelled (AbortError)')
           return null
@@ -189,7 +198,6 @@ export function useMeetingNumberPreview() {
         return null
       }
     },
-    // Use global defaults (30 min stale, 24 hours gc)
   })
 }
 
@@ -212,6 +220,7 @@ export function useCreateMeeting() {
           location: data.location,
           description: data.description,
           participants: data.participants,
+          attachments: data.attachments || [],
           status: "draft",
           created_by: userId
         }])
@@ -244,6 +253,7 @@ export function useUpdateMeeting(meetingId: string) {
           location: data.location,
           description: data.description,
           participants: data.participants,
+          attachments: data.attachments || [],
           updated_at: new Date().toISOString()
         })
         .eq('id', meetingId)
