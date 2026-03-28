@@ -3,7 +3,7 @@
 import * as React from "react"
 import { useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { ArrowLeft, Save, Loader2 } from "lucide-react"
+import { ArrowLeft, Save, Loader2, Upload, X, File } from "lucide-react"
 import { Card, CardContent } from "@/components/ui"
 import Button from "@/components/ui/Button"
 import { Input } from "@/components/ui/input"
@@ -15,11 +15,19 @@ import { TagsInput } from "@/components/ui/TagsInput"
 // Hook Form & Zod
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { meetingSchema, type MeetingFormData } from "@/lib/meeting/schemas"
+import { meetingSchema, type MeetingFormData, type MeetingAttachmentData } from "@/lib/meeting/schemas"
 
 // React Query & Custom Hooks
 import { useToast } from "@/components/ui/use-toast"
 import { useMeeting, useUpdateMeeting } from "@/hooks/useMeetings"
+
+// File Upload Utilities
+import {
+  uploadMeetingFile,
+  deleteMeetingFile,
+  validateMeetingFile,
+  formatFileSize
+} from "@/lib/supabase/meeting-storage"
 
 export default function EditMoMPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter()
@@ -41,7 +49,8 @@ export default function EditMoMPage({ params }: { params: Promise<{ id: string }
       meeting_time: "",
       location: "",
       description: "",
-      participants: []
+      participants: [],
+      attachments: []
     }
   })
 
@@ -61,13 +70,103 @@ export default function EditMoMPage({ params }: { params: Promise<{ id: string }
         meeting_time: timeStr,
         location: meeting.location || "",
         description: meeting.description || "",
-        participants: Array.isArray(meeting.participants) ? meeting.participants as string[] : []
+        participants: Array.isArray(meeting.participants) ? meeting.participants as string[] : [],
+        attachments: Array.isArray(meeting.attachments) ? meeting.attachments as MeetingAttachmentData[] : []
       })
     }
   }, [meeting, form])
 
+  // File upload state
+  const [uploadingFiles, setUploadingFiles] = React.useState(false)
+  const watchedAttachments = form.watch("attachments")
+
   // 4. Update Mutation
   const updateMutation = useUpdateMeeting(meetingId)
+
+  // Handle file select
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files
+    if (!files || files.length === 0) return
+
+    setUploadingFiles(true)
+
+    try {
+      const currentAttachments = watchedAttachments || []
+
+      // Check total files limit
+      if (currentAttachments.length + files.length > 10) {
+        throw new Error('Maksimal 10 file lampiran')
+      }
+
+      const uploadedFiles: MeetingAttachmentData[] = []
+
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i]
+
+        // Validate file
+        const validation = validateMeetingFile(file)
+        if (!validation.valid) {
+          throw new Error(`${file.name}: ${validation.error}`)
+        }
+
+        // Upload to Supabase Storage (directly to meeting folder since ID exists)
+        const uploadedFile = await uploadMeetingFile(file, meetingId)
+
+        uploadedFiles.push({
+          id: uploadedFile.id,
+          name: uploadedFile.name,
+          size: uploadedFile.size,
+          type: uploadedFile.type,
+          url: uploadedFile.url,
+          path: uploadedFile.path,
+        })
+      }
+
+      // Add to form
+      form.setValue('attachments', [...currentAttachments, ...uploadedFiles])
+
+      toast({
+        title: "Success",
+        description: `${uploadedFiles.length} file berhasil diupload`
+      })
+
+    } catch (err: any) {
+      toast({
+        variant: "destructive",
+        title: "Upload Error",
+        description: err.message || 'Gagal upload file'
+      })
+    } finally {
+      setUploadingFiles(false)
+      // Reset input
+      event.target.value = ''
+    }
+  }
+
+  // Handle remove file
+  const handleRemoveFile = async (id: string, path?: string) => {
+    try {
+      // Delete from storage if path exists
+      if (path) {
+        await deleteMeetingFile(path)
+      }
+
+      // Remove from form
+      const currentAttachments = watchedAttachments || []
+      form.setValue('attachments', currentAttachments.filter(file => file.id !== id))
+
+      toast({
+        title: "Success",
+        description: "File berhasil dihapus"
+      })
+    } catch (err: any) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: 'Gagal menghapus file'
+      })
+    }
+  }
 
   const onSubmit = form.handleSubmit((data) => {
     updateMutation.mutate(data, {
@@ -261,24 +360,73 @@ export default function EditMoMPage({ params }: { params: Promise<{ id: string }
                 </div>
               </div>
 
-              {/* Attachments Section - MOCK for now (needs file upload logic) */}
+              {/* Attachments Section */}
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold border-b pb-2">Lampiran File</h3>
 
-                <div>
-                  <Label htmlFor="attachments">Upload File Lampiran</Label>
-                  <div className="mt-2">
+                <div className="space-y-3">
+                  {/* File Input */}
+                  <div className="relative">
                     <input
                       type="file"
                       id="attachments"
                       multiple
-                      className="w-full border rounded-md p-2"
-                      accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png"
+                      className="hidden"
+                      onChange={handleFileSelect}
+                      accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
+                      disabled={uploadingFiles}
                     />
-                    <p className="text-sm text-gray-500 mt-1">
-                      💡 Support: PDF, Office docs, gambar. Max 10MB per file (Logic upload belum aktif)
-                    </p>
+                    <label
+                      htmlFor="attachments"
+                      className={`flex items-center justify-center gap-2 w-full border-2 border-dashed border-gray-300 rounded-lg p-4 cursor-pointer hover:border-brand-primary hover:bg-gray-50 transition-colors ${uploadingFiles ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    >
+                      {uploadingFiles ? (
+                        <>
+                          <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
+                          <span className="text-gray-600">Mengupload file...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="h-5 w-5 text-gray-400" />
+                          <span className="text-gray-600">Pilih File atau Klik di sini</span>
+                        </>
+                      )}
+                    </label>
                   </div>
+
+                  {/* Uploaded Files List */}
+                  {watchedAttachments && watchedAttachments.length > 0 && (
+                    <div className="space-y-2">
+                      {watchedAttachments.map((file) => (
+                        <div
+                          key={file.id}
+                          className="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-lg"
+                        >
+                          <div className="flex items-center gap-3">
+                            <File className="h-5 w-5 text-gray-400" />
+                            <div>
+                              <p className="text-sm font-medium text-gray-900">{file.name}</p>
+                              <p className="text-xs text-gray-500">{formatFileSize(file.size)}</p>
+                            </div>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0 text-gray-400 hover:text-red-500"
+                            onClick={() => handleRemoveFile(file.id, file.path)}
+                            disabled={uploadingFiles}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <p className="text-xs text-gray-500">
+                    Max 10 files • Max 5MB each • PDF, DOC, DOCX, XLS, XLSX, JPG, PNG
+                  </p>
                 </div>
               </div>
 
