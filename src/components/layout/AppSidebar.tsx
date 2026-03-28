@@ -37,7 +37,6 @@ const navItems = [
     path: "/documents",
     icon: FileText,
     children: [
-      "/documents/dashboard",
       "/documents/outgoing-letter",
       "/documents/memo",
       "/documents/revision",
@@ -49,14 +48,14 @@ const navItems = [
     name: "Produk & RAB",
     path: "/products",
     icon: Package,
-    children: ["/products/dashboard", "/products/project-tracking", "/products/kalkulator-harga", "/products/panel-lantai-dinding", "/products/pagar-beton"],
+    children: ["/products/project-tracking", "/products/kalkulator-harga", "/products/panel-lantai-dinding", "/products/pagar-beton"],
     activeColor: "green", // Warna untuk child routes
   },
   {
     name: "Marketing",
     path: "/crm",
     icon: Users,
-    children: ["/crm/dashboard", "/crm/input", "/crm/clients"],
+    children: ["/crm/input", "/crm/clients"],
   },
   // Hidden temporarily - Supply Chain
   // {
@@ -74,10 +73,7 @@ const navItems = [
     name: "Meeting",
     path: "/meeting",
     icon: Calendar,
-    children: [
-      "/meeting",
-      "/meeting/baru"
-    ],
+    children: ["/meeting/baru"],
   },
   {
     name: "File Manager",
@@ -306,18 +302,24 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     }
   }
 
-  // Handle category toggle
-  const handleCategoryToggle = (itemName: string, hasChildren: boolean, itemPath: string) => {
-    if (hasChildren) {
-      // Toggle expansion for categories with children
-      setExpandedCategory(expandedCategory === itemName ? null : itemName)
-    } else {
-      // Navigate directly for categories without children
-      router.push(itemPath)
+  // Handle main item click - navigate to parent path (dashboard is now at main path)
+  const handleMainItemClick = (itemName: string, hasChildren: boolean, itemPath: string, children: string[]) => {
+    // Navigate to parent path (item.path contains the dashboard)
+    router.push(itemPath)
+    if (hasChildren && children.length > 0) {
+      setExpandedCategory(itemName)
       if (isMobile) {
         setOpenMobile(false)
       }
+    } else if (isMobile) {
+      setOpenMobile(false)
     }
+  }
+
+  // Handle chevron/arrow click - only toggle expansion
+  const handleChevronClick = (e: React.MouseEvent, itemName: string) => {
+    e.stopPropagation() // Prevent triggering main item click
+    setExpandedCategory(expandedCategory === itemName ? null : itemName)
   }
 
   // Auto-expand category if a child route is active
@@ -390,7 +392,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 <SidebarMenuItem key={item.name}>
                   <SidebarMenuButton
                     isActive={isActive}
-                    onClick={() => handleCategoryToggle(item.name, !!hasChildren, item.path)}
+                    onClick={() => handleMainItemClick(item.name, !!hasChildren, item.path, item.children || [])}
                     className={`cursor-pointer ${
                       isActive && !hasChildren 
                         ? "bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90 hover:text-sidebar-primary-foreground data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground" 
@@ -411,11 +413,24 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                           )}
                           
                           {hasChildren && (
-                            isExpanded ? (
-                              <ChevronDown className="size-4" />
-                            ) : (
-                              <ChevronRight className="size-4" />
-                            )
+                            <div
+                              role="button"
+                              tabIndex={0}
+                              onClick={(e) => handleChevronClick(e, item.name)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                  e.preventDefault()
+                                  handleChevronClick(e as unknown as React.MouseEvent, item.name)
+                                }
+                              }}
+                              className="p-1 hover:bg-sidebar-accent rounded-sm transition-colors cursor-pointer"
+                            >
+                              {isExpanded ? (
+                                <ChevronDown className="size-4" />
+                              ) : (
+                                <ChevronRight className="size-4" />
+                              )}
+                            </div>
                           )}
                         </div>
                       )}
@@ -424,14 +439,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   {hasChildren && isExpanded && (
                     <SidebarMenuSub>
                       {item.children.map((childPath) => {
-                        // Special handling for meeting routes
+                        // Check if child route is active
                         let isChildActive = false
-                        if (childPath === "/meeting") {
-                          // /meeting is active for: exact /meeting, /meeting/[id], /meeting/[id]/edit
-                          // but NOT for /meeting/baru
-                          isChildActive = pathname === "/meeting" || 
-                                         (pathname.startsWith("/meeting/") && !pathname.startsWith("/meeting/baru"))
-                        } else if (childPath === "/meeting/baru") {
+                        if (childPath === "/meeting/baru") {
                           // /meeting/baru is only active for exact match or its children
                           isChildActive = pathname === childPath || pathname.startsWith(`${childPath}/`)
                         } else {
@@ -445,9 +455,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                         const pendingReviewsCount = pendingReviews?.length || 0;
                         const pendingApprovalsCount = pendingApprovals?.length || 0;
 
-                        if (childPath === "/products/dashboard") {
-                          childLabel = "Dashboard Produk & RAB"
-                        } else if (childPath === "/products/project-tracking") {
+                        if (childPath === "/products/project-tracking") {
                           childLabel = "Project Tracking"
                         } else if (childPath === "/products/kalkulator-harga") {
                           childLabel = "Kalkulator Harga"
@@ -455,14 +463,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                           childLabel = "Panel Lantai & Dinding"
                         } else if (childPath === "/products/pagar-beton") {
                           childLabel = "Pagar Beton (soon)"
-                        } else if (childPath === "/crm/dashboard") {
-                          childLabel = "CRM Dashboard"
                         } else if (childPath === "/crm/input") {
                           childLabel = "Input Data"
                         } else if (childPath === "/crm/clients") {
                           childLabel = "Daftar Client"
-                        } else if (childPath === "/documents/dashboard") {
-                          childLabel = "Dashboard";
                         } else if (childPath === "/documents/review") {
                           childLabel = "Review";
                           badge = pendingReviews?.length ? <Badge count={pendingReviews.length} /> : null;
@@ -478,8 +482,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                           childLabel = "Data Ongkir"
                         } else if (childPath === "/documents/outgoing-letter") {
                           childLabel = "Surat Keluar"
-                        } else if (childPath === "/supply-chain/dashboard") {
-                          childLabel = "Dashboard Supply Chain"
                         } else if (childPath === "/supply-chain/pr") {
                           childLabel = "PR"
                         } else if (childPath === "/supply-chain/po") {
@@ -491,8 +493,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                         } else if (childPath === "/documents/revision") {
                           childLabel = "Revisi";
                         } else if (childPath === "/documents/review") {
-                        } else if (childPath === "/meeting") {
-                          childLabel = "List Meeting"
                         } else if (childPath === "/meeting/baru") {
                           childLabel = "Buat Meeting"
                         } else if (childPath === "/setting/workflow") {
