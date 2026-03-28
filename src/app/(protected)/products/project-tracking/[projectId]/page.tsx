@@ -3,7 +3,7 @@
 import { useState, useMemo, useCallback } from "react"
 import Link from "next/link"
 import { useParams } from "next/navigation"
-import { Activity, Briefcase, CreditCard, DollarSign, Package, AlertTriangle, Plus, Pencil, Trash2 } from "lucide-react"
+import { Activity, Briefcase, CreditCard, DollarSign, Package, AlertTriangle, Plus, Pencil, Trash2, Paperclip, Calendar } from "lucide-react"
 import { 
   ProjectSummary, 
   VendorSpkWithProgress, 
@@ -28,6 +28,9 @@ const mockProjects: Record<string, ProjectSummary> = {
     status: "active",
     vendor_paid: 600000000,
     customer_paid: 500000000,
+    tanggal_mulai: "2026-01-01",
+    tanggal_deadline: "2026-06-30",
+    retensi_persen: 5,
   },
   "proj-002": {
     id: "proj-002",
@@ -39,6 +42,9 @@ const mockProjects: Record<string, ProjectSummary> = {
     status: "active",
     vendor_paid: 200000000,
     customer_paid: 150000000,
+    tanggal_mulai: "2026-02-01",
+    tanggal_deadline: "2026-04-15",
+    retensi_persen: 0,
   },
   "proj-003": {
     id: "proj-003",
@@ -50,6 +56,9 @@ const mockProjects: Record<string, ProjectSummary> = {
     status: "completed",
     vendor_paid: 600000000,
     customer_paid: 800000000,
+    tanggal_mulai: "2025-11-01",
+    tanggal_deadline: "2026-03-01",
+    retensi_persen: 10,
   },
 }
 
@@ -186,6 +195,24 @@ function calculateTotalCustomerPayments(projectId: string): number {
   return payments.reduce((sum, p) => sum + p.jumlah, 0)
 }
 
+function calculateSisaHari(deadline: string): number {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const deadlineDate = new Date(deadline)
+  deadlineDate.setHours(0, 0, 0, 0)
+  const diffTime = deadlineDate.getTime() - today.getTime()
+  return Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+}
+
+function getTerminLabel(termin: string, index: number, totalTerms: number): string {
+  if (termin === "dp") return "DP"
+  if (termin === "final") return "Final"
+  
+  // Hitung nomor termin (term)
+  const termIndex = index + 1
+  return `Termin ${termIndex}`
+}
+
 const JENIS_PEMBAYARAN_LABELS: Record<string, string> = {
   "dp": "DP",
   "term": "Termin",
@@ -233,6 +260,18 @@ export default function ProjectDetailPage() {
 
   const vendorOutstanding = calculatedTotalSpk - vendorPaid
   const customerOutstanding = project.contract_value - customerPaid
+  
+  // Business calculations
+  const cashFlowAktual = customerPaid - vendorPaid
+  const projectedMargin = project.contract_value - calculatedTotalSpk
+  const marginPercent = project.contract_value > 0 ? (projectedMargin / project.contract_value) * 100 : 0
+  const sisaHari = calculateSisaHari(project.tanggal_deadline)
+  
+  // Alert conditions
+  const isCashFlowNegative = cashFlowAktual < 0
+  const isCustomerOutstandingHigh = customerOutstanding > (project.contract_value * 0.5)
+  const isDeadlineWarning = sisaHari <= 14 && sisaHari > 0
+  const isOverdue = sisaHari <= 0
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("id-ID", {
@@ -263,6 +302,21 @@ export default function ProjectDetailPage() {
 
   const customerPayments = mockCustomerPayments[projectId as string] || mockCustomerPayments["proj-001"] || []
 
+  // Calculate termin labels with numbers
+  const customerPaymentsWithLabels = useMemo(() => {
+    let termCounter = 0
+    return customerPayments.map((payment) => {
+      if (payment.termin === "dp") {
+        return { ...payment, terminLabel: "DP" }
+      } else if (payment.termin === "final") {
+        return { ...payment, terminLabel: "Final" }
+      } else {
+        termCounter++
+        return { ...payment, terminLabel: `Termin ${termCounter}` }
+      }
+    })
+  }, [customerPayments])
+
   const vendorSpkWithPayments = useMemo(() => {
     return vendorSpkList.map(vspk => {
       const paid = calculateVendorPaidPerVendor(vspk.id)
@@ -292,26 +346,55 @@ export default function ProjectDetailPage() {
   return (
     <div className="min-h-screen bg-gray-50/50 p-6">
       <div className="max-w-[1400px] mx-auto space-y-6">
-        <div className="flex items-center gap-4">
+        <div className="flex items-start gap-4">
           <div className="flex-1">
-            <h1 className="text-2xl font-bold tracking-tight text-gray-900">{project.project_name}</h1>
+            <div className="flex items-center gap-3">
+              <h1 className="text-2xl font-bold tracking-tight text-gray-900">{project.project_name}</h1>
+              {/* Alert Badges */}
+              {isOverdue && (
+                <span className="px-2.5 py-1 text-xs font-medium rounded-full bg-red-100 text-red-700 border border-red-200">
+                  OVERDUE
+                </span>
+              )}
+              {!isOverdue && isDeadlineWarning && (
+                <span className="px-2.5 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-700 border border-yellow-200">
+                  {sisaHari} hari lagi
+                </span>
+              )}
+              {isCashFlowNegative && (
+                <span className="px-2.5 py-1 text-xs font-medium rounded-full bg-red-100 text-red-700 border border-red-200" title="Vendor Paid > Customer Paid">
+                  Cash Flow Negatif
+                </span>
+              )}
+              {isCustomerOutstandingHigh && (
+                <span className="px-2.5 py-1 text-xs font-medium rounded-full bg-orange-100 text-orange-700 border border-orange-200" title="Customer Outstanding > 50% Contract Value">
+                  Outstanding Customer Tinggi
+                </span>
+              )}
+            </div>
             <p className="text-sm text-gray-500 mt-1">Customer: {project.customer_name}</p>
+            <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
+              <span className="flex items-center gap-1">
+                <Calendar className="w-4 h-4" />
+                {formatDate(project.tanggal_mulai)} - {formatDate(project.tanggal_deadline)}
+              </span>
+              {!isOverdue && (
+                <span className={sisaHari <= 14 ? "text-yellow-600 font-medium" : "text-gray-500"}>
+                  Sisa {sisaHari} hari
+                </span>
+              )}
+            </div>
           </div>
           <div className="text-right">
             <p className="text-sm text-gray-500">Contract Value</p>
             <p className="text-xl font-bold text-gray-900">{formatCurrency(project.contract_value)}</p>
+            {project.retensi_persen > 0 && (
+              <p className="text-xs text-gray-500 mt-1">Retensi: {project.retensi_persen}%</p>
+            )}
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-4">
-          <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
-            <div className="flex items-center gap-2 mb-2">
-              <DollarSign className="w-4 h-4 text-gray-400" />
-              <p className="text-xs font-medium text-gray-500">Contract Value</p>
-            </div>
-            <p className="text-lg font-bold text-gray-900">{formatCurrency(project.contract_value)}</p>
-          </div>
-
+        <div className="grid grid-cols-4 gap-4">
           <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
             <div className="flex items-center gap-2 mb-2">
               <Activity className="w-4 h-4 text-blue-500" />
@@ -340,6 +423,7 @@ export default function ProjectDetailPage() {
               <p className="text-xs font-medium text-gray-500">Customer Paid</p>
             </div>
             <p className="text-lg font-bold text-green-600">{formatCurrency(customerPaid)}</p>
+            <p className="text-xs text-gray-500 mt-1">Outstanding: {formatCurrency(customerOutstanding)}</p>
           </div>
 
           <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
@@ -348,14 +432,51 @@ export default function ProjectDetailPage() {
               <p className="text-xs font-medium text-gray-500">Vendor Paid</p>
             </div>
             <p className="text-lg font-bold text-orange-600">{formatCurrency(vendorPaid)}</p>
+            <p className="text-xs text-gray-500 mt-1">Outstanding: {formatCurrency(vendorOutstanding)}</p>
+          </div>
+
+          <div className={`p-4 rounded-lg border shadow-sm ${isCashFlowNegative ? 'bg-red-50 border-red-200' : 'bg-white border-gray-200'}`}>
+            <div className="flex items-center gap-2 mb-2">
+              <DollarSign className={`w-4 h-4 ${isCashFlowNegative ? 'text-red-500' : 'text-blue-500'}`} />
+              <p className="text-xs font-medium text-gray-500">Cash Flow Aktual</p>
+            </div>
+            <p className={`text-lg font-bold ${isCashFlowNegative ? 'text-red-600' : 'text-blue-600'}`}>
+              {formatCurrency(cashFlowAktual)}
+            </p>
+            {isCashFlowNegative && (
+              <p className="text-xs text-red-500 mt-1">Vendor Paid &gt; Customer Paid</p>
+            )}
           </div>
 
           <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
             <div className="flex items-center gap-2 mb-2">
-              <AlertTriangle className="w-4 h-4 text-red-500" />
-              <p className="text-xs font-medium text-gray-500">Vendor Outstanding</p>
+              <DollarSign className="w-4 h-4 text-emerald-500" />
+              <p className="text-xs font-medium text-gray-500">Projected Margin</p>
             </div>
-            <p className="text-lg font-bold text-gray-900">{formatCurrency(vendorOutstanding)}</p>
+            <p className="text-lg font-bold text-emerald-600">{formatCurrency(projectedMargin)}</p>
+            <p className="text-xs text-gray-500 mt-1">{marginPercent.toFixed(1)}% dari Contract Value</p>
+          </div>
+
+          <div className={`p-4 rounded-lg border shadow-sm ${isOverdue ? 'bg-red-50 border-red-200' : isDeadlineWarning ? 'bg-yellow-50 border-yellow-200' : 'bg-white border-gray-200'}`}>
+            <div className="flex items-center gap-2 mb-2">
+              <Calendar className={`w-4 h-4 ${isOverdue ? 'text-red-500' : isDeadlineWarning ? 'text-yellow-500' : 'text-gray-400'}`} />
+              <p className="text-xs font-medium text-gray-500">Sisa Hari</p>
+            </div>
+            <p className={`text-lg font-bold ${isOverdue ? 'text-red-600' : isDeadlineWarning ? 'text-yellow-600' : 'text-gray-900'}`}>
+              {isOverdue ? `${Math.abs(sisaHari)} hari overdue` : `${sisaHari} hari`}
+            </p>
+            <p className="text-xs text-gray-500 mt-1">Deadline: {formatDate(project.tanggal_deadline)}</p>
+          </div>
+
+          <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+            <div className="flex items-center gap-2 mb-2">
+              <AlertTriangle className="w-4 h-4 text-gray-400" />
+              <p className="text-xs font-medium text-gray-500">Contract Value</p>
+            </div>
+            <p className="text-lg font-bold text-gray-900">{formatCurrency(project.contract_value)}</p>
+            {project.retensi_persen > 0 && (
+              <p className="text-xs text-gray-500 mt-1">Retensi: {project.retensi_persen}%</p>
+            )}
           </div>
         </div>
 
@@ -430,82 +551,104 @@ export default function ProjectDetailPage() {
                     <tr>
                       <th className="px-4 py-3 whitespace-nowrap">NAMA VENDOR</th>
                       <th className="px-4 py-3 whitespace-nowrap text-right">NILAI SPK</th>
+                      <th className="px-4 py-3 whitespace-nowrap text-right">BOBOT</th>
                       <th className="px-4 py-3 whitespace-nowrap text-right">PAID</th>
                       <th className="px-4 py-3 whitespace-nowrap text-right">OUTSTANDING</th>
                       <th className="px-4 py-3 whitespace-nowrap">PROGRESS</th>
                       <th className="px-4 py-3 whitespace-nowrap text-center">STATUS</th>
+                      <th className="px-4 py-3 whitespace-nowrap text-center">LAMPIRAN</th>
                       <th className="px-4 py-3 whitespace-nowrap text-center">AKSI</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
-                    {vendorSpkWithPayments.map((vendor) => (
-                      <tr key={vendor.id} className="hover:bg-gray-50/50 transition-colors">
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-2">
-                            {vendor.isOverpaid && (
-                              <span title="Pembayaran melebihi nilai SPK">
-                                <AlertTriangle className="w-4 h-4 text-red-500" />
+                    {vendorSpkWithPayments.map((vendor) => {
+                      const bobot = calculatedTotalSpk > 0 ? (vendor.nilai_spk / calculatedTotalSpk) * 100 : 0
+                      const kontribusiProgress = bobot * (vendor.latest_progress?.progress_percent ?? 0) / 100
+                      return (
+                        <tr key={vendor.id} className="hover:bg-gray-50/50 transition-colors">
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-2">
+                              {vendor.isOverpaid && (
+                                <span title="Pembayaran melebihi nilai SPK">
+                                  <AlertTriangle className="w-4 h-4 text-red-500" />
+                                </span>
+                              )}
+                              <span className="font-medium text-gray-900">{vendor.vendor_name}</span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 text-right">{formatCurrency(vendor.nilai_spk)}</td>
+                          <td className="px-4 py-3 text-right">
+                            <span className="text-xs text-gray-600" title={`Kontribusi progress: ${kontribusiProgress.toFixed(1)}%`}>
+                              {bobot.toFixed(1)}%
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <span className={vendor.isOverpaid ? "text-red-600 font-bold" : "text-orange-600"}>
+                              {formatCurrency(vendor.paid)}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <span className={vendor.outstanding < 0 ? "text-red-600 font-bold" : "text-gray-900"}>
+                              {formatCurrency(vendor.outstanding)}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-2">
+                              <div className="w-16 bg-gray-100 rounded-full h-1.5">
+                                <div
+                                  className={`h-full rounded-full ${
+                                    (vendor.latest_progress?.progress_percent ?? 0) === 100 ? "bg-green-500" : "bg-blue-500"
+                                  }`}
+                                  style={{ width: `${Math.min(vendor.latest_progress?.progress_percent ?? 0, 100)}%` }}
+                                />
+                              </div>
+                              <span className="text-xs font-medium text-gray-700 w-10">{(vendor.latest_progress?.progress_percent ?? 0).toFixed(1)}%</span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${
+                              vendor.status === "active"
+                                ? "bg-blue-50 text-blue-700"
+                                : "bg-green-50 text-green-700"
+                            }`}>
+                              {vendor.status === "active" ? "Aktif" : "Selesai"}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            {vendor.lampiran_url ? (
+                              <span title="Ada lampiran SPK">
+                                <Paperclip className="w-4 h-4 text-blue-500" />
+                              </span>
+                            ) : (
+                              <span title="Tidak ada lampiran">
+                                <Paperclip className="w-4 h-4 text-gray-300" />
                               </span>
                             )}
-                            <span className="font-medium text-gray-900">{vendor.vendor_name}</span>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 text-right">{formatCurrency(vendor.nilai_spk)}</td>
-                        <td className="px-4 py-3 text-right">
-                          <span className={vendor.isOverpaid ? "text-red-600 font-bold" : "text-orange-600"}>
-                            {formatCurrency(vendor.paid)}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-right">
-                          <span className={vendor.outstanding < 0 ? "text-red-600 font-bold" : "text-gray-900"}>
-                            {formatCurrency(vendor.outstanding)}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-2">
-                            <div className="w-20 bg-gray-100 rounded-full h-1.5">
-                              <div
-                                className={`h-full rounded-full ${
-                                  (vendor.latest_progress?.progress_percent ?? 0) === 100 ? "bg-green-500" : "bg-blue-500"
-                                }`}
-                                style={{ width: `${Math.min(vendor.latest_progress?.progress_percent ?? 0, 100)}%` }}
-                              />
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-1 justify-center">
+                              <button
+                                onClick={() => setVendorSpkModal({ isOpen: true, data: vendor })}
+                                className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                                title="Edit"
+                              >
+                                <Pencil className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => setDeleteModal({ isOpen: true, type: 'vendor_spk', id: vendor.id, name: vendor.vendor_name })}
+                                className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                                title="Hapus"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
                             </div>
-                            <span className="text-xs font-medium text-gray-700 w-10">{(vendor.latest_progress?.progress_percent ?? 0).toFixed(1)}%</span>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 text-center">
-                          <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${
-                            vendor.status === "active"
-                              ? "bg-blue-50 text-blue-700"
-                              : "bg-green-50 text-green-700"
-                          }`}>
-                            {vendor.status === "active" ? "Aktif" : "Selesai"}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-1 justify-end">
-                            <button
-                              onClick={() => setVendorSpkModal({ isOpen: true, data: vendor })}
-                              className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                              title="Edit"
-                            >
-                              <Pencil className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => setDeleteModal({ isOpen: true, type: 'vendor_spk', id: vendor.id, name: vendor.vendor_name })}
-                              className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
-                              title="Hapus"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
+                          </td>
+                        </tr>
+                      )
+                    })}
                     {vendorSpkWithPayments.length === 0 && (
                       <tr>
-                        <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
+                        <td colSpan={9} className="px-4 py-8 text-center text-gray-500">
                           Tidak ada vendor SPK
                         </td>
                       </tr>
@@ -516,8 +659,10 @@ export default function ProjectDetailPage() {
                       <tr>
                         <td className="px-4 py-3">TOTAL</td>
                         <td className="px-4 py-3 text-right">{formatCurrency(calculatedTotalSpk)}</td>
+                        <td className="px-4 py-3 text-right">100%</td>
                         <td className="px-4 py-3 text-right text-orange-600">{formatCurrency(vendorPaid)}</td>
                         <td className="px-4 py-3 text-right">{formatCurrency(vendorOutstanding)}</td>
+                        <td className="px-4 py-3"></td>
                         <td className="px-4 py-3"></td>
                         <td className="px-4 py-3"></td>
                         <td className="px-4 py-3"></td>
@@ -549,6 +694,7 @@ export default function ProjectDetailPage() {
                       <th className="px-4 py-3 whitespace-nowrap">VENDOR</th>
                       <th className="px-4 py-3 whitespace-nowrap">JENIS</th>
                       <th className="px-4 py-3 whitespace-nowrap text-right">JUMLAH</th>
+                      <th className="px-4 py-3 whitespace-nowrap text-center">LAMPIRAN</th>
                       <th className="px-4 py-3 whitespace-nowrap text-center">AKSI</th>
                     </tr>
                   </thead>
@@ -563,6 +709,17 @@ export default function ProjectDetailPage() {
                           </span>
                         </td>
                         <td className="px-4 py-3 font-medium text-right text-gray-900">{formatCurrency(payment.jumlah)}</td>
+                        <td className="px-4 py-3 text-center">
+                          {(payment as VendorPayment & { lampiran_url?: string }).lampiran_url ? (
+                            <span title="Ada lampiran">
+                              <Paperclip className="w-4 h-4 text-blue-500" />
+                            </span>
+                          ) : (
+                            <span title="Tidak ada lampiran">
+                              <Paperclip className="w-4 h-4 text-gray-300" />
+                            </span>
+                          )}
+                        </td>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-1 justify-center">
                             <button
@@ -585,7 +742,7 @@ export default function ProjectDetailPage() {
                     ))}
                     {allVendorPayments.length === 0 && (
                       <tr>
-                        <td colSpan={5} className="px-4 py-8 text-center text-gray-500">
+                        <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
                           Tidak ada pembayaran vendor
                         </td>
                       </tr>
@@ -594,8 +751,10 @@ export default function ProjectDetailPage() {
                   {allVendorPayments.length > 0 && (
                     <tfoot className="bg-gray-50 font-medium">
                       <tr>
-                        <td className="px-4 py-3" colSpan={4}>TOTAL PEMBAYARAN VENDOR</td>
+                        <td className="px-4 py-3" colSpan={3}>TOTAL PEMBAYARAN VENDOR</td>
                         <td className="px-4 py-3 text-right text-orange-600">{formatCurrency(vendorPaid)}</td>
+                        <td></td>
+                        <td></td>
                       </tr>
                     </tfoot>
                   )}
@@ -623,19 +782,31 @@ export default function ProjectDetailPage() {
                       <th className="px-4 py-3 whitespace-nowrap">TANGGAL</th>
                       <th className="px-4 py-3 whitespace-nowrap">TERMIN</th>
                       <th className="px-4 py-3 whitespace-nowrap text-right">JUMLAH</th>
+                      <th className="px-4 py-3 whitespace-nowrap text-center">LAMPIRAN</th>
                       <th className="px-4 py-3 whitespace-nowrap text-center">AKSI</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
-                    {customerPayments.map((payment) => (
+                    {customerPaymentsWithLabels.map((payment) => (
                       <tr key={payment.id} className="hover:bg-gray-50/50 transition-colors">
                         <td className="px-4 py-3 text-gray-600">{formatDate(payment.tanggal)}</td>
                         <td className="px-4 py-3">
                           <span className="px-2 py-0.5 bg-green-50 text-green-700 text-xs font-medium rounded">
-                            {TERMIN_LABELS[payment.termin] || payment.termin}
+                            {payment.terminLabel}
                           </span>
                         </td>
                         <td className="px-4 py-3 font-medium text-right text-green-700">{formatCurrency(payment.jumlah)}</td>
+                        <td className="px-4 py-3 text-center">
+                          {(payment as CustomerPayment & { lampiran_url?: string }).lampiran_url ? (
+                            <span title="Ada lampiran">
+                              <Paperclip className="w-4 h-4 text-blue-500" />
+                            </span>
+                          ) : (
+                            <span title="Tidak ada lampiran">
+                              <Paperclip className="w-4 h-4 text-gray-300" />
+                            </span>
+                          )}
+                        </td>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-1 justify-center">
                             <button
@@ -646,7 +817,7 @@ export default function ProjectDetailPage() {
                               <Pencil className="w-4 h-4" />
                             </button>
                             <button
-                              onClick={() => setDeleteModal({ isOpen: true, type: 'customer_payment', id: payment.id, name: `Pembayaran ${TERMIN_LABELS[payment.termin]}` })}
+                              onClick={() => setDeleteModal({ isOpen: true, type: 'customer_payment', id: payment.id, name: `Pembayaran ${payment.terminLabel}` })}
                               className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
                               title="Hapus"
                             >
@@ -656,23 +827,27 @@ export default function ProjectDetailPage() {
                         </td>
                       </tr>
                     ))}
-                    {customerPayments.length === 0 && (
+                    {customerPaymentsWithLabels.length === 0 && (
                       <tr>
-                        <td colSpan={4} className="px-4 py-8 text-center text-gray-500">
+                        <td colSpan={5} className="px-4 py-8 text-center text-gray-500">
                           Tidak ada pembayaran customer
                         </td>
                       </tr>
                     )}
                   </tbody>
-                  {customerPayments.length > 0 && (
+                  {customerPaymentsWithLabels.length > 0 && (
                     <tfoot className="bg-gray-50 font-medium">
                       <tr>
-                        <td className="px-4 py-3" colSpan={3}>TOTAL PEMBAYARAN CUSTOMER</td>
+                        <td className="px-4 py-3" colSpan={2}>TOTAL PEMBAYARAN CUSTOMER</td>
                         <td className="px-4 py-3 text-right text-green-600">{formatCurrency(customerPaid)}</td>
+                        <td></td>
+                        <td></td>
                       </tr>
                       <tr className="border-t border-gray-200">
-                        <td className="px-4 py-3" colSpan={3}>OUTSTANDING</td>
+                        <td className="px-4 py-3" colSpan={2}>OUTSTANDING</td>
                         <td className="px-4 py-3 text-right font-bold">{formatCurrency(customerOutstanding)}</td>
+                        <td></td>
+                        <td></td>
                       </tr>
                     </tfoot>
                   )}

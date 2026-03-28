@@ -78,6 +78,9 @@ export interface ProjectSummary {
   status: ProjectStatus
   vendor_paid: number
   customer_paid: number
+  tanggal_mulai: string
+  tanggal_deadline: string
+  retensi_persen: number
 }
 
 export interface ProjectDetailSummary {
