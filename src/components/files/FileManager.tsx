@@ -5,14 +5,15 @@ import { FileList } from './FileList'
 import { FileModal } from './FileModal'
 import Button from '../ui/Button'
 import { Input } from '../ui/input'
-import { Search, Upload, Filter, List, Grid } from 'lucide-react'
+import { Search, Upload, Filter, List, Grid, Folder, ChevronRight, Home } from 'lucide-react'
 
 export interface FileItem {
   name: string
   size: number
   lastModified: Date
   url: string
-
+  path: string
+  isFolder: boolean
 }
 
 export function FileManager() {
@@ -21,11 +22,12 @@ export function FileManager() {
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedFile, setSelectedFile] = useState<FileItem | null>(null)
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
-  const [bucketName] = useState('Leora Files') // User-specified bucket name
+  const [bucketName] = useState('Leora Files')
+  const [currentPath, setCurrentPath] = useState('')
 
   useEffect(() => {
     fetchFiles()
-  }, [])
+  }, [currentPath])
 
   const fetchFiles = async () => {
     setLoading(true)
@@ -33,7 +35,7 @@ export function FileManager() {
       const { data, error } = await supabase
         .storage
         .from(bucketName)
-        .list('', {
+        .list(currentPath, {
           limit: 100,
           offset: 0,
           sortBy: { column: 'name', order: 'asc' }
@@ -46,17 +48,22 @@ export function FileManager() {
 
       if (data) {
         const fileItems = await Promise.all(
-          data.map(async (file) => {
+          data.map(async (item) => {
+            const fullPath = currentPath ? `${currentPath}/${item.name}` : item.name
+            const isFolder = item.id === null
+            
             const { data: publicUrl } = supabase
               .storage
               .from(bucketName)
-              .getPublicUrl(file.name)
+              .getPublicUrl(fullPath)
 
             return {
-              name: file.name,
-              size: file.metadata?.size || 0,
-              lastModified: new Date(file.updated_at),
-              url: publicUrl.publicUrl
+              name: item.name,
+              size: item.metadata?.size || 0,
+              lastModified: new Date(item.updated_at || Date.now()),
+              url: publicUrl.publicUrl,
+              path: fullPath,
+              isFolder
             }
           })
         )
@@ -70,7 +77,26 @@ export function FileManager() {
   }
 
   const handleFileClick = (file: FileItem) => {
-    setSelectedFile(file)
+    if (file.isFolder) {
+      setCurrentPath(file.path)
+    } else {
+      setSelectedFile(file)
+    }
+  }
+
+  const handleNavigateUp = () => {
+    const pathParts = currentPath.split('/')
+    pathParts.pop()
+    setCurrentPath(pathParts.join('/'))
+  }
+
+  const handleNavigateToRoot = () => {
+    setCurrentPath('')
+  }
+
+  const getBreadcrumbParts = () => {
+    if (!currentPath) return []
+    return currentPath.split('/')
   }
 
   const handleCloseModal = () => {
@@ -78,11 +104,13 @@ export function FileManager() {
   }
 
   const handleDownload = async (file: FileItem) => {
+    if (file.isFolder) return
+    
     try {
       const { data, error } = await supabase
         .storage
         .from(bucketName)
-        .download(file.name)
+        .download(file.path)
 
       if (error) {
         console.error('Error downloading file:', error)
@@ -151,6 +179,26 @@ export function FileManager() {
         </div>
       </div>
 
+      {/* Breadcrumb Navigation */}
+      <div className="flex items-center gap-2 text-sm">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleNavigateToRoot}
+          className={currentPath === '' ? 'font-semibold' : ''}
+        >
+          <Home className="h-4 w-4 mr-1" />
+          Root
+        </Button>
+        
+        {getBreadcrumbParts().map((part, index) => (
+          <div key={index} className="flex items-center">
+            <ChevronRight className="h-4 w-4 text-gray-400" />
+            <span className="px-2 py-1 font-medium">{part}</span>
+          </div>
+        ))}
+      </div>
+
       {/* File List */}
       <FileList
         files={filteredFiles}
@@ -161,7 +209,7 @@ export function FileManager() {
       />
 
       {/* File Modal */}
-      {selectedFile && (
+      {selectedFile && !selectedFile.isFolder && (
         <FileModal
           file={selectedFile}
           onClose={handleCloseModal}

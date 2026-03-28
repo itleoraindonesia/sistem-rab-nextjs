@@ -2,7 +2,7 @@ import { FileItem } from './FileManager'
 import { cn } from '../../lib/utils'
 import { 
   File, FileText, FileImage, FileVideo, FileAudio, FileArchive, 
-  Download, FileSpreadsheet, FileCode
+  Download, FileSpreadsheet, FileCode, Folder
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client';
 
@@ -15,7 +15,9 @@ interface FileCardProps {
 export function FileCard({ file, onClick, onDownload }: FileCardProps) {
   const extension = file.name.split('.').pop()?.toLowerCase() || 'unknown'
 
-  const getFileIcon = (ext: string) => {
+  const getFileIcon = (ext: string, isFolder: boolean) => {
+    if (isFolder) return { icon: Folder, color: 'text-yellow-500', bg: 'bg-yellow-50' }
+    
     const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'webp']
     const docExtensions = ['doc', 'docx', 'txt', 'rtf']
     const sheetExtensions = ['xls', 'xlsx', 'csv']
@@ -52,8 +54,8 @@ export function FileCard({ file, onClick, onDownload }: FileCardProps) {
     })
   }
 
-  const { icon: FileIcon, color, bg } = getFileIcon(extension)
-  const isImage = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'webp'].includes(extension)
+  const { icon: FileIcon, color, bg } = getFileIcon(extension, file.isFolder)
+  const isImage = !file.isFolder && ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'webp'].includes(extension)
 
   return (
     <div 
@@ -81,17 +83,19 @@ export function FileCard({ file, onClick, onDownload }: FileCardProps) {
         {/* Hover Overlay */}
         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-200" />
         
-        {/* Quick Action Button */}
-        <button
-          onClick={(e) => {
-            e.stopPropagation()
-            onDownload()
-          }}
-          className="absolute top-2 right-2 p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-white text-gray-600 hover:text-primary transform translate-y-2 group-hover:translate-y-0"
-          title="Download File"
-        >
-          <Download className="h-4 w-4" />
-        </button>
+        {/* Quick Action Button - Only for files, not folders */}
+        {!file.isFolder && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              onDownload()
+            }}
+            className="absolute top-2 right-2 p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-white text-gray-600 hover:text-primary transform translate-y-2 group-hover:translate-y-0"
+            title="Download File"
+          >
+            <Download className="h-4 w-4" />
+          </button>
+        )}
       </div>
 
       {/* Info Area */}
@@ -102,8 +106,8 @@ export function FileCard({ file, onClick, onDownload }: FileCardProps) {
               {file.name}
             </h3>
             <div className="flex items-center text-xs text-gray-500 gap-2">
-              <span>{formatFileSize(file.size)}</span>
-              <span className="w-1 h-1 rounded-full bg-gray-300" />
+              {!file.isFolder && <span>{formatFileSize(file.size)}</span>}
+              {!file.isFolder && <span className="w-1 h-1 rounded-full bg-gray-300" />}
               <span>{formatDate(file.lastModified)}</span>
             </div>
           </div>

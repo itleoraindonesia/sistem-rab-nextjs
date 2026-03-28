@@ -1,6 +1,6 @@
 import { FileItem } from './FileManager'
 import Button from '../ui/Button'
-import { Download, File, FileText, FileImage, FileVideo, FileAudio, FileArchive } from 'lucide-react'
+import { Download, File, FileText, FileImage, FileVideo, FileAudio, FileArchive, Folder } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client';
 
 interface FileListItemProps {
@@ -10,7 +10,9 @@ interface FileListItemProps {
 }
 
 export function FileListItem({ file, onClick, onDownload }: FileListItemProps) {
-  const getFileIcon = (filename: string) => {
+  const getFileIcon = (filename: string, isFolder: boolean) => {
+    if (isFolder) return Folder
+    
     const extension = filename.split('.').pop()?.toLowerCase()
     
     if (!extension) return File
@@ -48,7 +50,7 @@ export function FileListItem({ file, onClick, onDownload }: FileListItemProps) {
     })
   }
 
-  const FileIcon = getFileIcon(file.name)
+  const FileIcon = getFileIcon(file.name, file.isFolder)
 
   return (
     <div 
@@ -57,31 +59,33 @@ export function FileListItem({ file, onClick, onDownload }: FileListItemProps) {
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
-          <FileIcon className="h-8 w-8 text-gray-400" />
+          <FileIcon className={`h-8 w-8 ${file.isFolder ? 'text-yellow-500' : 'text-gray-400'}`} />
           <div className="flex-1">
             <h3 className="font-medium text-gray-900 text-sm">
               {file.name}
             </h3>
             <div className="flex items-center space-x-4 text-xs text-gray-500 mt-1">
-              <span>{formatFileSize(file.size)}</span>
+              {!file.isFolder && <span>{formatFileSize(file.size)}</span>}
               <span>{formatDate(file.lastModified)}</span>
             </div>
           </div>
         </div>
         
         <div className="flex items-center space-x-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={(e) => {
-              e.stopPropagation()
-              onDownload()
-            }}
-            className="text-xs"
-          >
-            <Download className="h-3 w-3 mr-1" />
-            Download
-          </Button>
+          {!file.isFolder && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation()
+                onDownload()
+              }}
+              className="text-xs"
+            >
+              <Download className="h-3 w-3 mr-1" />
+              Download
+            </Button>
+          )}
         </div>
       </div>
     </div>
