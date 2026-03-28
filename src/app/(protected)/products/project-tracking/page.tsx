@@ -21,6 +21,9 @@ const mockProjects: ProjectSummary[] = [
     status: "active",
     vendor_paid: 600000000,
     customer_paid: 500000000,
+    tanggal_mulai: "2026-01-01",
+    tanggal_deadline: "2026-06-30",
+    retensi_persen: 5,
   },
   {
     id: "proj-002",
@@ -32,6 +35,9 @@ const mockProjects: ProjectSummary[] = [
     status: "active",
     vendor_paid: 200000000,
     customer_paid: 150000000,
+    tanggal_mulai: "2026-02-01",
+    tanggal_deadline: "2026-04-30",
+    retensi_persen: 3,
   },
   {
     id: "proj-003",
@@ -43,6 +49,9 @@ const mockProjects: ProjectSummary[] = [
     status: "completed",
     vendor_paid: 600000000,
     customer_paid: 800000000,
+    tanggal_mulai: "2025-12-01",
+    tanggal_deadline: "2026-03-15",
+    retensi_persen: 5,
   },
 ]
 

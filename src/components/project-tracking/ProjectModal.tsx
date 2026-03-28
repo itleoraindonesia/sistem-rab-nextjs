@@ -96,6 +96,9 @@ export default function ProjectModal({
         status: formData.status as 'active' | 'completed',
         vendor_paid: existingData?.vendor_paid || 0,
         customer_paid: existingData?.customer_paid || 0,
+        tanggal_mulai: existingData?.tanggal_mulai || new Date().toISOString().split('T')[0],
+        tanggal_deadline: existingData?.tanggal_deadline || '',
+        retensi_persen: existingData?.retensi_persen || 5,
       }
       
       if (typeof window !== 'undefined') {
