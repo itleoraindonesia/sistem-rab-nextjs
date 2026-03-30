@@ -4,7 +4,7 @@ import * as React from "react"
 import { createPortal } from "react-dom"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { LayoutDashboard, FileText, Package, Home, LogOut, User, ClipboardCheck, CheckSquare, Users, Truck, ChevronDown, ChevronRight, Calendar, Lock, Settings, Eye, EyeOff, AlertCircle, Folder, GitBranch } from "lucide-react"
+import { LayoutDashboard, FileText, Package, Home, LogOut, User, ClipboardCheck, CheckSquare, Users, Truck, ChevronDown, ChevronRight, Calendar, Lock, Settings, Eye, EyeOff, AlertCircle, Folder, GitBranch, HardHat } from "lucide-react"
 import { supabase } from "../../lib/supabase/client"
 import type { Tables } from "../../types/database"
 import { usePermissions } from "../../hooks/usePermissions"
@@ -48,7 +48,7 @@ const navItems = [
     name: "Produk & RAB",
     path: "/products",
     icon: Package,
-    children: ["/products/project-tracking", "/products/kalkulator-harga", "/products/panel-lantai-dinding", "/products/pagar-beton"],
+    children: ["/products/kalkulator-harga", "/products/panel-lantai-dinding", "/products/pagar-beton"],
     activeColor: "green", // Warna untuk child routes
   },
   {
@@ -56,6 +56,12 @@ const navItems = [
     path: "/crm",
     icon: Users,
     children: ["/crm/input", "/crm/clients"],
+  },
+  {
+    name: "Konstruksi",
+    path: "/construction",
+    icon: HardHat,
+    children: ["/construction/project-tracking"],
   },
   // Hidden temporarily - Supply Chain
   // {
@@ -85,7 +91,7 @@ const navItems = [
     name: "Setting",
     path: "/setting",
     icon: Settings,
-    children: ["/setting/workflow"],
+    children: ["/setting/workflow", "/setting/updates"],
   },
   // Hidden temporarily - Master Data
   // {
@@ -296,7 +302,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     const isChildActive = isChildRoute(item)
 
     return {
-      isActive: isExactActive || isChildActive,
+      // Only active when exact match, not when child is active
+      isActive: isExactActive,
       isChildActive,
       activeColor: item.activeColor,
     }
@@ -394,8 +401,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                     isActive={isActive}
                     onClick={() => handleMainItemClick(item.name, !!hasChildren, item.path, item.children || [])}
                     className={`cursor-pointer ${
-                      isActive && !hasChildren 
-                        ? "bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90 hover:text-sidebar-primary-foreground data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground" 
+                      isActive
+                        ? "bg-[#095540] text-white hover:bg-[#053a2c] hover:text-white data-[active=true]:bg-[#095540] data-[active=true]:text-white" 
+                        : isChildActive
+                        ? "bg-gray-100 text-gray-700 hover:bg-gray-200"
                         : ""
                     }`}
                     title={isCollapsed ? item.name : undefined}
@@ -423,7 +432,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                                   handleChevronClick(e as unknown as React.MouseEvent, item.name)
                                 }
                               }}
-                              className="p-1 hover:bg-sidebar-accent rounded-sm transition-colors cursor-pointer"
+                              className={`p-1 rounded-sm transition-colors cursor-pointer ${
+                                isActive 
+                                  ? "hover:bg-white/20 hover:text-white" 
+                                  : "hover:bg-[#095540]/10 hover:text-[#095540]"
+                              }`}
                             >
                               {isExpanded ? (
                                 <ChevronDown className="size-4" />
@@ -455,7 +468,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                         const pendingReviewsCount = pendingReviews?.length || 0;
                         const pendingApprovalsCount = pendingApprovals?.length || 0;
 
-                        if (childPath === "/products/project-tracking") {
+                        if (childPath === "/construction/project-tracking") {
                           childLabel = "Project Tracking"
                         } else if (childPath === "/products/kalkulator-harga") {
                           childLabel = "Kalkulator Harga"
@@ -497,6 +510,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                           childLabel = "Buat Meeting"
                         } else if (childPath === "/setting/workflow") {
                           childLabel = "Workflow Approval"
+                        } else if (childPath === "/setting/updates") {
+                          childLabel = "Updates"
                         }
 
                         return (
@@ -504,7 +519,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                             <SidebarMenuSubButton 
                               asChild 
                               isActive={isChildActive}
-                              className={isChildActive ? "bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90 hover:text-sidebar-primary-foreground data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground" : ""}
+                              className={isChildActive ? "bg-[#095540] text-white hover:bg-[#053a2c] hover:text-white data-[active=true]:bg-[#095540] data-[active=true]:text-white" : ""}
                             >
                               <Link href={childPath} className="flex items-center justify-between w-full">
                                 <span>{childLabel}</span>

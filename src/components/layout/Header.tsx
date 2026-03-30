@@ -17,6 +17,7 @@ const BREADCRUMB_MAP: Record<string, string> = {
   "products": "Produk & RAB",
   "dokumen": "Administrasi",
   "documents": "Administrasi",
+  "construction": "Konstruksi",
   "crm": "Marketing (CRM)",
   "supply-chain": "Supply Chain",
   "master": "Master Data",
@@ -38,7 +39,8 @@ const BREADCRUMB_MAP: Record<string, string> = {
   "pr": "Purchase Request",
   "po": "Purchase Order",
   "list-material": "List Material",
-  "setting": "Setting"
+  "setting": "Setting",
+  "project-tracking": "Project Tracking"
 };
 
 export default function Header() {

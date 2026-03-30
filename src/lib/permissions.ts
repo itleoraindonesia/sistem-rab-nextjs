@@ -45,7 +45,11 @@ export const PERMISSIONS = {
   'users.view': 'View Users',
 
   // Workflow permissions
-  'workflow.manage': 'Manage Workflows'
+  'workflow.manage': 'Manage Workflows',
+
+  // Konstruksi permissions
+  'konstruksi.view': 'View Konstruksi',
+  'konstruksi.manage': 'Manage Konstruksi'
 } as const
 
 export type Permission = keyof typeof PERMISSIONS
@@ -81,13 +85,15 @@ export const PERMISSION_MATRIX = {
       'crm.view', 'crm.manage', 'crm.create', 'crm.edit',
       'master.view', 'master.manage',
       'meeting.view', 'meeting.manage',
-      'files.view'
+      'files.view',
+      'konstruksi.view', 'konstruksi.manage'
     ],
     'Marketing': [
       'dashboard.view',
       'crm.view', 'crm.manage', 'crm.create', 'crm.edit',
       'meeting.view', 'meeting.manage',
-      'files.view'
+      'files.view',
+      'konstruksi.view'
     ],
     'PBD': Object.keys(PERMISSIONS), // FULL ACCESS like admin
     'SCM': [
@@ -100,19 +106,22 @@ export const PERMISSION_MATRIX = {
 
   reviewer: [
     'dashboard.view',
-    'dokumen.create', 'dokumen.submit', 'dokumen.review'
+    'dokumen.create', 'dokumen.submit', 'dokumen.review',
+    'konstruksi.view'
   ],
 
   approver: [
     'dashboard.view',
-    'dokumen.create', 'dokumen.submit', 'dokumen.approve'
+    'dokumen.create', 'dokumen.submit', 'dokumen.approve',
+    'konstruksi.view'
   ],
 
   user: [
     'dashboard.view',
     'dokumen.create.own', 'dokumen.submit',
     'products.view',
-    'crm.view'
+    'crm.view',
+    'konstruksi.view'
   ]
 } as const
 
@@ -188,7 +197,9 @@ export const MENU_PERMISSIONS = {
   '/files': ['files.view'],
   '/supply-chain': ['supply-chain.view', 'supply-chain.manage'], // Not implemented yet
   '/setting': ['workflow.manage'],
-  '/setting/workflow': ['workflow.manage']
+  '/setting/workflow': ['workflow.manage'],
+  '/setting/updates': [],
+  '/construction': ['konstruksi.view']
 } as const
 
 // Check if user can access a specific menu

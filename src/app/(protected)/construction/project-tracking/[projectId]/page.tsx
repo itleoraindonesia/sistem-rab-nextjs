@@ -333,7 +333,7 @@ export default function ProjectDetailPage() {
           <Package className="w-12 h-12 text-gray-300 mx-auto mb-4" />
           <p className="text-gray-500">Project tidak ditemukan</p>
           <Link
-            href="/products/project-tracking"
+            href="/construction/project-tracking"
             className="mt-4 text-primary hover:underline"
           >
             Kembali ke daftar project

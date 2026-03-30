@@ -348,7 +348,7 @@ export default function ProjectTrackingPage() {
                     </td>
                     <td className="px-4 py-3">
                       <Link
-                        href={`/products/project-tracking/${project.id}`}
+                        href={`/construction/project-tracking/${project.id}`}
                         className="inline-flex items-center gap-1 px-3 py-1 text-sm text-primary hover:bg-primary/5 rounded-md transition-colors"
                       >
                         Detail
@@ -380,7 +380,7 @@ export default function ProjectTrackingPage() {
             {filteredProjects.map((project) => (
               <Link
                 key={project.id}
-                href={`/products/project-tracking/${project.id}`}
+                href={`/construction/project-tracking/${project.id}`}
                 className="block bg-white p-3 rounded-lg border border-gray-200 shadow-sm active:scale-[0.99] transition-transform"
               >
                 <div className="flex justify-between items-start mb-2">

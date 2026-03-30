@@ -163,7 +163,7 @@ export default function CRMDashboard({ dateRange }: CRMDashboardProps) {
         <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
           <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
             <Target className="w-5 h-5 text-primary" />
-            Top Distribusi Kebutuhan
+            Top Tipe Bangunan
           </h3>
           {stats.byKebutuhan.length > 0 ? (
             <ResponsiveContainer width="100%" height={300}>
