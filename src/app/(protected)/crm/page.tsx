@@ -2,13 +2,17 @@
 
 import CRMDashboard from '@/components/crm/CRMDashboard';
 import ConnectionStatus from '@/components/crm/ConnectionStatus';
+import PrintReportModal from '@/components/crm/PrintReportModal';
 import DateRangePicker from '@/components/ui/DateRangePicker';
+import { Button } from '@/components/ui/Button';
 import Link from 'next/link';
 import { useState } from 'react';
 import { DateRangeFilter } from '@/hooks/useClients';
+import { Printer } from 'lucide-react';
 
 export default function CRMDashboardPage() {
   const [dateRange, setDateRange] = useState<DateRangeFilter>({});
+  const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
 
   const handleDateChange = (start: Date | null, end: Date | null) => {
     setDateRange({ startDate: start, endDate: end });
@@ -32,24 +36,31 @@ export default function CRMDashboardPage() {
               onDateChange={handleDateChange}
               className="flex-shrink-0"
             />
-            <Link
-              href="/crm/clients"
-              className="inline-flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium"
+            <Button
+              variant="outline"
+              onClick={() => setIsPrintModalOpen(true)}
             >
-              Lihat Semua Client
-            </Link>
-            <Link
-              href="/crm/input"
-              className="flex-1 sm:flex-none inline-flex items-center justify-center px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90 transition-colors shadow-sm"
-            >
-              + Input Data Baru
-            </Link>
+              <Printer className="w-4 h-4 mr-2" />
+              Cetak Report
+            </Button>
+            <Button variant="outline" asChild>
+              <Link href="/crm/clients">Lihat Semua Client</Link>
+            </Button>
+            <Button asChild>
+              <Link href="/crm/input">+ Input Data Baru</Link>
+            </Button>
           </div>
         </div>
 
         {/* Dashboard */}
         <CRMDashboard dateRange={dateRange} />
       </div>
+
+      {/* Print Modal */}
+      <PrintReportModal
+        isOpen={isPrintModalOpen}
+        onClose={() => setIsPrintModalOpen(false)}
+      />
     </div>
   );
 }
