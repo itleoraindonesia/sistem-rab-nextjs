@@ -1,17 +1,13 @@
 -- Migration: Fix Storage RLS Policies for Meeting Attachments
 -- Date: 2026-03-28
 -- Changes:
---   1. Enable RLS on storage.objects table
---   2. Create policies for authenticated users to access "Leora Files" bucket
+--   1. Create policies for authenticated users to access "Leora Files" bucket
+--
+-- NOTE: storage.objects RLS is already enabled by Supabase by default.
+--       We only manage policies here, not the table itself.
 
 -- ============================================
--- 1. ENABLE RLS ON STORAGE OBJECTS
--- ============================================
-
-ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
-
--- ============================================
--- 2. CREATE POLICIES FOR "Leora Files" BUCKET
+-- 1. CREATE POLICIES FOR "Leora Files" BUCKET
 -- ============================================
 
 -- Drop existing policies if they exist (for idempotency)
@@ -50,10 +46,8 @@ USING (
 );
 
 -- ============================================
--- 3. VERIFY BUCKET EXISTS
+-- 2. VERIFY BUCKET EXISTS
 -- ============================================
 -- Note: Pastikan bucket "Leora Files" sudah dibuat di Supabase Storage
 -- Kalau belum, buat via Supabase Dashboard atau SQL:
 -- INSERT INTO storage.buckets (id, name, public) VALUES ('Leora Files', 'Leora Files', true);
-
-COMMENT ON TABLE storage.objects IS 'Storage objects with RLS enabled for Leora Files bucket';
