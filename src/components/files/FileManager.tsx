@@ -14,6 +14,7 @@ export interface FileItem {
   url: string
   path: string
   isFolder: boolean
+  fileCount?: number
 }
 
 export function FileManager() {
@@ -47,7 +48,7 @@ export function FileManager() {
       }
 
       if (data) {
-        const fileItems = await Promise.all(
+        const fileItems: FileItem[] = await Promise.all(
           data.map(async (item) => {
             const fullPath = currentPath ? `${currentPath}/${item.name}` : item.name
             const isFolder = item.id === null
@@ -57,13 +58,23 @@ export function FileManager() {
               .from(bucketName)
               .getPublicUrl(fullPath)
 
+            let fileCount: number | undefined
+            if (isFolder) {
+              const { data: folderData } = await supabase
+                .storage
+                .from(bucketName)
+                .list(fullPath, { limit: 1000 })
+              fileCount = folderData?.length || 0
+            }
+
             return {
               name: item.name,
               size: item.metadata?.size || 0,
               lastModified: new Date(item.updated_at || Date.now()),
               url: publicUrl.publicUrl,
               path: fullPath,
-              isFolder
+              isFolder,
+              fileCount
             }
           })
         )
@@ -132,9 +143,13 @@ export function FileManager() {
     }
   }
 
-  const filteredFiles = files.filter(file =>
-    file.name.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+  const filteredFiles = files
+    .filter(file => file.name.toLowerCase().includes(searchTerm.toLowerCase()))
+    .sort((a, b) => {
+      if (a.isFolder && !b.isFolder) return -1
+      if (!a.isFolder && b.isFolder) return 1
+      return a.name.localeCompare(b.name)
+    })
 
   return (
     <div className="space-y-6">
@@ -180,23 +195,34 @@ export function FileManager() {
       </div>
 
       {/* Breadcrumb Navigation */}
-      <div className="flex items-center gap-2 text-sm">
+      <div className="flex items-center gap-1 text-sm">
         <Button
           variant="ghost"
           size="sm"
           onClick={handleNavigateToRoot}
-          className={currentPath === '' ? 'font-semibold' : ''}
+          className={currentPath === '' ? 'h-7 px-2 font-semibold text-primary' : 'h-7 px-2 text-gray-500'}
         >
-          <Home className="h-4 w-4 mr-1" />
-          Root
+          <Home className="h-4 w-4" />
         </Button>
         
-        {getBreadcrumbParts().map((part, index) => (
-          <div key={index} className="flex items-center">
-            <ChevronRight className="h-4 w-4 text-gray-400" />
-            <span className="px-2 py-1 font-medium">{part}</span>
-          </div>
-        ))}
+        {getBreadcrumbParts().map((part, index) => {
+          const pathToHere = getBreadcrumbParts().slice(0, index + 1).join('/')
+          const isLast = index === getBreadcrumbParts().length - 1
+          
+          return (
+            <div key={index} className="flex items-center">
+              <ChevronRight className="h-4 w-4 text-gray-300 mx-1" />
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setCurrentPath(pathToHere)}
+                className={isLast ? 'font-semibold text-primary h-7 px-2' : 'h-7 px-2 text-gray-500'}
+              >
+                {part}
+              </Button>
+            </div>
+          )
+        })}
       </div>
 
       {/* File List */}

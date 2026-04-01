@@ -4,7 +4,6 @@ import {
   File, FileText, FileImage, FileVideo, FileAudio, FileArchive, 
   Download, FileSpreadsheet, FileCode, Folder
 } from 'lucide-react'
-import { supabase } from '@/lib/supabase/client';
 
 interface FileCardProps {
   file: FileItem
@@ -15,9 +14,7 @@ interface FileCardProps {
 export function FileCard({ file, onClick, onDownload }: FileCardProps) {
   const extension = file.name.split('.').pop()?.toLowerCase() || 'unknown'
 
-  const getFileIcon = (ext: string, isFolder: boolean) => {
-    if (isFolder) return { icon: Folder, color: 'text-yellow-500', bg: 'bg-yellow-50' }
-    
+  const getFileIcon = (ext: string) => {
     const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'webp']
     const docExtensions = ['doc', 'docx', 'txt', 'rtf']
     const sheetExtensions = ['xls', 'xlsx', 'csv']
@@ -54,16 +51,53 @@ export function FileCard({ file, onClick, onDownload }: FileCardProps) {
     })
   }
 
-  const { icon: FileIcon, color, bg } = getFileIcon(extension, file.isFolder)
-  const isImage = !file.isFolder && ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'webp'].includes(extension)
+  if (file.isFolder) {
+    const itemCount = file.fileCount || 0
+    const countText = itemCount === 1 ? '1 item' : `${itemCount} items`
+    
+    return (
+      <div 
+        className="group relative flex flex-col bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-primary/20 transition-all duration-200 cursor-pointer overflow-hidden"
+        onClick={onClick}
+      >
+        <div className="relative aspect-[4/3] w-full flex items-center justify-center p-6">
+          <div className="flex flex-col items-center justify-center transform transition-transform duration-300 group-hover:scale-110">
+            <div className="relative flex flex-col items-center">
+              <Folder className="h-20 w-20 text-primary fill-primary" />
+              {itemCount > 0 && (
+                <div className="absolute -bottom-1 -right-1 bg-secondary text-secondary-foreground text-[10px] font-medium px-1.5 py-0.5 rounded-full shadow-sm">
+                  {itemCount}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="p-3">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex-1 min-w-0">
+              <h3 className="font-medium text-gray-900 text-sm truncate leading-tight mb-1" title={file.name}>
+                {file.name}
+              </h3>
+              {itemCount > 0 && (
+                <p className="text-xs text-gray-500">{countText}</p>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  const { icon: FileIcon, color, bg } = getFileIcon(extension)
+  const isImage = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'webp'].includes(extension)
 
   return (
     <div 
       className="group relative flex flex-col bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-primary/20 transition-all duration-200 cursor-pointer overflow-hidden"
       onClick={onClick}
     >
-      {/* Preview Area */}
-      <div className={cn("relative aspect-[4/3] w-full overflow-hidden flex items-center justify-center", !isImage && bg)}>
+      <div className={cn("relative aspect-[4/3] w-full overflow-hidden flex items-center justify-center", bg)}>
         {isImage ? (
           <img 
             src={file.url} 
@@ -80,10 +114,8 @@ export function FileCard({ file, onClick, onDownload }: FileCardProps) {
           </div>
         )}
 
-        {/* Hover Overlay */}
         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-200" />
         
-        {/* Quick Action Button - Only for files, not folders */}
         {!file.isFolder && (
           <button
             onClick={(e) => {
@@ -98,7 +130,6 @@ export function FileCard({ file, onClick, onDownload }: FileCardProps) {
         )}
       </div>
 
-      {/* Info Area */}
       <div className="p-3">
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
@@ -106,8 +137,8 @@ export function FileCard({ file, onClick, onDownload }: FileCardProps) {
               {file.name}
             </h3>
             <div className="flex items-center text-xs text-gray-500 gap-2">
-              {!file.isFolder && <span>{formatFileSize(file.size)}</span>}
-              {!file.isFolder && <span className="w-1 h-1 rounded-full bg-gray-300" />}
+              <span>{formatFileSize(file.size)}</span>
+              <span className="w-1 h-1 rounded-full bg-gray-300" />
               <span>{formatDate(file.lastModified)}</span>
             </div>
           </div>
