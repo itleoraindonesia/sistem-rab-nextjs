@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { Providers } from "../components/Providers";
 import PWALoadingScreen from "../components/ui/PWALoadingScreen";
@@ -9,6 +9,12 @@ import ClearPersistCache from "../components/ClearPersistCache";
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
+});
+
+const plusJakartaSans = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  variable: "--font-plus-jakarta",
+  weight: ["400", "600", "700", "800"],
 });
 
 export const metadata: Metadata = {
@@ -72,7 +78,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className={`${inter.variable} font-sans antialiased`}>
+      <body className={`${inter.variable} ${plusJakartaSans.variable} font-sans antialiased`}>
         <ClearPersistCache />
         <PWALoadingScreen />
         <Providers>{children}</Providers>
