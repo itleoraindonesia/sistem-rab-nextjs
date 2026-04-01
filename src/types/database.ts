@@ -68,6 +68,110 @@ export type Database = {
         }
         Relationships: []
       }
+      customer_payment: {
+        Row: {
+          catatan: string | null
+          created_at: string | null
+          id: string
+          jumlah: number
+          project_id: string
+          tanggal_pembayaran: string
+          termin: Database["public"]["Enums"]["customer_payment_termin"]
+        }
+        Insert: {
+          catatan?: string | null
+          created_at?: string | null
+          id?: string
+          jumlah: number
+          project_id: string
+          tanggal_pembayaran: string
+          termin: Database["public"]["Enums"]["customer_payment_termin"]
+        }
+        Update: {
+          catatan?: string | null
+          created_at?: string | null
+          id?: string
+          jumlah?: number
+          project_id?: string
+          tanggal_pembayaran?: string
+          termin?: Database["public"]["Enums"]["customer_payment_termin"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_payment_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "project_summary"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_payment_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      department_permissions: {
+        Row: {
+          created_at: string | null
+          department_id: string
+          id: string
+          permissions: Json
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          department_id: string
+          id?: string
+          permissions?: Json
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          department_id?: string
+          id?: string
+          permissions?: Json
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "department_permissions_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: true
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      departments: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          name: string
+          slug: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          slug: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          slug?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       document_types: {
         Row: {
           category: string | null
@@ -226,7 +330,21 @@ export type Database = {
             foreignKeyName: "letter_histories_action_by_id_fkey"
             columns: ["action_by_id"]
             isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "letter_histories_action_by_id_fkey"
+            columns: ["action_by_id"]
+            isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "letter_histories_assigned_to_id_fkey"
+            columns: ["assigned_to_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
             referencedColumns: ["id"]
           },
           {
@@ -359,6 +477,13 @@ export type Database = {
             foreignKeyName: "mom_meetings_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mom_meetings_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
@@ -476,6 +601,13 @@ export type Database = {
             foreignKeyName: "outgoing_letters_created_by_id_fkey"
             columns: ["created_by_id"]
             isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "outgoing_letters_created_by_id_fkey"
+            columns: ["created_by_id"]
+            isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
@@ -496,6 +628,58 @@ export type Database = {
           {
             foreignKeyName: "outgoing_letters_sender_id_fkey"
             columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "outgoing_letters_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      projects: {
+        Row: {
+          client_id: string | null
+          contract_value: number
+          created_at: string | null
+          customer_name: string
+          id: string
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          client_id?: string | null
+          contract_value?: number
+          created_at?: string | null
+          customer_name: string
+          id?: string
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          client_id?: string | null
+          contract_value?: number
+          created_at?: string | null
+          customer_name?: string
+          id?: string
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "projects_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "projects_client_id_fkey"
+            columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
@@ -640,63 +824,303 @@ export type Database = {
         }
         Relationships: []
       }
+      roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_system_role: boolean | null
+          name: string
+          permissions: Json
+          slug: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_system_role?: boolean | null
+          name: string
+          permissions?: Json
+          slug: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_system_role?: boolean | null
+          name?: string
+          permissions?: Json
+          slug?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       users: {
         Row: {
           avatar_url: string | null
           created_at: string | null
-          departemen: string | null
+          department_id: string | null
           email: string
           id: string
           is_active: boolean | null
+          is_approver_eligible: boolean | null
+          is_reviewer_eligible: boolean | null
           jabatan: string | null
           last_login_at: string | null
           nama: string
           nik: string | null
           no_hp: string | null
-          role: Database["public"]["Enums"]["user_role"] | null
+          role_id: string
           signature_image: string | null
+          stakeholder_type: Database["public"]["Enums"]["stakeholder_type"]
           updated_at: string | null
           username: string
         }
         Insert: {
           avatar_url?: string | null
           created_at?: string | null
-          departemen?: string | null
+          department_id?: string | null
           email: string
           id?: string
           is_active?: boolean | null
+          is_approver_eligible?: boolean | null
+          is_reviewer_eligible?: boolean | null
           jabatan?: string | null
           last_login_at?: string | null
           nama: string
           nik?: string | null
           no_hp?: string | null
-          role?: Database["public"]["Enums"]["user_role"] | null
+          role_id: string
           signature_image?: string | null
+          stakeholder_type?: Database["public"]["Enums"]["stakeholder_type"]
           updated_at?: string | null
           username: string
         }
         Update: {
           avatar_url?: string | null
           created_at?: string | null
-          departemen?: string | null
+          department_id?: string | null
           email?: string
           id?: string
           is_active?: boolean | null
+          is_approver_eligible?: boolean | null
+          is_reviewer_eligible?: boolean | null
           jabatan?: string | null
           last_login_at?: string | null
           nama?: string
           nik?: string | null
           no_hp?: string | null
-          role?: Database["public"]["Enums"]["user_role"] | null
+          role_id?: string
           signature_image?: string | null
+          stakeholder_type?: Database["public"]["Enums"]["stakeholder_type"]
           updated_at?: string | null
           username?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "users_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "users_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "roles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vendor_payment: {
+        Row: {
+          catatan: string | null
+          created_at: string | null
+          id: string
+          jenis_pembayaran: Database["public"]["Enums"]["vendor_payment_jenis"]
+          jumlah: number
+          lampiran: Json | null
+          tanggal_pembayaran: string
+          vendor_spk_id: string
+        }
+        Insert: {
+          catatan?: string | null
+          created_at?: string | null
+          id?: string
+          jenis_pembayaran: Database["public"]["Enums"]["vendor_payment_jenis"]
+          jumlah: number
+          lampiran?: Json | null
+          tanggal_pembayaran: string
+          vendor_spk_id: string
+        }
+        Update: {
+          catatan?: string | null
+          created_at?: string | null
+          id?: string
+          jenis_pembayaran?: Database["public"]["Enums"]["vendor_payment_jenis"]
+          jumlah?: number
+          lampiran?: Json | null
+          tanggal_pembayaran?: string
+          vendor_spk_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_payment_vendor_spk_id_fkey"
+            columns: ["vendor_spk_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_spk"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vendor_progress: {
+        Row: {
+          catatan: string | null
+          created_at: string | null
+          id: string
+          lampiran: Json | null
+          progress_percent: number
+          tanggal: string
+          vendor_spk_id: string
+        }
+        Insert: {
+          catatan?: string | null
+          created_at?: string | null
+          id?: string
+          lampiran?: Json | null
+          progress_percent: number
+          tanggal: string
+          vendor_spk_id: string
+        }
+        Update: {
+          catatan?: string | null
+          created_at?: string | null
+          id?: string
+          lampiran?: Json | null
+          progress_percent?: number
+          tanggal?: string
+          vendor_spk_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_progress_vendor_spk_id_fkey"
+            columns: ["vendor_spk_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_spk"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vendor_spk: {
+        Row: {
+          created_at: string | null
+          id: string
+          nilai_spk: number
+          pekerjaan: string
+          project_id: string
+          status: Database["public"]["Enums"]["vendor_spk_status"]
+          updated_at: string | null
+          vendor_id: string | null
+          vendor_name: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          nilai_spk?: number
+          pekerjaan: string
+          project_id: string
+          status?: Database["public"]["Enums"]["vendor_spk_status"]
+          updated_at?: string | null
+          vendor_id?: string | null
+          vendor_name: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          nilai_spk?: number
+          pekerjaan?: string
+          project_id?: string
+          status?: Database["public"]["Enums"]["vendor_spk_status"]
+          updated_at?: string | null
+          vendor_id?: string | null
+          vendor_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_spk_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "project_summary"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendor_spk_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendor_spk_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendor_spk_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
-      [_ in never]: never
+      project_summary: {
+        Row: {
+          contract_value: number | null
+          customer_name: string | null
+          customer_outstanding: number | null
+          customer_paid: number | null
+          id: string | null
+          name: string | null
+          project_progress: number | null
+          total_spk: number | null
+          vendor_outstanding: number | null
+          vendor_paid: number | null
+        }
+        Relationships: []
+      }
+      user_profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string | null
+          department_name: string | null
+          department_slug: string | null
+          email: string | null
+          id: string | null
+          is_active: boolean | null
+          is_approver_eligible: boolean | null
+          is_reviewer_eligible: boolean | null
+          jabatan: string | null
+          last_login_at: string | null
+          nama: string | null
+          nik: string | null
+          no_hp: string | null
+          role_name: string | null
+          role_permissions: Json | null
+          role_slug: string | null
+          signature_image: string | null
+          stakeholder_type:
+            | Database["public"]["Enums"]["stakeholder_type"]
+            | null
+          updated_at: string | null
+          username: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       _email_local_part: { Args: { email: string }; Returns: string }
@@ -708,13 +1132,23 @@ export type Database = {
           status: string
         }[]
       }
+      current_user_id: { Args: never; Returns: string }
       generate_document_number: {
         Args: { p_letter_id: string }
         Returns: string
       }
+      generate_meeting_number: { Args: never; Returns: string }
       get_generated_meeting_number_preview: { Args: never; Returns: string }
       get_next_meeting_number_preview: { Args: never; Returns: string }
+      get_project_progress: { Args: { p_project_id: string }; Returns: number }
       get_roman_month: { Args: { month_int: number }; Returns: string }
+      get_user_department_slug: { Args: never; Returns: string }
+      get_user_permissions: { Args: never; Returns: Json }
+      get_user_role_slug: { Args: never; Returns: string }
+      get_user_stakeholder_type: { Args: never; Returns: string }
+      is_client: { Args: never; Returns: boolean }
+      is_internal_user: { Args: never; Returns: boolean }
+      is_vendor: { Args: never; Returns: boolean }
       resubmit_revision: {
         Args: { p_letter_id: string; p_user_id: string }
         Returns: Json
@@ -732,8 +1166,10 @@ export type Database = {
         Args: { p_letter_id: string; p_user_id: string }
         Returns: Json
       }
+      user_has_permission: { Args: { p_permission: string }; Returns: boolean }
     }
     Enums: {
+      customer_payment_termin: "dp" | "term" | "final"
       kebutuhan_type:
         | "Pagar"
         | "Gudang"
@@ -789,7 +1225,9 @@ export type Database = {
         | "WIP"
         | "Finish"
         | "Cancelled"
-      user_role: "admin" | "manager" | "reviewer" | "approver" | "user"
+      stakeholder_type: "internal" | "vendor" | "client"
+      vendor_payment_jenis: "dp" | "term" | "pelunasan"
+      vendor_spk_status: "active" | "completed"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -917,6 +1355,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      customer_payment_termin: ["dp", "term", "final"],
       kebutuhan_type: [
         "Pagar",
         "Gudang",
@@ -977,7 +1416,9 @@ export const Constants = {
         "Finish",
         "Cancelled",
       ],
-      user_role: ["admin", "manager", "reviewer", "approver", "user"],
+      stakeholder_type: ["internal", "vendor", "client"],
+      vendor_payment_jenis: ["dp", "term", "pelunasan"],
+      vendor_spk_status: ["active", "completed"],
     },
   },
 } as const

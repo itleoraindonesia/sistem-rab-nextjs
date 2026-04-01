@@ -45,7 +45,7 @@ interface RoleGuardProps {
 export function RoleGuard({ roles, fallback = null, children }: RoleGuardProps) {
   const { user } = usePermissions()
 
-  const hasRole = user && roles.includes(user.role)
+  const hasRole = user && user.role_slug && roles.includes(user.role_slug)
 
   return hasRole ? <>{children}</> : <>{fallback}</>
 }
@@ -60,7 +60,7 @@ interface DepartmentGuardProps {
 export function DepartmentGuard({ departments, fallback = null, children }: DepartmentGuardProps) {
   const { user } = usePermissions()
 
-  const hasDepartment = user && user.departemen && departments.includes(user.departemen)
+  const hasDepartment = user && user.department_slug && departments.includes(user.department_slug)
 
   return hasDepartment ? <>{children}</> : <>{fallback}</>
 }

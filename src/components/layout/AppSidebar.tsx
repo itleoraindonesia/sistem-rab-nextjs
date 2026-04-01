@@ -8,7 +8,7 @@ import { LayoutDashboard, FileText, Package, Home, LogOut, User, ClipboardCheck,
 import { supabase } from "../../lib/supabase/client"
 import type { Tables } from "../../types/database"
 import { usePermissions } from "../../hooks/usePermissions"
-import { canAccessMenu } from "../../lib/permissions"
+import { canAccessMenu, UserProfile } from "../../lib/permissions"
 import { CompactRoleBadge } from "../../components/ui/RoleBadge"
 import { usePendingReviews, usePendingApprovals, useLetters } from "../../hooks/useLetters"
 import PWAInstallButton from "../../components/ui/PWAInstallButton"
@@ -107,7 +107,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const router = useRouter()
   const { state: sidebarState, isMobile, setOpenMobile } = useSidebar()
   const [expandedCategory, setExpandedCategory] = React.useState<string | null>(null)
-  const [user, setUser] = React.useState<Tables<'users'> | null>(null)
+  const [user, setUser] = React.useState<UserProfile | null>(null)
   const [isLoggingOut, setIsLoggingOut] = React.useState(false)
   const [showPasswordModal, setShowPasswordModal] = React.useState(false)
   const [currentPassword, setCurrentPassword] = React.useState("")
@@ -563,8 +563,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                     <div className="flex flex-col items-start">
                       <span className="text-sm font-medium">{user.nama}</span>
                       <CompactRoleBadge
-                        role={user.role || 'user'}
-                        departemen={user.departemen || undefined}
+                        role={user.role_slug || 'user'}
+                        departemen={user.department_slug || undefined}
                       />
                     </div>
                     <Settings className="size-4 shrink-0 text-muted-foreground" />

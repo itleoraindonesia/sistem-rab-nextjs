@@ -47,7 +47,7 @@ export type OutgoingLetterWithRelations = Tables<'outgoing_letters'> & {
     id: number;
     stage_type: string;
     sequence: number;
-    assignee_users?: Array<Pick<Tables<'users'>, 'id' | 'nama' | 'email' | 'jabatan' | 'departemen'>>;
+    assignee_users?: Array<Pick<Tables<'users'>, 'id' | 'nama' | 'email' | 'jabatan' | 'department_id'>>;
   }>;
 };
 

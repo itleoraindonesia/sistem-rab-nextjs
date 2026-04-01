@@ -2,7 +2,7 @@
 
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect } from 'react'
-import { User } from '@/lib/permissions'
+import { UserProfile, fetchUserProfile } from '@/lib/permissions'
 import { supabase } from '@/lib/supabase/client'
 
 export const userKeys = {
@@ -13,25 +13,20 @@ export const userKeys = {
 export function useUser() {
   return useQuery({
     queryKey: userKeys.current(),
-    queryFn: async (): Promise<User | null> => {
+    queryFn: async (): Promise<UserProfile | null> => {
       const { data: { session } } = await supabase.auth.getSession()
-      
+
       if (!session?.user) {
         return null
       }
 
-      const { data: userData, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', session.user.id)
-        .single()
+      const profile = await fetchUserProfile(session.user.id)
 
-      if (error) {
-        console.error('Error fetching user profile:', error)
-        throw new Error(error.message || 'Failed to fetch user profile')
+      if (!profile) {
+        return null
       }
 
-      return userData as User
+      return profile
     },
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,

@@ -1,146 +1,57 @@
 import { supabase } from './supabase/client';
 
-// Permission system berdasarkan AUTH.md specification
 export const PERMISSIONS = {
-  // Dashboard
   'dashboard.view': 'View Dashboard',
-
-  // Dokumen permissions
   'dokumen.create': 'Create Documents',
   'dokumen.create.own': 'Create Own Documents',
   'dokumen.submit': 'Submit Documents',
   'dokumen.review': 'Review Documents',
   'dokumen.approve': 'Approve Documents',
-
-  // Products permissions
   'products.view': 'View Products',
   'products.create': 'Create Products',
   'products.edit': 'Edit Products',
   'products.delete': 'Delete Products',
-
-  // CRM permissions
   'crm.view': 'View CRM',
   'crm.manage': 'Manage CRM',
   'crm.create': 'Create CRM Data',
   'crm.edit': 'Edit CRM Data',
-
-  // Master Data permissions
   'master.view': 'View Master Data',
   'master.manage': 'Manage Master Data',
-
-  // Meeting permissions
   'meeting.view': 'View Meetings',
   'meeting.manage': 'Manage Meetings',
-
-  // Supply Chain permissions (soon)
   'supply-chain.view': 'View Supply Chain',
   'supply-chain.manage': 'Manage Supply Chain',
-
-  // File Manager permissions
   'files.view': 'View File Manager',
   'files.download': 'Download Files',
-
-  // User management
   'users.manage': 'Manage Users',
   'users.view': 'View Users',
-
-  // Workflow permissions
   'workflow.manage': 'Manage Workflows',
-
-  // Konstruksi permissions
   'konstruksi.view': 'View Konstruksi',
   'konstruksi.manage': 'Manage Konstruksi'
 } as const
 
 export type Permission = keyof typeof PERMISSIONS
 
-// Permission matrix berdasarkan AUTH.md
-export const PERMISSION_MATRIX = {
-  admin: Object.keys(PERMISSIONS),
+export type StakeholderType = 'internal' | 'vendor' | 'client'
 
-  manager: {
-    'Corsec': [
-      'dashboard.view',
-      'meeting.view', 'meeting.manage',
-      'files.view'
-      // Security-related modules - can be expanded as needed
-    ],
-    'Finance': [
-      'dashboard.view',
-      'dokumen.create', 'products.view', 'products.create', 'products.edit',
-      'master.view', 'master.manage',
-      'meeting.view', 'meeting.manage',
-      'files.view'
-    ],
-    'Human Capital': [
-      'dashboard.view',
-      'dokumen.create', 'dokumen.submit', 'dokumen.review', 'dokumen.approve',
-      'meeting.view', 'meeting.manage',
-      'files.view'
-    ],
-    'Konstruksi': [
-      'dashboard.view',
-      'dokumen.create', 'dokumen.submit', 'dokumen.review', 'dokumen.approve',
-      'products.view', 'products.create', 'products.edit', 'products.delete',
-      'crm.view', 'crm.manage', 'crm.create', 'crm.edit',
-      'master.view', 'master.manage',
-      'meeting.view', 'meeting.manage',
-      'files.view',
-      'konstruksi.view', 'konstruksi.manage'
-    ],
-    'Marketing': [
-      'dashboard.view',
-      'crm.view', 'crm.manage', 'crm.create', 'crm.edit',
-      'meeting.view', 'meeting.manage',
-      'files.view',
-      'konstruksi.view'
-    ],
-    'PBD': Object.keys(PERMISSIONS), // FULL ACCESS like admin
-    'SCM': [
-      'dashboard.view',
-      'supply-chain.view', 'supply-chain.manage',
-      'meeting.view', 'meeting.manage',
-      'files.view'
-    ]
-  },
-
-  reviewer: [
-    'dashboard.view',
-    'dokumen.create', 'dokumen.submit', 'dokumen.review',
-    'konstruksi.view'
-  ],
-
-  approver: [
-    'dashboard.view',
-    'dokumen.create', 'dokumen.submit', 'dokumen.approve',
-    'konstruksi.view'
-  ],
-
-  user: [
-    'dashboard.view',
-    'dokumen.create.own', 'dokumen.submit',
-    'products.view',
-    'crm.view',
-    'konstruksi.view'
-  ]
-} as const
-
-export type UserRole = keyof typeof PERMISSION_MATRIX
-export type Department = keyof typeof PERMISSION_MATRIX.manager
-
-// User type (aligned with database)
-export interface User {
+export interface UserProfile {
   id: string
   nik: string
   username: string
   email: string
   nama: string
   jabatan?: string
-  departemen?: string
+  department_id?: string
+  department_name?: string
+  department_slug?: string
   no_hp?: string
-  instansi_id?: string
-  role: UserRole
+  role_id: string
+  role_name?: string
+  role_slug?: string
   is_active: boolean
+  stakeholder_type: StakeholderType
+  is_reviewer_eligible: boolean
+  is_approver_eligible: boolean
   avatar_url?: string
   signature_image?: string
   last_login_at?: string
@@ -148,45 +59,69 @@ export interface User {
   updated_at: string
 }
 
-// Utility functions
-export function hasPermission(user: User | null, permission: string): boolean {
-  if (!user || !user.is_active) return false
+export async function fetchUserProfile(userId: string): Promise<UserProfile | null> {
+  const { data, error } = await supabase
+    .from('user_profiles')
+    .select('*')
+    .eq('id', userId)
+    .single()
 
-  // Admin has all permissions
-  if (user.role === 'admin') return true
+  if (error || !data) return null
 
-  const userPermissions = getUserPermissions(user)
-  return userPermissions.includes(permission)
+  return {
+    id: data.id,
+    nik: data.nik,
+    username: data.username,
+    email: data.email,
+    nama: data.nama,
+    jabatan: data.jabatan,
+    department_id: data.department_id,
+    department_name: data.department_name,
+    department_slug: data.department_slug,
+    no_hp: data.no_hp,
+    role_id: data.role_id,
+    role_name: data.role_name,
+    role_slug: data.role_slug,
+    is_active: data.is_active,
+    stakeholder_type: data.stakeholder_type,
+    is_reviewer_eligible: data.is_reviewer_eligible,
+    is_approver_eligible: data.is_approver_eligible,
+    avatar_url: data.avatar_url,
+    signature_image: data.signature_image,
+    last_login_at: data.last_login_at,
+    created_at: data.created_at,
+    updated_at: data.updated_at,
+  }
 }
 
-export function getUserPermissions(user: User | null): string[] {
-  if (!user) return []
+export async function fetchUserPermissions(userId: string): Promise<string[]> {
+  const { data, error } = await supabase.rpc('get_user_permissions')
 
-  if (user.role === 'admin') {
-    return [...PERMISSION_MATRIX.admin]
+  if (error) {
+    console.error('Failed to fetch user permissions:', error)
+    return []
   }
 
-  if (user.role === 'manager') {
-    const deptPermissions = PERMISSION_MATRIX.manager[user.departemen as Department]
-    return deptPermissions ? [...deptPermissions] : []
-  }
+  if (!data) return []
 
-  return PERMISSION_MATRIX[user.role] ? [...PERMISSION_MATRIX[user.role]] : []
+  return data as string[]
 }
 
-export function canAccess(user: User | null, permissions: string[], requireAll = false): boolean {
-  if (!user) return false
+export function hasPermission(permissions: string[], permission: string): boolean {
+  return permissions.includes(permission)
+}
 
+export function getUserPermissions(permissions: string[]): string[] {
+  return [...permissions]
+}
+
+export function canAccess(permissions: string[], required: string[], requireAll = false): boolean {
   if (requireAll) {
-    // AND logic - user must have ALL permissions
-    return permissions.every(p => hasPermission(user, p))
-  } else {
-    // OR logic - user must have at least ONE permission
-    return permissions.some(p => hasPermission(user, p))
+    return required.every(p => permissions.includes(p))
   }
+  return required.some(p => permissions.includes(p))
 }
 
-// Menu permissions mapping
 export const MENU_PERMISSIONS = {
   '/': ['dashboard.view'],
   '/documents': ['dokumen.create', 'dokumen.review', 'dokumen.approve'],
@@ -195,17 +130,15 @@ export const MENU_PERMISSIONS = {
   '/master': ['master.view', 'master.manage'],
   '/meeting': ['meeting.view', 'meeting.manage'],
   '/files': ['files.view'],
-  '/supply-chain': ['supply-chain.view', 'supply-chain.manage'], // Not implemented yet
+  '/supply-chain': ['supply-chain.view', 'supply-chain.manage'],
   '/setting': ['workflow.manage'],
   '/setting/workflow': ['workflow.manage'],
   '/setting/updates': [],
   '/construction': ['konstruksi.view']
 } as const
 
-// Check if user can access a specific menu
-export function canAccessMenu(user: User | null, menuPath: string): boolean {
+export function canAccessMenu(permissions: string[], menuPath: string): boolean {
   const requiredPermissions = MENU_PERMISSIONS[menuPath as keyof typeof MENU_PERMISSIONS]
-  if (!requiredPermissions) return true // Menu without specific permissions
-
-  return canAccess(user, [...requiredPermissions])
+  if (!requiredPermissions) return true
+  return canAccess(permissions, [...requiredPermissions])
 }
