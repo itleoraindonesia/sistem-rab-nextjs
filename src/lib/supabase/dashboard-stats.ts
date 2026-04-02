@@ -14,7 +14,7 @@ export async function getDashboardStats(userId?: string) {
     .select('*', { count: 'exact', head: true })
 
   // 3. Menunggu Review (User specific if userId provided, otherwise global)
-  let pendingReviewsQuery = supabase
+  const pendingReviewsQuery = supabase
     .from('outgoing_letters')
     .select('*', { count: 'exact', head: true })
     .eq('status', 'SUBMITTED_TO_REVIEW')
