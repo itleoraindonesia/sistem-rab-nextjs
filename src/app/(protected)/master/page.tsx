@@ -1,37 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import Link from "next/link";
-import { supabase } from "../../../lib/supabase/client";
+import { usePermissions } from "../../../hooks/usePermissions";
 
 export default function MasterData() {
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const { isLoading } = usePermissions();
 
-  useEffect(() => {
-    const checkUserRole = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user) {
-          const { data: userData } = await supabase
-            .from('users')
-            .select('role')
-            .eq('id', session.user.id)
-            .single();
-          
-          setIsAdmin(userData?.role === 'admin');
-        }
-      } catch (error) {
-        console.error("Error checking user role:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    checkUserRole();
-  }, []);
-
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex h-[50vh] items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-primary"></div>
@@ -40,17 +15,14 @@ export default function MasterData() {
   }
 
   return (
- <div className=' '>
+  <div className=' '>
       <div className='space-y-6'>
-        {/* Header */}
         <div className='mb-4'>
           <h1 className='text-2xl font-bold text-brand-primary'>Master Data</h1>
           <p className='text-gray-600'>Kelola data panel dan ongkos kirim</p>
         </div>
 
-        {/* Master Data Cards */}
         <div className='grid grid-cols-1 md:grid-cols-2 gap-6 mb-8'>
-          {/* Panel Card */}
           <Link
             href="/master/panel"
             className='bg-white rounded-lg shadow hover:shadow-lg transition-shadow block border-2 border-transparent hover:border-brand-primary'
@@ -62,7 +34,6 @@ export default function MasterData() {
             </div>
           </Link>
 
-          {/* Ongkir Card */}
           <Link
             href="/master/ongkir"
             className='bg-white rounded-lg shadow hover:shadow-lg transition-shadow block border-2 border-transparent hover:border-brand-primary'
