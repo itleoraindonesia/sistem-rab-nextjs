@@ -6,6 +6,7 @@ interface PermissionGuardProps {
   permissions: string[]
   fallback?: React.ReactNode
   requireAll?: boolean // true = AND, false = OR
+  loading?: React.ReactNode
   children: React.ReactNode
 }
 
@@ -13,9 +14,14 @@ export function PermissionGuard({
   permissions,
   fallback = null,
   requireAll = false,
+  loading = null,
   children
 }: PermissionGuardProps) {
-  const { canAccess } = usePermissions()
+  const { canAccess, isLoading } = usePermissions()
+
+  if (isLoading) {
+    return <>{loading}</>
+  }
 
   const hasAccess = canAccess(permissions, requireAll)
 
@@ -26,11 +32,16 @@ export function PermissionGuard({
 interface HasPermissionProps {
   permission: string
   fallback?: React.ReactNode
+  loading?: React.ReactNode
   children: React.ReactNode
 }
 
-export function HasPermission({ permission, fallback = null, children }: HasPermissionProps) {
-  const { hasPermission } = usePermissions()
+export function HasPermission({ permission, fallback = null, loading = null, children }: HasPermissionProps) {
+  const { hasPermission, isLoading } = usePermissions()
+
+  if (isLoading) {
+    return <>{loading}</>
+  }
 
   return hasPermission(permission) ? <>{children}</> : <>{fallback}</>
 }
@@ -39,11 +50,16 @@ export function HasPermission({ permission, fallback = null, children }: HasPerm
 interface RoleGuardProps {
   roles: string[]
   fallback?: React.ReactNode
+  loading?: React.ReactNode
   children: React.ReactNode
 }
 
-export function RoleGuard({ roles, fallback = null, children }: RoleGuardProps) {
-  const { user } = usePermissions()
+export function RoleGuard({ roles, fallback = null, loading = null, children }: RoleGuardProps) {
+  const { user, isLoading } = usePermissions()
+
+  if (isLoading) {
+    return <>{loading}</>
+  }
 
   const hasRole = user && user.role_slug && roles.includes(user.role_slug)
 
@@ -54,11 +70,16 @@ export function RoleGuard({ roles, fallback = null, children }: RoleGuardProps) 
 interface DepartmentGuardProps {
   departments: string[]
   fallback?: React.ReactNode
+  loading?: React.ReactNode
   children: React.ReactNode
 }
 
-export function DepartmentGuard({ departments, fallback = null, children }: DepartmentGuardProps) {
-  const { user } = usePermissions()
+export function DepartmentGuard({ departments, fallback = null, loading = null, children }: DepartmentGuardProps) {
+  const { user, isLoading } = usePermissions()
+
+  if (isLoading) {
+    return <>{loading}</>
+  }
 
   const hasDepartment = user && user.department_slug && departments.includes(user.department_slug)
 
