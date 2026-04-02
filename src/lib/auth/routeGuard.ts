@@ -46,6 +46,15 @@ export async function requirePermission(permission: string, redirectTo = '/unaut
   const profile = await getCachedProfile()
 
   if (!hasPermission(profile.permissions, permission)) {
+    console.warn('Permission denied', {
+      userId: profile.id,
+      role: profile.role_slug,
+      stakeholderType: profile.stakeholder_type,
+      requiredPermission: permission,
+      userPermissions: profile.permissions,
+      action: 'requirePermission',
+      redirectTo
+    })
     redirect(redirectTo)
   }
 
@@ -58,6 +67,15 @@ export async function requireAnyPermission(permissions: string[], redirectTo = '
   const hasAny = permissions.some(p => hasPermission(profile.permissions, p))
 
   if (!hasAny) {
+    console.warn('Permission denied (any required)', {
+      userId: profile.id,
+      role: profile.role_slug,
+      stakeholderType: profile.stakeholder_type,
+      requiredPermissions: permissions,
+      userPermissions: profile.permissions,
+      action: 'requireAnyPermission',
+      redirectTo
+    })
     redirect(redirectTo)
   }
 
@@ -70,6 +88,15 @@ export async function requireAllPermissions(permissions: string[], redirectTo = 
   const hasAll = permissions.every(p => hasPermission(profile.permissions, p))
 
   if (!hasAll) {
+    console.warn('Permission denied (all required)', {
+      userId: profile.id,
+      role: profile.role_slug,
+      stakeholderType: profile.stakeholder_type,
+      requiredPermissions: permissions,
+      userPermissions: profile.permissions,
+      action: 'requireAllPermissions',
+      redirectTo
+    })
     redirect(redirectTo)
   }
 
@@ -80,6 +107,14 @@ export async function requireRole(roles: string[], redirectTo = '/unauthorized')
   const profile = await getCachedProfile()
 
   if (!roles.includes(profile.role_slug)) {
+    console.warn('Role access denied', {
+      userId: profile.id,
+      userRole: profile.role_slug,
+      stakeholderType: profile.stakeholder_type,
+      requiredRoles: roles,
+      action: 'requireRole',
+      redirectTo
+    })
     redirect(redirectTo)
   }
 
@@ -96,7 +131,7 @@ export async function requireDepartment(departments: string[], redirectTo = '/un
 
   const { data: profile } = await supabase
     .from('user_profiles')
-    .select('department_slug, is_active')
+    .select('department_slug, is_active, role_slug, stakeholder_type')
     .eq('id', user.id)
     .single()
 
@@ -105,6 +140,15 @@ export async function requireDepartment(departments: string[], redirectTo = '/un
   }
 
   if (!profile.department_slug || !departments.includes(profile.department_slug)) {
+    console.warn('Department access denied', {
+      userId: user.id,
+      userRole: profile.role_slug,
+      stakeholderType: profile.stakeholder_type,
+      userDepartment: profile.department_slug,
+      requiredDepartments: departments,
+      action: 'requireDepartment',
+      redirectTo
+    })
     redirect(redirectTo)
   }
 
@@ -115,6 +159,14 @@ export async function requireInternalUser(redirectTo = '/login') {
   const profile = await getCachedProfile()
 
   if (profile.stakeholder_type !== 'internal') {
+    console.warn('Stakeholder type access denied', {
+      userId: profile.id,
+      role: profile.role_slug,
+      stakeholderType: profile.stakeholder_type,
+      requiredType: 'internal',
+      action: 'requireInternalUser',
+      redirectTo
+    })
     redirect(redirectTo)
   }
 
@@ -125,6 +177,14 @@ export async function requireVendor(redirectTo = '/login') {
   const profile = await getCachedProfile()
 
   if (profile.stakeholder_type !== 'vendor') {
+    console.warn('Stakeholder type access denied', {
+      userId: profile.id,
+      role: profile.role_slug,
+      stakeholderType: profile.stakeholder_type,
+      requiredType: 'vendor',
+      action: 'requireVendor',
+      redirectTo
+    })
     redirect(redirectTo)
   }
 
@@ -135,6 +195,14 @@ export async function requireClient(redirectTo = '/login') {
   const profile = await getCachedProfile()
 
   if (profile.stakeholder_type !== 'client') {
+    console.warn('Stakeholder type access denied', {
+      userId: profile.id,
+      role: profile.role_slug,
+      stakeholderType: profile.stakeholder_type,
+      requiredType: 'client',
+      action: 'requireClient',
+      redirectTo
+    })
     redirect(redirectTo)
   }
 
